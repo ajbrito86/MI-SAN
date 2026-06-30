@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { validarEnv } from './config/validar-env';
 import { AuthModule } from './modules/auth/auth.module';
+import { ChatsModule } from './modules/chats/chats.module';
 import { CiclosModule } from './modules/ciclos/ciclos.module';
 import { ParticipantesModule } from './modules/participantes/participantes.module';
 import { PagosModule } from './modules/pagos/pagos.module';
@@ -28,6 +29,7 @@ import { PrismaModule } from './prisma/prisma.module';
     SaludModule,
     AuthModule,
     UsuariosModule,
+    ChatsModule,
     SociedadesModule,
     ParticipantesModule,
     CiclosModule,

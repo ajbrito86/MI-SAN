@@ -1,5 +1,6 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { EstadoCiclo, EstadoTurno, FrecuenciaSociedad, Prisma } from '@prisma/client';
+import { RegistrarEntregaDto } from './dto/registrar-entrega.dto';
 import { TurnosManualesDto } from './dto/turnos-manuales.dto';
 import { TurnosRepository } from './turnos.repository';
 
@@ -15,6 +16,8 @@ export class TurnosService {
       numeroTurno: turno.numeroTurno,
       fechaProgramada: turno.fechaProgramada,
       montoCobro: Number(turno.montoCobro),
+      montoEntregado: turno.montoEntregado ? Number(turno.montoEntregado) : null,
+      entregaIncompleta: turno.entregaIncompleta,
       estado: turno.estado,
       fechaEntrega: turno.fechaEntrega,
       entregadoPor: turno.entregadoPor,
@@ -37,7 +40,7 @@ export class TurnosService {
     return this.turnosRepository.guardarTurnos(ciclo.id, ciclo.sociedadId, usuarioId, turnos);
   }
 
-  async registrarEntrega(usuarioId: string, cicloId: string, turnoId: string) {
+  async registrarEntrega(usuarioId: string, cicloId: string, turnoId: string, dto: RegistrarEntregaDto) {
     const ciclo = await this.validarAcceso(usuarioId, cicloId);
 
     if (ciclo.sociedad.organizadorId !== usuarioId) {
@@ -58,7 +61,24 @@ export class TurnosService {
       throw new BadRequestException('Este turno ya fue registrado como entregado.');
     }
 
-    const entregado = await this.turnosRepository.registrarEntrega(turnoId, usuarioId);
+    const participantesActivos = await this.turnosRepository.listarParticipantesActivos(ciclo.sociedadId);
+    const resumenConfirmado = await this.turnosRepository.resumenPagosConfirmadosTurno(cicloId, turno.numeroTurno);
+    const pagosConfirmados = resumenConfirmado._count._all;
+    const montoEntregado = new Prisma.Decimal(resumenConfirmado._sum.monto ?? 0);
+    const entregaIncompleta = pagosConfirmados < participantesActivos.length || montoEntregado.lessThan(turno.montoCobro);
+
+    if (entregaIncompleta && !dto.permitirEntregaIncompleta) {
+      throw new BadRequestException({
+        message: 'Faltan pagos confirmados para completar esta entrega.',
+        codigo: 'ENTREGA_INCOMPLETA',
+        participantesActivos: participantesActivos.length,
+        pagosConfirmados,
+        montoPlanificado: Number(turno.montoCobro),
+        montoConfirmado: Number(montoEntregado),
+      });
+    }
+
+    const entregado = await this.turnosRepository.registrarEntrega(turnoId, usuarioId, montoEntregado, entregaIncompleta);
     return this.mapearTurno(entregado);
   }
 
@@ -67,6 +87,8 @@ export class TurnosService {
     numeroTurno: number;
     fechaProgramada: Date;
     montoCobro: Prisma.Decimal;
+    montoEntregado: Prisma.Decimal | null;
+    entregaIncompleta: boolean;
     estado: string;
     fechaEntrega: Date | null;
     entregadoPor: string | null;
@@ -85,6 +107,8 @@ export class TurnosService {
       numeroTurno: turno.numeroTurno,
       fechaProgramada: turno.fechaProgramada,
       montoCobro: Number(turno.montoCobro),
+      montoEntregado: turno.montoEntregado ? Number(turno.montoEntregado) : null,
+      entregaIncompleta: turno.entregaIncompleta,
       estado: turno.estado,
       fechaEntrega: turno.fechaEntrega,
       entregadoPor: turno.entregadoPor,

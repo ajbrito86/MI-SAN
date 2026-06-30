@@ -2,6 +2,7 @@ import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { UsuarioActual } from '../../common/decorators/usuario-actual.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { UsuarioAutenticado } from '../../common/types/usuario-autenticado.type';
+import { RegistrarEntregaDto } from './dto/registrar-entrega.dto';
 import { TurnosManualesDto } from './dto/turnos-manuales.dto';
 import { TurnosService } from './turnos.service';
 
@@ -34,7 +35,8 @@ export class TurnosController {
     @UsuarioActual() usuario: UsuarioAutenticado,
     @Param('id') cicloId: string,
     @Param('turnoId') turnoId: string,
+    @Body() dto: RegistrarEntregaDto,
   ) {
-    return this.turnosService.registrarEntrega(usuario.id, cicloId, turnoId);
+    return this.turnosService.registrarEntrega(usuario.id, cicloId, turnoId, dto);
   }
 }

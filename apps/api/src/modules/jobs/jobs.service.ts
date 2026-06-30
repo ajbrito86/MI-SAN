@@ -42,6 +42,11 @@ export class JobsService {
         titulo: 'Pago atrasado',
         mensaje: `La cuota #${cuota.numeroCuota} de ${cuota.ciclo.sociedad.nombre} esta atrasada.`,
         tipo: TipoNotificacion.PROXIMO_VENCIMIENTO,
+        metadataJson: {
+          sociedadId: cuota.ciclo.sociedadId,
+          cuotaPagoId: cuota.id,
+          destino: 'PAGOS',
+        },
       })),
     });
 

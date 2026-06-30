@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { EstadoTurno, Prisma, TipoMovimientoHistorial } from '@prisma/client';
+import { EstadoPago, EstadoTurno, Prisma, TipoMovimientoHistorial, TipoNotificacion } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 
 type TurnoInput = {
@@ -67,6 +67,18 @@ export class TurnosRepository {
     });
   }
 
+  resumenPagosConfirmadosTurno(cicloId: string, numeroTurno: number) {
+    return this.prisma.cuotaPago.aggregate({
+      where: {
+        cicloId,
+        numeroCuota: numeroTurno,
+        estado: EstadoPago.CONFIRMADO,
+      },
+      _count: { _all: true },
+      _sum: { monto: true },
+    });
+  }
+
   guardarTurnos(cicloId: string, sociedadId: string, usuarioId: string, turnos: TurnoInput[]) {
     return this.prisma.$transaction(async (tx) => {
       await tx.turnoCobro.deleteMany({ where: { cicloId } });
@@ -100,7 +112,7 @@ export class TurnosRepository {
     });
   }
 
-  registrarEntrega(turnoId: string, usuarioId: string) {
+  registrarEntrega(turnoId: string, usuarioId: string, montoEntregado: Prisma.Decimal, entregaIncompleta: boolean) {
     return this.prisma.$transaction(async (tx) => {
       const turno = await tx.turnoCobro.update({
         where: { id: turnoId },
@@ -108,6 +120,8 @@ export class TurnosRepository {
           estado: EstadoTurno.PAGADO,
           fechaEntrega: new Date(),
           entregadoPor: usuarioId,
+          montoEntregado,
+          entregaIncompleta,
         },
         include: {
           ciclo: { include: { sociedad: true } },
@@ -127,11 +141,34 @@ export class TurnosRepository {
           usuarioId: turno.participante.usuarioId,
           realizadoPor: usuarioId,
           accion: TipoMovimientoHistorial.TURNO_ENTREGADO,
-          descripcion: `Turno #${turno.numeroTurno} entregado a ${turno.participante.usuario.nombres} ${turno.participante.usuario.apellidos}.`,
+          descripcion: entregaIncompleta
+            ? `Turno #${turno.numeroTurno} entregado incompleto a ${turno.participante.usuario.nombres} ${turno.participante.usuario.apellidos}.`
+            : `Turno #${turno.numeroTurno} entregado a ${turno.participante.usuario.nombres} ${turno.participante.usuario.apellidos}.`,
           metadataJson: {
             turnoId: turno.id,
-            montoCobro: Number(turno.montoCobro),
+            montoPlanificado: Number(turno.montoCobro),
+            montoEntregado: Number(turno.montoEntregado ?? 0),
+            entregaIncompleta,
             fechaEntrega: turno.fechaEntrega,
+          },
+        },
+      });
+
+      await tx.notificacion.create({
+        data: {
+          usuarioId: turno.participante.usuarioId,
+          titulo: entregaIncompleta ? 'Entrega registrada incompleta' : 'Entrega registrada',
+          mensaje: entregaIncompleta
+            ? `Tu turno #${turno.numeroTurno} fue registrado con entrega incompleta.`
+            : `Tu turno #${turno.numeroTurno} fue registrado como entregado.`,
+          tipo: TipoNotificacion.PROXIMO_COBRO,
+          metadataJson: {
+            sociedadId: turno.ciclo.sociedadId,
+            turnoId: turno.id,
+            montoPlanificado: Number(turno.montoCobro),
+            montoEntregado: Number(turno.montoEntregado ?? 0),
+            entregaIncompleta,
+            destino: 'DETALLE_SAN',
           },
         },
       });

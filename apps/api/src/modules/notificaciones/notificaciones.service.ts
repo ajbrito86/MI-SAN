@@ -9,6 +9,11 @@ export class NotificacionesService {
     return this.notificacionesRepository.listar(usuarioId);
   }
 
+  async contarNoLeidas(usuarioId: string) {
+    const cantidad = await this.notificacionesRepository.contarNoLeidas(usuarioId);
+    return { cantidad };
+  }
+
   async marcarLeida(usuarioId: string, notificacionId: string) {
     const notificacion = await this.notificacionesRepository.buscar(notificacionId);
 
@@ -21,5 +26,9 @@ export class NotificacionesService {
     }
 
     return this.notificacionesRepository.marcarLeida(notificacionId);
+  }
+
+  marcarTodasLeidas(usuarioId: string) {
+    return this.notificacionesRepository.marcarTodasLeidas(usuarioId);
   }
 }

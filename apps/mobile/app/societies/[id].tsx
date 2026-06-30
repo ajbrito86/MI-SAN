@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { Alert, Image, Linking, Modal, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { AppButton } from '@/components/app-button';
@@ -76,6 +76,7 @@ export default function DetalleSociedad() {
   });
   const esOrganizador = sociedad?.rol === 'ORGANIZADOR';
   const puedeInvitar = sociedad?.estado === 'CONFIGURACION';
+  const chatDisponible = sociedad?.estado !== 'FINALIZADA' && sociedad?.estado !== 'CANCELADA';
   const participantesOrdenables = useMemo(
     () => participantes.filter((participante) => participante.estadoParticipante === 'ACTIVO'),
     [participantes],
@@ -125,6 +126,38 @@ export default function DetalleSociedad() {
   };
 
   const participantePorId = (participanteId: string) => participantesOrdenables.find((participante) => participante.id === participanteId);
+  const obtenerResumenEntrega = (numeroTurno: number) => {
+    const pagosDelTurno = pagosSociedad.filter((pago) => pago.numeroCuota === numeroTurno);
+    const pagosConfirmados = pagosDelTurno.filter((pago) => pago.estado === 'CONFIRMADO');
+    const montoConfirmado = pagosConfirmados.reduce((total, pago) => total + pago.monto, 0);
+
+    return {
+      pagosConfirmados: pagosConfirmados.length,
+      montoConfirmado,
+      entregaCompleta: pagosConfirmados.length >= participantesActivos && montoConfirmado >= montoEntregaEstimado,
+    };
+  };
+  const registrarEntregaConValidacion = (turno: { id: string; numeroTurno: number; montoCobro: number }) => {
+    const resumenEntrega = obtenerResumenEntrega(turno.numeroTurno);
+
+    if (resumenEntrega.entregaCompleta) {
+      entregarTurnoMutation.mutate({ turnoId: turno.id });
+      return;
+    }
+
+    Alert.alert(
+      'Entrega incompleta',
+      `Solo hay ${formatearMonto(resumenEntrega.montoConfirmado, sociedad?.moneda)} confirmado de ${formatearMonto(turno.montoCobro, sociedad?.moneda)} planificado. Si continuas, el turno quedara entregado con el monto real confirmado y marcado como incompleto.`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Entregar incompleto',
+          style: 'destructive',
+          onPress: () => entregarTurnoMutation.mutate({ turnoId: turno.id, permitirEntregaIncompleta: true }),
+        },
+      ],
+    );
+  };
   const invalidarSociedad = async () => {
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: ['sociedad', id] }),
@@ -213,11 +246,13 @@ export default function DetalleSociedad() {
     onError: (err) => setMensajeAccion(err instanceof Error ? err.message : 'No pudimos rechazar el pago.'),
   });
   const entregarTurnoMutation = useMutation({
-    mutationFn: (turnoId: string) => entregarTurno(token ?? '', sociedad?.cicloActual?.id ?? '', turnoId),
+    mutationFn: ({ turnoId, permitirEntregaIncompleta }: { turnoId: string; permitirEntregaIncompleta?: boolean }) =>
+      entregarTurno(token ?? '', sociedad?.cicloActual?.id ?? '', turnoId, Boolean(permitirEntregaIncompleta)),
     onSuccess: async () => {
       setMensajeAccion('Turno registrado como entregado.');
       await queryClient.invalidateQueries({ queryKey: ['turnos', sociedad?.cicloActual?.id] });
       await queryClient.invalidateQueries({ queryKey: ['historial', id] });
+      await queryClient.invalidateQueries({ queryKey: ['reporte-sociedad', id] });
     },
     onError: (err) => setMensajeAccion(err instanceof Error ? err.message : 'No pudimos registrar la entrega.'),
   });
@@ -399,8 +434,16 @@ export default function DetalleSociedad() {
                 {miTurno ? (
                   <>
                     <Text className="mt-1 font-semibold text-marca-texto">
-                      #{miTurno.numeroTurno} - entrega {formatearMonto(miTurno.montoCobro, sociedad.moneda)}
+                      #{miTurno.numeroTurno} -{' '}
+                      {miTurno.montoEntregado !== null
+                        ? `recibido ${formatearMonto(miTurno.montoEntregado, sociedad.moneda)}`
+                        : `entrega planificada ${formatearMonto(miTurno.montoCobro, sociedad.moneda)}`}
                     </Text>
+                    {miTurno.entregaIncompleta ? (
+                      <Text className="mt-1 text-sm font-semibold text-amber-700">
+                        Entrega incompleta. Planificado: {formatearMonto(miTurno.montoCobro, sociedad.moneda)}
+                      </Text>
+                    ) : null}
                     <Text className="mt-1 text-sm text-slate-600">
                       Fecha prevista: {new Date(miTurno.fechaProgramada).toLocaleDateString()}
                     </Text>
@@ -617,6 +660,12 @@ export default function DetalleSociedad() {
           <View className="mt-3 gap-3">
             {participantes.map((participante) => {
               const turno = turnos.find((item) => item.participante.id === participante.usuario.id);
+              const esOrganizadorEnSuPropiaFila = esOrganizador && participante.usuario.id === usuarioActual?.id;
+              const puedeChatear =
+                chatDisponible &&
+                participante.estadoParticipante === 'ACTIVO' &&
+                !esOrganizadorEnSuPropiaFila &&
+                (esOrganizador || participante.usuario.id === usuarioActual?.id);
 
               return (
                 <View key={participante.id} className="gap-2 border-b border-slate-100 pb-4">
@@ -629,8 +678,15 @@ export default function DetalleSociedad() {
                       {turno ? (
                         <>
                           <Text className="font-semibold text-slate-700">
-                            Entrega: {formatearMonto(turno.montoCobro, sociedad?.moneda)}
+                            {turno.montoEntregado !== null
+                              ? `Entregado: ${formatearMonto(turno.montoEntregado, sociedad?.moneda)}`
+                              : `Entrega planificada: ${formatearMonto(turno.montoCobro, sociedad?.moneda)}`}
                           </Text>
+                          {turno.montoEntregado !== null && turno.montoEntregado !== turno.montoCobro ? (
+                            <Text className="text-sm font-semibold text-amber-700">
+                              Planificado: {formatearMonto(turno.montoCobro, sociedad?.moneda)}
+                            </Text>
+                          ) : null}
                           <Text className="text-slate-600">
                             Fecha prevista: {new Date(turno.fechaProgramada).toLocaleDateString()}
                           </Text>
@@ -657,10 +713,14 @@ export default function DetalleSociedad() {
                       {turno ? (
                         <Text
                           className={`rounded-full px-3 py-1 text-xs font-bold ${
-                            turno.estado === 'PAGADO' ? 'bg-emerald-50 text-marca-verde' : 'bg-slate-100 text-slate-600'
+                            turno.entregaIncompleta
+                              ? 'bg-amber-50 text-amber-700'
+                              : turno.estado === 'PAGADO'
+                                ? 'bg-emerald-50 text-marca-verde'
+                                : 'bg-slate-100 text-slate-600'
                           }`}
                         >
-                          {turno.estado === 'PAGADO' ? 'ENTREGADO' : 'PENDIENTE'}
+                          {turno.entregaIncompleta ? 'INCOMPLETO' : turno.estado === 'PAGADO' ? 'ENTREGADO' : 'PENDIENTE'}
                         </Text>
                       ) : null}
                     </View>
@@ -669,8 +729,24 @@ export default function DetalleSociedad() {
                     <AppButton
                       titulo={entregarTurnoMutation.isPending ? 'Registrando...' : 'Registrar entrega'}
                       variante="secundario"
-                      onPress={() => entregarTurnoMutation.mutate(turno.id)}
+                      onPress={() => registrarEntregaConValidacion(turno)}
                       disabled={entregarTurnoMutation.isPending}
+                    />
+                  ) : null}
+                  {puedeChatear ? (
+                    <AppButton
+                      titulo={esOrganizador ? 'Chat privado' : 'Chat con organizador'}
+                      variante="secundario"
+                      onPress={() =>
+                        router.push({
+                          pathname: '/societies/[id]/chat/[participanteId]',
+                          params: {
+                            id,
+                            participanteId: participante.id,
+                            nombre: `${participante.usuario.nombres} ${participante.usuario.apellidos}`,
+                          },
+                        })
+                      }
                     />
                   ) : null}
                   {esOrganizador && sociedad?.estado === 'CONFIGURACION' && participante.usuario.id !== usuarioActual?.id ? (

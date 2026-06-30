@@ -104,6 +104,11 @@ export class PagosRepository {
           titulo: 'Pago reportado',
           mensaje: `${cuota.participante.usuario.nombres} reporto una cuota en ${cuota.ciclo.sociedad.nombre}.`,
           tipo: TipoNotificacion.RECORDATORIO_PAGO,
+          metadataJson: {
+            sociedadId: cuota.ciclo.sociedadId,
+            cuotaPagoId: cuota.id,
+            destino: 'DETALLE_SAN',
+          },
         },
       });
 
@@ -139,6 +144,11 @@ export class PagosRepository {
           titulo: 'Pago confirmado',
           mensaje: 'Tu pago fue confirmado por el organizador.',
           tipo: TipoNotificacion.PAGO_CONFIRMADO,
+          metadataJson: {
+            sociedadId: cuota.ciclo.sociedadId,
+            cuotaPagoId: cuota.id,
+            destino: 'PAGOS',
+          },
         },
       });
 
@@ -174,6 +184,11 @@ export class PagosRepository {
           titulo: 'Pago rechazado',
           mensaje: observacion,
           tipo: TipoNotificacion.PAGO_RECHAZADO,
+          metadataJson: {
+            sociedadId: cuota.ciclo.sociedadId,
+            cuotaPagoId: cuota.id,
+            destino: 'PAGOS',
+          },
         },
       });
 

@@ -61,6 +61,8 @@ export type TurnoCobro = {
   numeroTurno: number;
   fechaProgramada: string;
   montoCobro: number;
+  montoEntregado: number | null;
+  entregaIncompleta: boolean;
   estado: string;
   fechaEntrega: string | null;
   entregadoPor: string | null;
@@ -206,8 +208,9 @@ export function expulsarParticipante(token: string, participanteId: string, moti
   });
 }
 
-export function entregarTurno(token: string, cicloId: string, turnoId: string) {
+export function entregarTurno(token: string, cicloId: string, turnoId: string, permitirEntregaIncompleta = false) {
   return apiRequestAutenticado<TurnoCobro>(`/cycles/${cicloId}/turns/${turnoId}/deliver`, {
     method: 'POST',
+    body: JSON.stringify({ permitirEntregaIncompleta }),
   });
 }

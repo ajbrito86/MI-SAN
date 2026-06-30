@@ -14,6 +14,16 @@ export class NotificacionesController {
     return this.notificacionesService.listar(usuario.id);
   }
 
+  @Get('unread-count')
+  contarNoLeidas(@UsuarioActual() usuario: UsuarioAutenticado) {
+    return this.notificacionesService.contarNoLeidas(usuario.id);
+  }
+
+  @Patch('read-all')
+  marcarTodasLeidas(@UsuarioActual() usuario: UsuarioAutenticado) {
+    return this.notificacionesService.marcarTodasLeidas(usuario.id);
+  }
+
   @Patch(':id/read')
   marcarLeida(@UsuarioActual() usuario: UsuarioAutenticado, @Param('id') notificacionId: string) {
     return this.notificacionesService.marcarLeida(usuario.id, notificacionId);
