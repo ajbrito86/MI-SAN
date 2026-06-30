@@ -1,0 +1,35 @@
+node_modules
+
+# Builds y caches
+dist
+build
+coverage
+.expo
+.expo-shared
+.turbo
+.nativewind
+.cache
+
+# Entorno local
+.env
+.env.*
+!.env.example
+
+# Archivos generados o subidos en desarrollo
+/uploads
+/apps/api/uploads
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# SO / editores
+.DS_Store
+Thumbs.db
+.idea
+.vscode
+
+# Docker/local
+Dockerfile.local

@@ -1,0 +1,23 @@
+{
+  "name": "mi-san",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "api:dev": "npm run start:dev -w @mi-san/api",
+    "api:build": "npm run build -w @mi-san/api",
+    "api:prisma:generate": "npm run prisma:generate -w @mi-san/api",
+    "api:seed": "npm run prisma:seed -w @mi-san/api",
+    "mobile:start": "npm run start -w @mi-san/mobile",
+    "mobile:android": "npm run android -w @mi-san/mobile",
+    "mobile:ios": "npm run ios -w @mi-san/mobile",
+    "mobile:web": "npm run web -w @mi-san/mobile"
+  },
+  "devDependencies": {
+    "react": "18.3.1",
+    "react-native": "0.76.5"
+  }
+}

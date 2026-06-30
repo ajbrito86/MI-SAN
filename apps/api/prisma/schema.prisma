@@ -1,0 +1,282 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum FrecuenciaSociedad {
+  SEMANAL
+  QUINCENAL
+  MENSUAL
+}
+
+enum ModalidadTurno {
+  MANUAL
+  ALEATORIA
+}
+
+enum TipoPago {
+  EFECTIVO
+  DEPOSITO_BANCARIO
+  TRANSFERENCIA
+  MIXTO
+}
+
+enum Moneda {
+  DOP
+  USD
+}
+
+enum RolUsuario {
+  ORGANIZADOR
+  PARTICIPANTE
+}
+
+enum EstadoSociedad {
+  CONFIGURACION
+  ACTIVA
+  FINALIZADA
+  CANCELADA
+}
+
+enum EstadoParticipante {
+  INVITADO
+  ACTIVO
+  RETIRADO
+  EXPULSADO
+}
+
+enum EstadoInvitacion {
+  PENDIENTE
+  ACEPTADA
+  RECHAZADA
+  EXPIRADA
+}
+
+enum EstadoCiclo {
+  CONFIGURACION
+  ACTIVO
+  COMPLETADO
+  CANCELADO
+}
+
+enum EstadoTurno {
+  PENDIENTE
+  PAGADO
+  REPROGRAMADO
+}
+
+enum EstadoPago {
+  PENDIENTE
+  REPORTADO
+  CONFIRMADO
+  RECHAZADO
+  ATRASADO
+  INCUMPLIDO
+}
+
+enum TipoNotificacion {
+  RECORDATORIO_PAGO
+  PAGO_CONFIRMADO
+  PAGO_RECHAZADO
+  INVITACION_RECIBIDA
+  INVITACION_ACEPTADA
+  NUEVO_CICLO
+  PROXIMO_COBRO
+  PROXIMO_VENCIMIENTO
+  PARTICIPANTE_EXPULSADO
+}
+
+enum TipoMovimientoHistorial {
+  SOCIEDAD_CREADA
+  SOCIEDAD_EDITADA
+  SOCIEDAD_CERRADA
+  PARTICIPANTE_AGREGADO
+  PARTICIPANTE_EXPULSADO
+  INVITACION_ENVIADA
+  INVITACION_ACEPTADA
+  CICLO_CREADO
+  CICLO_INICIADO
+  CICLO_FINALIZADO
+  TURNO_GENERADO
+  TURNO_ENTREGADO
+  PAGO_REPORTADO
+  PAGO_CONFIRMADO
+  PAGO_RECHAZADO
+  EVIDENCIA_CARGADA
+}
+
+model Usuario {
+  id                  String                 @id @default(uuid())
+  nombres             String
+  apellidos           String
+  telefono            String                 @unique
+  email               String                 @unique
+  rolGlobal           RolUsuario             @default(PARTICIPANTE)
+  passwordHash        String
+  refreshTokenHash    String?
+  fotoPerfilUrl       String?
+  pushToken           String?
+  isVerified          Boolean                @default(false)
+  isActive            Boolean                @default(true)
+  createdAt           DateTime               @default(now())
+  updatedAt           DateTime               @updatedAt
+  sociedadesCreadas   Sociedad[]             @relation("OrganizadorSociedades")
+  participaciones     ParticipanteSociedad[]
+  invitacionesEnviadas InvitacionSociedad[]   @relation("InvitacionesEnviadas")
+  cuotasConfirmadas   CuotaPago[]            @relation("CuotasConfirmadas")
+  evidenciasCargadas  EvidenciaPago[]
+  notificaciones      Notificacion[]
+  movimientos         HistorialMovimiento[]  @relation("MovimientosUsuario")
+  movimientosRealizados HistorialMovimiento[] @relation("MovimientosRealizados")
+}
+
+model Sociedad {
+  id                    String                 @id @default(uuid())
+  nombre                String
+  descripcion           String?
+  organizadorId         String
+  montoCuota            Decimal                @db.Decimal(12, 2)
+  moneda                Moneda                 @default(DOP)
+  frecuencia            FrecuenciaSociedad
+  modalidadTurnos       ModalidadTurno
+  tipoPago              TipoPago
+  cantidadParticipantes Int
+  fechaInicio           DateTime
+  fechaFinEstimada      DateTime?
+  estado                EstadoSociedad         @default(CONFIGURACION)
+  isActive              Boolean                @default(true)
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+  organizador           Usuario                @relation("OrganizadorSociedades", fields: [organizadorId], references: [id])
+  participantes         ParticipanteSociedad[]
+  invitaciones          InvitacionSociedad[]
+  ciclos                CicloSociedad[]
+  movimientos           HistorialMovimiento[]
+}
+
+model ParticipanteSociedad {
+  id                 String              @id @default(uuid())
+  sociedadId         String
+  usuarioId          String
+  turno              Int?
+  fechaIngreso       DateTime?
+  estadoParticipante EstadoParticipante  @default(INVITADO)
+  observacion        String?
+  isActive           Boolean             @default(true)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  sociedad           Sociedad            @relation(fields: [sociedadId], references: [id])
+  usuario            Usuario             @relation(fields: [usuarioId], references: [id])
+  turnos             TurnoCobro[]
+  cuotas             CuotaPago[]
+
+  @@unique([usuarioId, sociedadId])
+}
+
+model InvitacionSociedad {
+  id                String           @id @default(uuid())
+  sociedadId        String
+  telefonoInvitado  String?
+  emailInvitado     String?
+  enviadaPor        String
+  estado            EstadoInvitacion @default(PENDIENTE)
+  fechaRespuesta    DateTime?
+  createdAt         DateTime         @default(now())
+  sociedad          Sociedad         @relation(fields: [sociedadId], references: [id])
+  usuarioEnvia      Usuario          @relation("InvitacionesEnviadas", fields: [enviadaPor], references: [id])
+}
+
+model CicloSociedad {
+  id          String        @id @default(uuid())
+  sociedadId  String
+  numeroCiclo Int
+  fechaInicio DateTime
+  fechaFin    DateTime?
+  estado      EstadoCiclo   @default(CONFIGURACION)
+  createdAt   DateTime      @default(now())
+  sociedad    Sociedad      @relation(fields: [sociedadId], references: [id])
+  turnos      TurnoCobro[]
+  cuotas      CuotaPago[]
+
+  @@unique([sociedadId, numeroCiclo])
+}
+
+model TurnoCobro {
+  id              String                @id @default(uuid())
+  cicloId         String
+  participanteId  String
+  numeroTurno     Int
+  fechaProgramada DateTime
+  montoCobro      Decimal               @db.Decimal(12, 2)
+  estado          EstadoTurno           @default(PENDIENTE)
+  fechaEntrega    DateTime?
+  entregadoPor    String?
+  createdAt       DateTime              @default(now())
+  ciclo           CicloSociedad         @relation(fields: [cicloId], references: [id])
+  participante    ParticipanteSociedad  @relation(fields: [participanteId], references: [id])
+
+  @@unique([cicloId, participanteId])
+  @@unique([cicloId, numeroTurno])
+}
+
+model CuotaPago {
+  id               String                @id @default(uuid())
+  cicloId          String
+  participanteId   String
+  numeroCuota      Int
+  monto            Decimal               @db.Decimal(12, 2)
+  fechaVencimiento DateTime
+  fechaPago        DateTime?
+  estado           EstadoPago            @default(PENDIENTE)
+  metodoPagoReportado TipoPago?
+  confirmadoPor    String?
+  observacion      String?
+  createdAt        DateTime              @default(now())
+  ciclo            CicloSociedad         @relation(fields: [cicloId], references: [id])
+  participante     ParticipanteSociedad  @relation(fields: [participanteId], references: [id])
+  usuarioConfirma  Usuario?              @relation("CuotasConfirmadas", fields: [confirmadoPor], references: [id])
+  evidencias       EvidenciaPago[]
+
+  @@unique([cicloId, participanteId, numeroCuota])
+}
+
+model EvidenciaPago {
+  id            String     @id @default(uuid())
+  cuotaPagoId   String
+  urlArchivo    String
+  nombreArchivo String
+  mimeType      String
+  cargadoPor    String
+  createdAt     DateTime   @default(now())
+  cuotaPago     CuotaPago  @relation(fields: [cuotaPagoId], references: [id])
+  usuarioCarga  Usuario    @relation(fields: [cargadoPor], references: [id])
+}
+
+model Notificacion {
+  id        String           @id @default(uuid())
+  usuarioId String
+  titulo    String
+  mensaje   String
+  tipo      TipoNotificacion
+  leida     Boolean          @default(false)
+  createdAt DateTime         @default(now())
+  usuario   Usuario          @relation(fields: [usuarioId], references: [id])
+}
+
+model HistorialMovimiento {
+  id            String                  @id @default(uuid())
+  sociedadId    String
+  usuarioId     String?
+  accion        TipoMovimientoHistorial
+  descripcion   String
+  realizadoPor  String
+  metadataJson  Json?
+  createdAt     DateTime                @default(now())
+  sociedad      Sociedad                @relation(fields: [sociedadId], references: [id])
+  usuario       Usuario?                @relation("MovimientosUsuario", fields: [usuarioId], references: [id])
+  realizador    Usuario                 @relation("MovimientosRealizados", fields: [realizadoPor], references: [id])
+}

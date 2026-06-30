@@ -1,0 +1,13 @@
+node_modules
+apps/*/node_modules
+packages/*/node_modules
+.expo
+apps/mobile/.expo
+.git
+.idea
+dist
+apps/*/dist
+coverage
+npm-debug.log
+/uploads
+/apps/api/uploads

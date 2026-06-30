@@ -1,0 +1,41 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: mi-san-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: misan
+      POSTGRES_USER: misan
+      POSTGRES_PASSWORD: misan_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - mi_san_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U misan -d misan"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    container_name: mi-san-api
+    restart: unless-stopped
+    env_file:
+      - apps/api/.env.example
+    environment:
+      DATABASE_URL: postgresql://misan:misan_dev@postgres:5432/misan?schema=public
+      PORT: 3000
+    ports:
+      - "3000:3000"
+    volumes:
+      - mi_san_api_uploads:/app/apps/api/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  mi_san_postgres_data:
+  mi_san_api_uploads:
