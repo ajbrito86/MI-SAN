@@ -1,10 +1,11 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, SafeAreaView, ScrollView, Text, TextInput, View } from 'react-native';
+import { Pressable, Text, TextInput, View } from 'react-native';
 import { AppButton } from '@/components/app-button';
 import { CalendarDatePicker } from '@/components/calendar-date-picker';
 import { AppHeader } from '@/components/app-header';
+import { ScreenScrollView } from '@/components/screen';
 import { prepararSociedadPayload } from '@/lib/sociedad-form';
 import { crearSociedad, type CrearSociedadPayload } from '@/services/sociedades-service';
 import { useAuthStore } from '@/stores/auth-store';
@@ -57,8 +58,7 @@ export default function CrearSociedad() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-marca-fondo">
-      <ScrollView className="flex-1 px-5 pt-12" contentContainerStyle={{ paddingBottom: 32 }}>
+    <ScreenScrollView contentContainerStyle={{ paddingBottom: 32 }}>
       <View className="gap-4">
         <AppHeader titulo="Nueva sociedad" subtitulo="Crear una sociedad te convierte en organizador." mostrarAtras />
         <TextInput className="rounded-lg border border-slate-200 bg-white px-4 py-4 text-base" placeholder="Nombre" value={formulario.nombre} onChangeText={(valor) => actualizar('nombre', valor)} />
@@ -92,8 +92,7 @@ export default function CrearSociedad() {
         {error ? <Text className="text-sm font-semibold text-red-600">{error}</Text> : null}
         <AppButton titulo={crearMutation.isPending ? 'Guardando...' : 'Guardar sociedad'} disabled={crearMutation.isPending} onPress={enviar} />
       </View>
-      </ScrollView>
-    </SafeAreaView>
+    </ScreenScrollView>
   );
 }
 

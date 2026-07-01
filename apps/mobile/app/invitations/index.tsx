@@ -1,9 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { ScrollView, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { AppButton } from '@/components/app-button';
 import { AppCard } from '@/components/app-card';
 import { AppHeader } from '@/components/app-header';
+import { ScreenScrollView } from '@/components/screen';
 import { formatearMonto } from '@/lib/moneda';
 import { aceptarInvitacion, listarMisInvitaciones, rechazarInvitacion } from '@/services/invitaciones-service';
 import { useAuthStore } from '@/stores/auth-store';
@@ -39,7 +40,7 @@ export default function Invitaciones() {
   });
 
   return (
-    <ScrollView className="flex-1 bg-marca-fondo px-5 pt-12">
+    <ScreenScrollView>
       <AppHeader titulo="Invitaciones" subtitulo="Sociedades pendientes de respuesta" mostrarAtras />
       <View className="mt-5 gap-4 pb-8">
         {mensaje ? <Text className="rounded-lg bg-white p-3 text-sm font-semibold text-marca-verde">{mensaje}</Text> : null}
@@ -78,6 +79,6 @@ export default function Invitaciones() {
           ))
         )}
       </View>
-    </ScrollView>
+    </ScreenScrollView>
   );
 }

@@ -1,10 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Pressable, SafeAreaView, ScrollView, Text, TextInput, View } from 'react-native';
+import { Pressable, Text, TextInput, View } from 'react-native';
 import { AppButton } from '@/components/app-button';
 import { AppHeader } from '@/components/app-header';
 import { CalendarDatePicker } from '@/components/calendar-date-picker';
+import { ScreenScrollView } from '@/components/screen';
 import { prepararSociedadPayload } from '@/lib/sociedad-form';
 import {
   actualizarSociedad,
@@ -87,9 +88,9 @@ export default function EditarSociedad() {
   const puedeEditar = sociedad?.rol === 'ORGANIZADOR' && sociedad.estado === 'CONFIGURACION';
 
   return (
-    <SafeAreaView className="flex-1 bg-marca-fondo">
+    <>
       <Stack.Screen options={{ headerShown: false }} />
-      <ScrollView className="flex-1 px-5 pt-12" contentContainerStyle={{ paddingBottom: 32 }}>
+      <ScreenScrollView contentContainerStyle={{ paddingBottom: 32 }}>
         <View className="gap-4">
           <AppHeader titulo="Editar sociedad" subtitulo="Solo puedes cambiar datos antes de iniciar el SAN." mostrarAtras />
           {!puedeEditar && sociedad ? (
@@ -108,8 +109,8 @@ export default function EditarSociedad() {
           {error ? <Text className="text-sm font-semibold text-red-600">{error}</Text> : null}
           <AppButton titulo={actualizarMutation.isPending ? 'Guardando...' : 'Guardar cambios'} disabled={actualizarMutation.isPending || !puedeEditar} onPress={enviar} />
         </View>
-      </ScrollView>
-    </SafeAreaView>
+      </ScreenScrollView>
+    </>
   );
 }
 

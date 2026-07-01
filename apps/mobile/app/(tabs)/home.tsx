@@ -1,9 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import { ScrollView, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { AppButton } from '@/components/app-button';
 import { AppCard } from '@/components/app-card';
 import { AppHeader } from '@/components/app-header';
+import { ScreenScrollView } from '@/components/screen';
 import { formatearMonto } from '@/lib/moneda';
 import { obtenerResumenDashboard } from '@/services/dashboard-service';
 import { useAuthStore } from '@/stores/auth-store';
@@ -19,7 +20,7 @@ export default function Home() {
   });
 
   return (
-    <ScrollView className="flex-1 bg-marca-fondo px-5 pt-12">
+    <ScreenScrollView>
       <AppHeader titulo="Inicio" subtitulo={usuario ? `Hola, ${usuario.nombres}` : 'Resumen de tus sociedades'} />
       <View className="mt-5 gap-4 pb-8">
         <View className="rounded-lg bg-white p-4">
@@ -99,6 +100,6 @@ export default function Home() {
           )}
         </View>
       </View>
-    </ScrollView>
+    </ScreenScrollView>
   );
 }

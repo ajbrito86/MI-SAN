@@ -5,6 +5,7 @@ import { KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, View } fro
 import { AppButton } from '@/components/app-button';
 import { AppCard } from '@/components/app-card';
 import { AppHeader } from '@/components/app-header';
+import { ScreenTopView } from '@/components/screen';
 import { enviarMensajeSan, listarMensajesSan } from '@/services/chats-service';
 import { useAuthStore } from '@/stores/auth-store';
 
@@ -37,9 +38,9 @@ export default function ChatSan() {
   return (
     <KeyboardAvoidingView className="flex-1 bg-marca-fondo" behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <Stack.Screen options={{ headerShown: false }} />
-      <View className="px-5 pt-12">
+      <ScreenTopView>
         <AppHeader titulo="Chat privado" subtitulo={nombre ? `SAN - ${nombre}` : 'Conversacion del SAN'} mostrarAtras />
-      </View>
+      </ScreenTopView>
       <ScrollView className="flex-1 px-5" contentContainerClassName="gap-3 pb-4">
         {isLoading ? (
           <AppCard titulo="Cargando chat" detalle="Buscando los mensajes de esta conversacion." estado="PENDIENTE" />

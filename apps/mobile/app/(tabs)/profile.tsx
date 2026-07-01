@@ -1,7 +1,8 @@
 import { router } from 'expo-router';
-import { ScrollView, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { AppHeader } from '@/components/app-header';
 import { AppButton } from '@/components/app-button';
+import { ScreenScrollView } from '@/components/screen';
 import { logout } from '@/services/auth-service';
 import { useAuthStore } from '@/stores/auth-store';
 
@@ -19,7 +20,7 @@ export default function Perfil() {
   }
 
   return (
-    <ScrollView className="flex-1 bg-marca-fondo px-5 pt-12">
+    <ScreenScrollView>
       <AppHeader titulo="Perfil" subtitulo="Tus datos principales" />
       <View className="mt-5 rounded-lg bg-white p-4">
         <Text className="text-lg font-semibold text-marca-texto">
@@ -32,6 +33,6 @@ export default function Perfil() {
       <View className="mt-5">
         <AppButton titulo="Cerrar sesion" variante="secundario" onPress={salir} />
       </View>
-    </ScrollView>
+    </ScreenScrollView>
   );
 }

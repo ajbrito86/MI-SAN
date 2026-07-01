@@ -1,9 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { AppButton } from '@/components/app-button';
 import { AppCard } from '@/components/app-card';
 import { AppHeader } from '@/components/app-header';
+import { ScreenScrollView } from '@/components/screen';
 import {
   listarNotificaciones,
   marcarNotificacionLeida,
@@ -67,7 +68,7 @@ export default function Notificaciones() {
   };
 
   return (
-    <ScrollView className="flex-1 bg-marca-fondo px-5 pt-12">
+    <ScreenScrollView>
       <AppHeader titulo="Avisos" subtitulo={noLeidas > 0 ? `${noLeidas} aviso(s) nuevo(s)` : 'Recordatorios y actividad reciente'} />
       <View className="mt-5 gap-4 pb-8">
         <View className="gap-3 rounded-lg bg-white p-4">
@@ -109,7 +110,7 @@ export default function Notificaciones() {
           ))
         )}
       </View>
-    </ScrollView>
+    </ScreenScrollView>
   );
 }
 

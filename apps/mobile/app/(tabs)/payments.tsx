@@ -1,10 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as DocumentPicker from 'expo-document-picker';
 import { useState } from 'react';
-import { Linking, Pressable, ScrollView, Text, View } from 'react-native';
+import { Linking, Pressable, Text, View } from 'react-native';
 import { AppButton } from '@/components/app-button';
 import { AppCard } from '@/components/app-card';
 import { AppHeader } from '@/components/app-header';
+import { ScreenScrollView } from '@/components/screen';
 import { formatearMonto } from '@/lib/moneda';
 import { getPublicFileUrl } from '@/services/api';
 import { subirEvidenciaPago, type ArchivoEvidencia } from '@/services/evidencias-service';
@@ -251,7 +252,7 @@ export default function Pagos() {
   };
 
   return (
-    <ScrollView className="flex-1 bg-marca-fondo px-5 pt-12">
+    <ScreenScrollView>
       <AppHeader titulo="Pagos" subtitulo="Reporta tus cuotas y consulta su estado" />
       <View className="mt-5 gap-4 pb-24">
         {mensaje ? <Text className="rounded-lg bg-white p-3 text-sm font-semibold text-marca-verde">{mensaje}</Text> : null}
@@ -279,7 +280,7 @@ export default function Pagos() {
           </>
         )}
       </View>
-    </ScrollView>
+    </ScreenScrollView>
   );
 }
 

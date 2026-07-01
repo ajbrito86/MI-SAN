@@ -1,10 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, Image, Linking, Modal, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { Alert, Image, Linking, Modal, Pressable, Text, TextInput, View } from 'react-native';
 import { AppButton } from '@/components/app-button';
 import { AppCard } from '@/components/app-card';
 import { AppHeader } from '@/components/app-header';
+import { ScreenScrollView } from '@/components/screen';
 import { formatearMonto } from '@/lib/moneda';
 import { getPublicFileUrl } from '@/services/api';
 import { confirmarPago, listarMisPagos, listarPagosSociedad, rechazarPago } from '@/services/pagos-service';
@@ -318,19 +319,19 @@ export default function DetalleSociedad() {
 
   if (sociedadCargando) {
     return (
-      <ScrollView className="flex-1 bg-marca-fondo px-5 pt-12">
+      <ScreenScrollView>
         <Stack.Screen options={{ headerShown: false }} />
         <AppHeader titulo="Sociedad" subtitulo="Cargando detalle del SAN" mostrarAtras />
         <View className="mt-5">
           <AppCard titulo="Cargando" detalle="Buscando la informacion de esta sociedad." estado="PENDIENTE" />
         </View>
-      </ScrollView>
+      </ScreenScrollView>
     );
   }
 
   if (sociedadError || !sociedad) {
     return (
-      <ScrollView className="flex-1 bg-marca-fondo px-5 pt-12">
+      <ScreenScrollView>
         <Stack.Screen options={{ headerShown: false }} />
         <AppHeader titulo="Sociedad" subtitulo="No pudimos cargar este SAN" mostrarAtras />
         <View className="mt-5 gap-3 rounded-lg bg-white p-4">
@@ -338,12 +339,12 @@ export default function DetalleSociedad() {
           <Text className="text-sm text-slate-600">Revisa tu conexion o vuelve a intentarlo en unos segundos.</Text>
           <AppButton titulo="Reintentar" variante="secundario" onPress={() => recargarSociedad()} />
         </View>
-      </ScrollView>
+      </ScreenScrollView>
     );
   }
 
   return (
-    <ScrollView className="flex-1 bg-marca-fondo px-5 pt-12">
+    <ScreenScrollView>
       <Stack.Screen options={{ headerShown: false }} />
       <Modal visible={Boolean(evidenciaVistaPrevia)} transparent animationType="fade" onRequestClose={() => setEvidenciaVistaPrevia(null)}>
         <View className="flex-1 justify-center bg-black/80 px-4">
@@ -999,6 +1000,6 @@ export default function DetalleSociedad() {
           </View>
         </View>
       </View>
-    </ScrollView>
+    </ScreenScrollView>
   );
 }

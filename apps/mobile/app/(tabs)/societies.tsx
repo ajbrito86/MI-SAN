@@ -1,8 +1,9 @@
 import { Link, router } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
-import { ScrollView, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { AppButton } from '@/components/app-button';
 import { AppHeader } from '@/components/app-header';
+import { ScreenScrollView } from '@/components/screen';
 import { formatearMonto } from '@/lib/moneda';
 import { listarSociedades, type Sociedad } from '@/services/sociedades-service';
 import { useAuthStore } from '@/stores/auth-store';
@@ -19,7 +20,7 @@ export default function Sociedades() {
   const sociedadesParticipante = sociedades.filter((sociedad) => sociedad.rol === 'PARTICIPANTE');
 
   return (
-    <ScrollView className="flex-1 bg-marca-fondo px-5 pt-12">
+    <ScreenScrollView>
       <AppHeader titulo="Mis sociedades" subtitulo="Organiza y consulta tus turnos" />
       <View className="mt-5 gap-4 pb-8">
         {usuario?.rolGlobal === 'ORGANIZADOR' ? (
@@ -33,7 +34,7 @@ export default function Sociedades() {
         <SeccionSociedades titulo="Organizo" sociedades={sociedadesOrganizadas} />
         <SeccionSociedades titulo="Participo" sociedades={sociedadesParticipante} />
       </View>
-    </ScrollView>
+    </ScreenScrollView>
   );
 }
 
