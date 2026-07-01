@@ -23,10 +23,33 @@ export default function Registro() {
 
   async function enviar() {
     setError('');
+    const payload = {
+      nombres: formulario.nombres.trim(),
+      apellidos: formulario.apellidos.trim(),
+      telefono: formulario.telefono.trim(),
+      email: formulario.email.trim().toLowerCase(),
+      contrasena: formulario.contrasena,
+    };
+
+    if (!payload.nombres || !payload.apellidos || !payload.telefono || !payload.email || !payload.contrasena) {
+      setError('Completa todos los campos para crear tu cuenta.');
+      return;
+    }
+
+    if (!payload.email.includes('@') || !payload.email.includes('.')) {
+      setError('Escribe un correo valido.');
+      return;
+    }
+
+    if (payload.contrasena.length < 6) {
+      setError('La contrasena debe tener al menos 6 caracteres.');
+      return;
+    }
+
     setCargando(true);
 
     try {
-      const respuesta = await registrar(formulario);
+      const respuesta = await registrar(payload);
       guardarSesion(respuesta);
       router.replace('/(tabs)/home');
     } catch (err) {

@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
 import { AppButton } from '@/components/app-button';
 import { AppCard } from '@/components/app-card';
@@ -10,7 +11,8 @@ import { useAuthStore } from '@/stores/auth-store';
 export default function Invitaciones() {
   const token = useAuthStore((state) => state.accessToken);
   const queryClient = useQueryClient();
-  const { data: invitaciones = [] } = useQuery({
+  const [mensaje, setMensaje] = useState('');
+  const { data: invitaciones = [], isLoading, isError, refetch } = useQuery({
     queryKey: ['mis-invitaciones'],
     queryFn: () => listarMisInvitaciones(token ?? ''),
     enabled: Boolean(token),
@@ -19,21 +21,36 @@ export default function Invitaciones() {
   const aceptarMutation = useMutation({
     mutationFn: (invitacionId: string) => aceptarInvitacion(token ?? '', invitacionId),
     onSuccess: async () => {
+      setMensaje('Invitacion aceptada. Ya puedes ver esta sociedad en tu lista.');
       await queryClient.invalidateQueries({ queryKey: ['mis-invitaciones'] });
       await queryClient.invalidateQueries({ queryKey: ['sociedades'] });
       await queryClient.invalidateQueries({ queryKey: ['notificaciones'] });
     },
+    onError: (err) => setMensaje(err instanceof Error ? err.message : 'No pudimos aceptar la invitacion.'),
   });
   const rechazarMutation = useMutation({
     mutationFn: (invitacionId: string) => rechazarInvitacion(token ?? '', invitacionId),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['mis-invitaciones'] }),
+    onSuccess: async () => {
+      setMensaje('Invitacion rechazada.');
+      await queryClient.invalidateQueries({ queryKey: ['mis-invitaciones'] });
+      await queryClient.invalidateQueries({ queryKey: ['notificaciones'] });
+    },
+    onError: (err) => setMensaje(err instanceof Error ? err.message : 'No pudimos rechazar la invitacion.'),
   });
 
   return (
     <ScrollView className="flex-1 bg-marca-fondo px-5 pt-12">
       <AppHeader titulo="Invitaciones" subtitulo="Sociedades pendientes de respuesta" mostrarAtras />
       <View className="mt-5 gap-4 pb-8">
-        {invitaciones.length === 0 ? (
+        {mensaje ? <Text className="rounded-lg bg-white p-3 text-sm font-semibold text-marca-verde">{mensaje}</Text> : null}
+        {isLoading ? (
+          <AppCard titulo="Cargando" detalle="Buscando tus invitaciones pendientes." estado="PENDIENTE" />
+        ) : isError ? (
+          <View className="gap-3 rounded-lg bg-white p-4">
+            <Text className="font-semibold text-red-600">No pudimos cargar tus invitaciones.</Text>
+            <AppButton titulo="Reintentar" variante="secundario" onPress={() => refetch()} />
+          </View>
+        ) : invitaciones.length === 0 ? (
           <AppCard titulo="Sin invitaciones" detalle="No tienes invitaciones pendientes." estado="AL DIA" />
         ) : (
           invitaciones.map((invitacion) => (

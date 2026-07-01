@@ -14,10 +14,17 @@ export default function Login() {
 
   async function enviar() {
     setError('');
+    const identificadorLimpio = identificador.trim();
+
+    if (!identificadorLimpio || !contrasena) {
+      setError('Escribe tu telefono o correo y tu contrasena.');
+      return;
+    }
+
     setCargando(true);
 
     try {
-      const respuesta = await login({ identificador, contrasena });
+      const respuesta = await login({ identificador: identificadorLimpio, contrasena });
       guardarSesion(respuesta);
       router.replace('/(tabs)/home');
     } catch (err) {

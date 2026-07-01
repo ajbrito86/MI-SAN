@@ -1,8 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { ScrollView, Text, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, View } from 'react-native';
 import { AppButton } from '@/components/app-button';
+import { AppCard } from '@/components/app-card';
 import { AppHeader } from '@/components/app-header';
 import { enviarMensajeSan, listarMensajesSan } from '@/services/chats-service';
 import { useAuthStore } from '@/stores/auth-store';
@@ -15,7 +16,7 @@ export default function ChatSan() {
   const [mensaje, setMensaje] = useState('');
   const [mensajeAccion, setMensajeAccion] = useState('');
 
-  const { data: mensajes = [] } = useQuery({
+  const { data: mensajes = [], isLoading, isError, refetch } = useQuery({
     queryKey: ['chat-san', id, participanteId],
     queryFn: () => listarMensajesSan(token ?? '', id, participanteId),
     enabled: Boolean(token && id && participanteId),
@@ -34,13 +35,20 @@ export default function ChatSan() {
   });
 
   return (
-    <View className="flex-1 bg-marca-fondo">
+    <KeyboardAvoidingView className="flex-1 bg-marca-fondo" behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <Stack.Screen options={{ headerShown: false }} />
       <View className="px-5 pt-12">
         <AppHeader titulo="Chat privado" subtitulo={nombre ? `SAN - ${nombre}` : 'Conversacion del SAN'} mostrarAtras />
       </View>
       <ScrollView className="flex-1 px-5" contentContainerClassName="gap-3 pb-4">
-        {mensajes.length === 0 ? (
+        {isLoading ? (
+          <AppCard titulo="Cargando chat" detalle="Buscando los mensajes de esta conversacion." estado="PENDIENTE" />
+        ) : isError ? (
+          <View className="gap-3 rounded-lg bg-white p-4">
+            <Text className="font-semibold text-red-600">No pudimos cargar esta conversacion.</Text>
+            <AppButton titulo="Reintentar" variante="secundario" onPress={() => refetch()} />
+          </View>
+        ) : mensajes.length === 0 ? (
           <View className="rounded-lg bg-white p-4">
             <Text className="text-slate-600">Aun no hay mensajes en esta conversacion.</Text>
           </View>
@@ -75,6 +83,6 @@ export default function ChatSan() {
           disabled={enviarMutation.isPending || !mensaje.trim()}
         />
       </View>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
