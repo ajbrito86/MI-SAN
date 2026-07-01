@@ -82,8 +82,10 @@ export default function DetalleSociedad() {
     enabled: Boolean(token),
   });
   const esOrganizador = sociedad?.rol === 'ORGANIZADOR';
+  const sociedadCerrada = sociedad?.estado === 'FINALIZADA' || sociedad?.estado === 'CANCELADA';
+  const puedeOperarSociedad = Boolean(sociedad && !sociedadCerrada);
   const puedeInvitar = sociedad?.estado === 'CONFIGURACION';
-  const chatDisponible = sociedad?.estado !== 'FINALIZADA' && sociedad?.estado !== 'CANCELADA';
+  const chatDisponible = puedeOperarSociedad;
   const participantesOrdenables = useMemo(
     () => participantes.filter((participante) => participante.estadoParticipante === 'ACTIVO'),
     [participantes],
@@ -549,8 +551,13 @@ export default function DetalleSociedad() {
           <View className="rounded-lg bg-white p-4">
             <Text className="text-lg font-semibold text-marca-texto">Acciones</Text>
             {mensajeAccion ? <Text className="mt-2 text-sm font-semibold text-marca-verde">{mensajeAccion}</Text> : null}
+            {!puedeOperarSociedad ? (
+              <Text className="mt-2 rounded-lg bg-slate-50 p-3 text-sm font-semibold text-slate-600">
+                Esta sociedad esta cerrada y queda disponible solo para consulta.
+              </Text>
+            ) : null}
             <View className="mt-4 gap-3">
-              {sociedad?.estado === 'CONFIGURACION' ? (
+              {puedeOperarSociedad && sociedad?.estado === 'CONFIGURACION' ? (
                 <AppButton
                   titulo="Editar sociedad"
                   variante="secundario"
@@ -578,7 +585,8 @@ export default function DetalleSociedad() {
                   Este san ya inicio y esta cerrado para nuevos invitados.
                 </Text>
               ) : null}
-              {!sociedad?.cicloActual || sociedad.cicloActual.estado === 'COMPLETADO' || sociedad.cicloActual.estado === 'CANCELADO' ? (
+              {puedeOperarSociedad &&
+              (!sociedad?.cicloActual || sociedad.cicloActual.estado === 'COMPLETADO' || sociedad.cicloActual.estado === 'CANCELADO') ? (
                 <AppButton
                   titulo={crearCicloMutation.isPending ? 'Creando...' : sociedad?.cicloActual ? 'Crear nuevo ciclo' : 'Crear ciclo'}
                   variante="secundario"
@@ -586,7 +594,7 @@ export default function DetalleSociedad() {
                   disabled={crearCicloMutation.isPending}
                 />
               ) : null}
-              {sociedad?.cicloActual && sociedad.cicloActual.estado === 'CONFIGURACION' ? (
+              {puedeOperarSociedad && sociedad?.cicloActual && sociedad.cicloActual.estado === 'CONFIGURACION' ? (
                 <>
                   <View className="gap-3 rounded-lg bg-slate-50 p-3">
                     <View>
@@ -691,7 +699,7 @@ export default function DetalleSociedad() {
                   />
                 </>
               ) : null}
-              {sociedad?.cicloActual?.estado === 'ACTIVO' ? (
+              {puedeOperarSociedad && sociedad?.cicloActual?.estado === 'ACTIVO' ? (
                 <AppButton
                   titulo={finalizarCicloMutation.isPending ? 'Finalizando...' : 'Finalizar ciclo'}
                   variante="secundario"
@@ -704,7 +712,7 @@ export default function DetalleSociedad() {
                   disabled={finalizarCicloMutation.isPending}
                 />
               ) : null}
-              {sociedad?.estado !== 'FINALIZADA' && sociedad?.estado !== 'CANCELADA' ? (
+              {puedeOperarSociedad ? (
                 <AppButton
                   titulo={cerrarSociedadMutation.isPending ? 'Cerrando...' : 'Cerrar sociedad'}
                   variante="secundario"
@@ -790,7 +798,7 @@ export default function DetalleSociedad() {
                       ) : null}
                     </View>
                   </View>
-                  {esOrganizador && sociedad?.cicloActual?.estado === 'ACTIVO' && turno && turno.estado !== 'PAGADO' ? (
+                  {puedeOperarSociedad && esOrganizador && sociedad?.cicloActual?.estado === 'ACTIVO' && turno && turno.estado !== 'PAGADO' ? (
                     <AppButton
                       titulo={entregarTurnoMutation.isPending ? 'Registrando...' : 'Registrar entrega'}
                       variante="secundario"

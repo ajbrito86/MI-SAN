@@ -32,6 +32,8 @@ export class CiclosService {
     const ciclo = await this.validarCicloOrganizador(usuarioId, cicloId);
     const participantesActivos = await this.ciclosRepository.listarParticipantesActivos(ciclo.sociedadId);
 
+    this.validarSociedadOperativa(ciclo.sociedad.estado);
+
     if (ciclo.estado !== EstadoCiclo.CONFIGURACION) {
       throw new BadRequestException('El ciclo ya fue iniciado o cerrado.');
     }
@@ -49,6 +51,8 @@ export class CiclosService {
 
   async finalizar(usuarioId: string, cicloId: string) {
     const ciclo = await this.validarCicloOrganizador(usuarioId, cicloId);
+
+    this.validarSociedadOperativa(ciclo.sociedad.estado);
 
     if (ciclo.estado !== EstadoCiclo.ACTIVO) {
       throw new BadRequestException('Solo un ciclo activo puede finalizarse.');
@@ -87,5 +91,11 @@ export class CiclosService {
     }
 
     return ciclo;
+  }
+
+  private validarSociedadOperativa(estado: EstadoSociedad) {
+    if (estado === EstadoSociedad.CANCELADA || estado === EstadoSociedad.FINALIZADA) {
+      throw new BadRequestException('La sociedad esta cerrada y no permite operar ciclos.');
+    }
   }
 }

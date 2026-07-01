@@ -1,5 +1,5 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { EstadoCiclo, EstadoPago, TipoPago } from '@prisma/client';
+import { EstadoCiclo, EstadoPago, EstadoSociedad, TipoPago } from '@prisma/client';
 import { JobsService } from '../jobs/jobs.service';
 import { ReportarPagoDto } from './dto/reportar-pago.dto';
 import { PagosRepository } from './pagos.repository';
@@ -80,6 +80,8 @@ export class PagosService {
       throw new BadRequestException('No se permiten pagos sobre ciclos cerrados o no iniciados.');
     }
 
+    this.validarSociedadOperativa(cuota.ciclo.sociedad.estado);
+
     const estadosReportables: EstadoPago[] = [EstadoPago.PENDIENTE, EstadoPago.ATRASADO, EstadoPago.RECHAZADO];
 
     if (!estadosReportables.includes(cuota.estado)) {
@@ -99,6 +101,8 @@ export class PagosService {
       throw new BadRequestException('Solo se pueden confirmar pagos reportados.');
     }
 
+    this.validarSociedadOperativa(cuota.ciclo.sociedad.estado);
+
     const requiereEvidencia = cuota.metodoPagoReportado !== TipoPago.EFECTIVO;
 
     if (requiereEvidencia && cuota.evidencias.length === 0) {
@@ -115,6 +119,8 @@ export class PagosService {
     if (cuota.estado !== EstadoPago.REPORTADO) {
       throw new BadRequestException('Solo se pueden rechazar pagos reportados.');
     }
+
+    this.validarSociedadOperativa(cuota.ciclo.sociedad.estado);
 
     return this.pagosRepository.rechazar(cuotaPagoId, usuarioId, observacion.trim());
   }
@@ -142,6 +148,12 @@ export class PagosService {
 
     if (tipoPagoSociedad !== TipoPago.MIXTO && metodoPago !== tipoPagoSociedad) {
       throw new BadRequestException('Ese metodo de pago no esta permitido en esta sociedad.');
+    }
+  }
+
+  private validarSociedadOperativa(estado: EstadoSociedad) {
+    if (estado === EstadoSociedad.CANCELADA || estado === EstadoSociedad.FINALIZADA) {
+      throw new BadRequestException('La sociedad esta cerrada y no permite operar pagos.');
     }
   }
 }

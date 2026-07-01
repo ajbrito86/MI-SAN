@@ -1,5 +1,5 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { EstadoCiclo, EstadoTurno, FrecuenciaSociedad, Prisma } from '@prisma/client';
+import { EstadoCiclo, EstadoSociedad, EstadoTurno, FrecuenciaSociedad, Prisma } from '@prisma/client';
 import { RegistrarEntregaDto } from './dto/registrar-entrega.dto';
 import { TurnosManualesDto } from './dto/turnos-manuales.dto';
 import { TurnosRepository } from './turnos.repository';
@@ -46,6 +46,8 @@ export class TurnosService {
     if (ciclo.sociedad.organizadorId !== usuarioId) {
       throw new ForbiddenException('Solo el organizador puede registrar entregas de turno.');
     }
+
+    this.validarSociedadOperativa(ciclo.sociedad.estado);
 
     if (ciclo.estado !== EstadoCiclo.ACTIVO) {
       throw new BadRequestException('Solo se pueden registrar entregas en ciclos activos.');
@@ -170,6 +172,8 @@ export class TurnosService {
       throw new ForbiddenException('No tienes permiso para realizar esta accion.');
     }
 
+    this.validarSociedadOperativa(ciclo.sociedad.estado);
+
     if (ciclo.estado !== EstadoCiclo.CONFIGURACION) {
       throw new BadRequestException('Los turnos solo se pueden modificar antes de iniciar el ciclo.');
     }
@@ -181,6 +185,12 @@ export class TurnosService {
     }
 
     return ciclo;
+  }
+
+  private validarSociedadOperativa(estado: EstadoSociedad) {
+    if (estado === EstadoSociedad.CANCELADA || estado === EstadoSociedad.FINALIZADA) {
+      throw new BadRequestException('La sociedad esta cerrada y no permite operar turnos.');
+    }
   }
 
   private calcularFecha(inicio: Date, frecuencia: FrecuenciaSociedad, indice: number) {
