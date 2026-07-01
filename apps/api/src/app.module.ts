@@ -5,6 +5,7 @@ import { validarEnv } from './config/validar-env';
 import { AuthModule } from './modules/auth/auth.module';
 import { ChatsModule } from './modules/chats/chats.module';
 import { CiclosModule } from './modules/ciclos/ciclos.module';
+import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { ParticipantesModule } from './modules/participantes/participantes.module';
 import { PagosModule } from './modules/pagos/pagos.module';
 import { NotificacionesModule } from './modules/notificaciones/notificaciones.module';
@@ -33,6 +34,7 @@ import { PrismaModule } from './prisma/prisma.module';
     SociedadesModule,
     ParticipantesModule,
     CiclosModule,
+    DashboardModule,
     TurnosModule,
     PagosModule,
     UploadsModule,
