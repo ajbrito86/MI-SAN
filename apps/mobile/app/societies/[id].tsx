@@ -86,7 +86,7 @@ export default function DetalleSociedad() {
   const sociedadCerrada = sociedad?.estado === 'FINALIZADA' || sociedad?.estado === 'CANCELADA';
   const puedeOperarSociedad = Boolean(sociedad && !sociedadCerrada);
   const puedeInvitar = sociedad?.estado === 'CONFIGURACION';
-  const chatDisponible = puedeOperarSociedad;
+  const chatDisponible = Boolean(sociedad);
   const participantesOrdenables = useMemo(
     () => participantes.filter((participante) => participante.estadoParticipante === 'ACTIVO'),
     [participantes],

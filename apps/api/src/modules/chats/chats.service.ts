@@ -11,7 +11,10 @@ export class ChatsService {
     const { sociedad, participacionUsuario, esOrganizador } = await this.validarAccesoSociedad(usuarioId, sociedadId);
 
     if (this.estaCerrada(sociedad.estado)) {
-      return [];
+      const conversaciones = esOrganizador
+        ? await this.chatsRepository.listarConversaciones(sociedad.id)
+        : await this.chatsRepository.listarConversaciones(sociedad.id, participacionUsuario!.id);
+      return conversaciones.map((item) => this.mapearConversacion(item));
     }
 
     if (!esOrganizador) {
@@ -37,7 +40,14 @@ export class ChatsService {
 
   async listarMensajes(usuarioId: string, sociedadId: string, participanteId: string) {
     const { sociedad } = await this.validarAccesoChat(usuarioId, sociedadId, participanteId);
-    const conversacion = await this.chatsRepository.buscarOCrearConversacion(sociedad.id, participanteId, sociedad.organizadorId);
+    const conversacion = this.estaCerrada(sociedad.estado)
+      ? await this.chatsRepository.buscarConversacion(sociedad.id, participanteId)
+      : await this.chatsRepository.buscarOCrearConversacion(sociedad.id, participanteId, sociedad.organizadorId);
+
+    if (!conversacion) {
+      return [];
+    }
+
     const mensajes = await this.chatsRepository.listarMensajes(conversacion.id);
     return mensajes.map((mensaje) => this.mapearMensaje(mensaje));
   }
@@ -45,6 +55,10 @@ export class ChatsService {
   async enviarMensaje(usuarioId: string, sociedadId: string, participanteId: string, dto: EnviarMensajeDto) {
     const { sociedad } = await this.validarAccesoChat(usuarioId, sociedadId, participanteId);
     const texto = dto.mensaje.trim();
+
+    if (this.estaCerrada(sociedad.estado)) {
+      throw new BadRequestException('El chat esta en modo lectura porque el san esta cerrado.');
+    }
 
     if (!texto) {
       throw new BadRequestException('El mensaje no puede estar vacio.');
@@ -57,10 +71,6 @@ export class ChatsService {
 
   private async validarAccesoChat(usuarioId: string, sociedadId: string, participanteId: string) {
     const contexto = await this.validarAccesoSociedad(usuarioId, sociedadId);
-
-    if (this.estaCerrada(contexto.sociedad.estado)) {
-      throw new BadRequestException('El chat no esta disponible cuando el san ya finalizo o fue cancelado.');
-    }
 
     const participante = await this.chatsRepository.buscarParticipacion(participanteId, sociedadId);
 

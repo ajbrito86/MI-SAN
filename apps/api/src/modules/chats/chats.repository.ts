@@ -48,6 +48,12 @@ export class ChatsRepository {
     });
   }
 
+  buscarConversacion(sociedadId: string, participanteId: string) {
+    return this.prisma.conversacionSociedad.findUnique({
+      where: { sociedadId_participanteId: { sociedadId, participanteId } },
+    });
+  }
+
   listarConversaciones(sociedadId: string, participanteId?: string) {
     return this.prisma.conversacionSociedad.findMany({
       where: {

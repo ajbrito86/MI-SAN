@@ -7,6 +7,7 @@ import { AppCard } from '@/components/app-card';
 import { AppHeader } from '@/components/app-header';
 import { ScreenTopView } from '@/components/screen';
 import { enviarMensajeSan, listarMensajesSan } from '@/services/chats-service';
+import { obtenerSociedad } from '@/services/sociedades-service';
 import { useAuthStore } from '@/stores/auth-store';
 
 export default function ChatSan() {
@@ -16,6 +17,12 @@ export default function ChatSan() {
   const queryClient = useQueryClient();
   const [mensaje, setMensaje] = useState('');
   const [mensajeAccion, setMensajeAccion] = useState('');
+  const { data: sociedad } = useQuery({
+    queryKey: ['sociedad', id],
+    queryFn: () => obtenerSociedad(token ?? '', id),
+    enabled: Boolean(token && id),
+  });
+  const chatSoloLectura = sociedad?.estado === 'CANCELADA' || sociedad?.estado === 'FINALIZADA';
 
   const { data: mensajes = [], isLoading, isError, refetch } = useQuery({
     queryKey: ['chat-san', id, participanteId],
@@ -70,18 +77,27 @@ export default function ChatSan() {
         )}
       </ScrollView>
       <View className="gap-3 border-t border-slate-200 bg-white px-5 py-4">
+        {chatSoloLectura ? (
+          <Text className="rounded-lg bg-slate-50 p-3 text-sm font-semibold text-slate-600">
+            Este SAN esta cerrado. Puedes consultar el historial, pero no enviar mensajes nuevos.
+          </Text>
+        ) : null}
         {mensajeAccion ? <Text className="text-sm font-semibold text-red-600">{mensajeAccion}</Text> : null}
         <TextInput
-          className="min-h-20 rounded-lg border border-slate-200 bg-white px-4 py-3 text-base"
-          placeholder="Escribe un mensaje privado"
+          className={`min-h-20 rounded-lg border px-4 py-3 text-base ${
+            chatSoloLectura ? 'border-slate-200 bg-slate-100 text-slate-400' : 'border-slate-200 bg-white'
+          }`}
+          placeholder={chatSoloLectura ? 'Chat en modo lectura' : 'Escribe un mensaje privado'}
+          placeholderTextColor={chatSoloLectura ? '#94A3B8' : undefined}
           multiline
           value={mensaje}
           onChangeText={setMensaje}
+          editable={!chatSoloLectura}
         />
         <AppButton
-          titulo={enviarMutation.isPending ? 'Enviando...' : 'Enviar mensaje'}
+          titulo={chatSoloLectura ? 'Chat solo lectura' : enviarMutation.isPending ? 'Enviando...' : 'Enviar mensaje'}
           onPress={() => enviarMutation.mutate()}
-          disabled={enviarMutation.isPending || !mensaje.trim()}
+          disabled={chatSoloLectura || enviarMutation.isPending || !mensaje.trim()}
         />
       </View>
     </KeyboardAvoidingView>
