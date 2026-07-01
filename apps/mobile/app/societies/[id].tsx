@@ -91,6 +91,32 @@ export default function DetalleSociedad() {
   const participantesActivos = participantesOrdenables.length;
   const montoEntregaEstimado = sociedad ? sociedad.montoCuota * participantesActivos : 0;
   const cuotasPorParticipante = turnos.length > 0 ? turnos.length : participantesActivos;
+  const participantesConTurnoOrdenados = useMemo(
+    () =>
+      participantes
+        .map((participante) => ({
+          participante,
+          turno: turnos.find((item) => item.participante.id === participante.usuario.id),
+        }))
+        .sort((a, b) => {
+          if (a.turno && b.turno) {
+            return a.turno.numeroTurno - b.turno.numeroTurno;
+          }
+
+          if (a.turno) {
+            return -1;
+          }
+
+          if (b.turno) {
+            return 1;
+          }
+
+          return `${a.participante.usuario.nombres} ${a.participante.usuario.apellidos}`.localeCompare(
+            `${b.participante.usuario.nombres} ${b.participante.usuario.apellidos}`,
+          );
+        }),
+    [participantes, turnos],
+  );
   const misPagosSociedad = misPagos.filter((pago) => pago.sociedad.id === id);
   const miTurno = turnos.find((turno) => turno.participante.id === usuarioActual?.id);
   const misPagosConfirmados = misPagosSociedad.filter((pago) => pago.estado === 'CONFIRMADO');
@@ -697,8 +723,7 @@ export default function DetalleSociedad() {
         <View className="rounded-lg bg-white p-4">
           <Text className="text-lg font-semibold text-marca-texto">Participantes y turnos</Text>
           <View className="mt-3 gap-3">
-            {participantes.map((participante) => {
-              const turno = turnos.find((item) => item.participante.id === participante.usuario.id);
+            {participantesConTurnoOrdenados.map(({ participante, turno }) => {
               const esOrganizadorEnSuPropiaFila = esOrganizador && participante.usuario.id === usuarioActual?.id;
               const puedeChatear =
                 chatDisponible &&
