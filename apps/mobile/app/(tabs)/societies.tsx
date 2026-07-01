@@ -85,7 +85,7 @@ function SociedadCard({ sociedad }: { sociedad: Sociedad }) {
       <Text className="mt-3 text-sm font-semibold text-slate-600">{textoParticipantes}</Text>
       <View className="mt-3">
         <AppButton
-          titulo="Abrir SAN"
+          titulo="Ver SAN"
           variante="secundario"
           onPress={() => router.push({ pathname: '/societies/[id]', params: { id: sociedad.id } })}
         />
