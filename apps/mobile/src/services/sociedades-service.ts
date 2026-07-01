@@ -8,9 +8,12 @@ export type Sociedad = {
   montoCuota: number;
   moneda: 'DOP' | 'USD';
   frecuencia: string;
+  modalidadTurnos: 'MANUAL' | 'ALEATORIA';
+  tipoPago: 'EFECTIVO' | 'DEPOSITO_BANCARIO' | 'TRANSFERENCIA' | 'MIXTO';
   estado: string;
   cantidadParticipantes: number;
   fechaInicio: string;
+  fechaFinEstimada: string | null;
 };
 
 export type ParticipanteSociedad = {
@@ -152,6 +155,13 @@ export function crearSociedad(token: string, payload: CrearSociedadPayload) {
   return apiRequest<Sociedad>('/societies', {
     method: 'POST',
     token,
+    body: JSON.stringify(payload),
+  });
+}
+
+export function actualizarSociedad(token: string, sociedadId: string, payload: Partial<CrearSociedadPayload>) {
+  return apiRequestAutenticado<Sociedad>(`/societies/${sociedadId}`, {
+    method: 'PATCH',
     body: JSON.stringify(payload),
   });
 }

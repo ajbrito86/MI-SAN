@@ -5,18 +5,23 @@ type CalendarDatePickerProps = {
   label: string;
   value: string;
   onChange: (value: string) => void;
+  disabled?: boolean;
 };
 
 const DIAS = ['D', 'L', 'M', 'M', 'J', 'V', 'S'];
 const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
-export function CalendarDatePicker({ label, value, onChange }: CalendarDatePickerProps) {
+export function CalendarDatePicker({ label, value, onChange, disabled }: CalendarDatePickerProps) {
   const fechaBase = value ? crearFechaLocal(value) : new Date();
   const year = fechaBase.getFullYear();
   const month = fechaBase.getMonth();
   const celdas = crearCeldasMes(year, month);
 
   const cambiarMes = (delta: number) => {
+    if (disabled) {
+      return;
+    }
+
     const siguiente = new Date(year, month + delta, 1);
     onChange(formatearFecha(siguiente));
   };
@@ -24,16 +29,16 @@ export function CalendarDatePicker({ label, value, onChange }: CalendarDatePicke
   return (
     <View className="gap-2">
       <Text className="font-semibold text-marca-texto">{label}</Text>
-      <View className="rounded-lg bg-white p-4">
+      <View className={`rounded-lg p-4 ${disabled ? 'bg-slate-100' : 'bg-white'}`}>
         <View className="mb-4 flex-row items-center justify-between">
-          <Pressable className="h-10 w-10 items-center justify-center rounded-full bg-slate-100" onPress={() => cambiarMes(-1)}>
-            <ChevronLeft color="#1F2A2E" size={20} />
+          <Pressable className="h-10 w-10 items-center justify-center rounded-full bg-slate-100" onPress={() => cambiarMes(-1)} disabled={disabled}>
+            <ChevronLeft color={disabled ? '#94A3B8' : '#1F2A2E'} size={20} />
           </Pressable>
           <Text className="text-base font-bold text-marca-texto">
             {MESES[month]} {year}
           </Text>
-          <Pressable className="h-10 w-10 items-center justify-center rounded-full bg-slate-100" onPress={() => cambiarMes(1)}>
-            <ChevronRight color="#1F2A2E" size={20} />
+          <Pressable className="h-10 w-10 items-center justify-center rounded-full bg-slate-100" onPress={() => cambiarMes(1)} disabled={disabled}>
+            <ChevronRight color={disabled ? '#94A3B8' : '#1F2A2E'} size={20} />
           </Pressable>
         </View>
 
@@ -53,7 +58,7 @@ export function CalendarDatePicker({ label, value, onChange }: CalendarDatePicke
               <Pressable
                 key={`${fechaTexto}-${index}`}
                 className="aspect-square w-[14.285%] items-center justify-center p-1"
-                disabled={!fecha}
+                disabled={!fecha || disabled}
                 onPress={() => fecha && onChange(formatearFecha(fecha))}
               >
                 {fecha ? (

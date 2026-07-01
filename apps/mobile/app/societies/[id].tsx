@@ -491,6 +491,13 @@ export default function DetalleSociedad() {
             <Text className="text-lg font-semibold text-marca-texto">Acciones</Text>
             {mensajeAccion ? <Text className="mt-2 text-sm font-semibold text-marca-verde">{mensajeAccion}</Text> : null}
             <View className="mt-4 gap-3">
+              {sociedad?.estado === 'CONFIGURACION' ? (
+                <AppButton
+                  titulo="Editar sociedad"
+                  variante="secundario"
+                  onPress={() => router.push({ pathname: '/societies/[id]/edit', params: { id } } as never)}
+                />
+              ) : null}
               <TextInput
                 className={`rounded-lg border px-4 py-4 text-base ${
                   puedeInvitar ? 'border-slate-200 bg-white' : 'border-slate-200 bg-slate-100 text-slate-400'
