@@ -117,6 +117,7 @@ export default function Pagos() {
   };
 
   const renderPago = (pago: Pago) => {
+    const etiquetaCiclo = pago.ciclo ? ` ciclo #${pago.ciclo.numeroCiclo}` : '';
     const puedeReportar = ['PENDIENTE', 'ATRASADO', 'RECHAZADO'].includes(pago.estado);
     const estaActivo = pagoActivo === pago.id;
     const adjuntoActivo = comprobanteActivo === pago.id;
@@ -128,7 +129,7 @@ export default function Pagos() {
         <View className="flex-row items-start justify-between gap-3">
           <View className="flex-1">
             <Text className="font-semibold text-marca-texto">
-              {pago.sociedad.nombre} - cuota #{pago.numeroCuota} ciclo #{pago.ciclo.numeroCiclo}
+              {pago.sociedad.nombre} - cuota #{pago.numeroCuota}{etiquetaCiclo}
             </Text>
             <Text className="mt-1 text-slate-600">
               {formatearMonto(pago.monto, pago.sociedad.moneda)} vence {new Date(pago.fechaVencimiento).toLocaleDateString()}

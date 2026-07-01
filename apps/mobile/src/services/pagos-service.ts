@@ -9,7 +9,7 @@ export type Pago = {
     tipoPago: string;
     moneda: 'DOP' | 'USD';
   };
-  ciclo: {
+  ciclo?: {
     id: string;
     numeroCiclo: number;
     estado: string;

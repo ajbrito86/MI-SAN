@@ -138,8 +138,12 @@ export default function DetalleSociedad() {
     },
     [participantes, turnos],
   );
-  const pagosSociedadCiclo = pagosSociedad.filter((pago) => pago.sociedad.id === id && (!cicloSeleccionado || pago.ciclo.id === cicloSeleccionado.id));
-  const misPagosSociedad = misPagos.filter((pago) => pago.sociedad.id === id && (!cicloSeleccionado || pago.ciclo.id === cicloSeleccionado.id));
+  const pagosSociedadCiclo = pagosSociedad.filter(
+    (pago) => pago.sociedad.id === id && (!cicloSeleccionado || !pago.ciclo || pago.ciclo.id === cicloSeleccionado.id),
+  );
+  const misPagosSociedad = misPagos.filter(
+    (pago) => pago.sociedad.id === id && (!cicloSeleccionado || !pago.ciclo || pago.ciclo.id === cicloSeleccionado.id),
+  );
   const miTurno = turnos.find((turno) => turno.participante.id === usuarioActual?.id);
   const misPagosConfirmados = misPagosSociedad.filter((pago) => pago.estado === 'CONFIRMADO');
   const misPagosPendientes = misPagosSociedad.filter((pago) => ['PENDIENTE', 'REPORTADO', 'RECHAZADO', 'ATRASADO'].includes(pago.estado));
@@ -609,7 +613,8 @@ export default function DetalleSociedad() {
                 <View className="rounded-lg bg-slate-50 p-3">
                   <Text className="text-xs font-bold uppercase text-slate-500">Proximo pago</Text>
                   <Text className="mt-1 font-semibold text-marca-texto">
-                    Cuota #{proximoPago.numeroCuota} ciclo #{proximoPago.ciclo.numeroCiclo} - {formatearMonto(proximoPago.monto, sociedad.moneda)}
+                    Cuota #{proximoPago.numeroCuota}
+                    {proximoPago.ciclo ? ` ciclo #${proximoPago.ciclo.numeroCiclo}` : ''} - {formatearMonto(proximoPago.monto, sociedad.moneda)}
                   </Text>
                   <Text className="mt-1 text-sm text-slate-600">
                     Vence {new Date(proximoPago.fechaVencimiento).toLocaleDateString()} - {etiquetaEstadoOperativo(proximoPago.estado)}
@@ -970,7 +975,8 @@ export default function DetalleSociedad() {
                     return (
                     <View key={pago.id} className="gap-2 border-b border-slate-100 pb-4">
                       <Text className="font-semibold text-marca-texto">
-                        {pago.participante.nombres} {pago.participante.apellidos} - cuota #{pago.numeroCuota} ciclo #{pago.ciclo.numeroCiclo}
+                        {pago.participante.nombres} {pago.participante.apellidos} - cuota #{pago.numeroCuota}
+                        {pago.ciclo ? ` ciclo #${pago.ciclo.numeroCiclo}` : ''}
                       </Text>
                       <Text className="text-slate-600">{formatearMonto(pago.monto, pago.sociedad.moneda)}</Text>
                       <Text className="text-sm font-semibold text-slate-600">
