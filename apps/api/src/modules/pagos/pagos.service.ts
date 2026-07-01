@@ -19,6 +19,11 @@ export class PagosService {
     return pagos.map((pago) => ({
       id: pago.id,
       sociedad: pago.ciclo.sociedad,
+      ciclo: {
+        id: pago.ciclo.id,
+        numeroCiclo: pago.ciclo.numeroCiclo,
+        estado: pago.ciclo.estado,
+      },
       numeroCuota: pago.numeroCuota,
       monto: Number(pago.monto),
       fechaVencimiento: pago.fechaVencimiento,
@@ -50,6 +55,11 @@ export class PagosService {
     return pagos.map((pago) => ({
       id: pago.id,
       sociedad: pago.ciclo.sociedad,
+      ciclo: {
+        id: pago.ciclo.id,
+        numeroCiclo: pago.ciclo.numeroCiclo,
+        estado: pago.ciclo.estado,
+      },
       participante: pago.participante.usuario,
       numeroCuota: pago.numeroCuota,
       monto: Number(pago.monto),

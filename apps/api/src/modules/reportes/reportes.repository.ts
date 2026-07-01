@@ -11,7 +11,7 @@ export class ReportesRepository {
       where: { id: sociedadId },
       include: {
         participantes: { where: { isActive: true } },
-        ciclos: { orderBy: { numeroCiclo: 'desc' }, take: 1 },
+        ciclos: { orderBy: { numeroCiclo: 'desc' } },
       },
     });
   }

@@ -94,7 +94,6 @@ export class SociedadesRepository {
         },
         ciclos: {
           orderBy: { numeroCiclo: 'desc' },
-          take: 1,
         },
       },
     });

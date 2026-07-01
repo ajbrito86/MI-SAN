@@ -41,6 +41,7 @@ export default function DetalleSociedad() {
   const [motivoExpulsion, setMotivoExpulsion] = useState('');
   const [ordenManual, setOrdenManual] = useState<string[]>([]);
   const [evidenciaVistaPrevia, setEvidenciaVistaPrevia] = useState<{ nombre: string; url: string } | null>(null);
+  const [cicloSeleccionadoId, setCicloSeleccionadoId] = useState<string | null>(null);
 
   const {
     data: sociedad,
@@ -62,15 +63,24 @@ export default function DetalleSociedad() {
     queryFn: () => listarHistorial(token ?? '', id),
     enabled: Boolean(token && id),
   });
+  const ciclosDisponibles = useMemo(
+    () => (sociedad?.ciclos?.length ? sociedad.ciclos : sociedad?.cicloActual ? [sociedad.cicloActual] : []),
+    [sociedad?.ciclos, sociedad?.cicloActual],
+  );
+  const cicloSeleccionado =
+    ciclosDisponibles.find((ciclo) => ciclo.id === cicloSeleccionadoId) ?? sociedad?.cicloActual ?? ciclosDisponibles[0] ?? null;
+  const esCicloActualSeleccionado = Boolean(
+    sociedad?.cicloActual && cicloSeleccionado && sociedad.cicloActual.id === cicloSeleccionado.id,
+  );
   const { data: resumen } = useQuery({
-    queryKey: ['reporte-sociedad', id],
-    queryFn: () => obtenerResumenSociedad(token ?? '', id),
-    enabled: Boolean(token && id),
+    queryKey: ['reporte-sociedad', id, cicloSeleccionado?.id],
+    queryFn: () => obtenerResumenSociedad(token ?? '', id, cicloSeleccionado?.id),
+    enabled: Boolean(token && id && (!ciclosDisponibles.length || cicloSeleccionado?.id)),
   });
   const { data: turnos = [] } = useQuery({
-    queryKey: ['turnos', sociedad?.cicloActual?.id],
-    queryFn: () => listarTurnos(token ?? '', sociedad?.cicloActual?.id ?? ''),
-    enabled: Boolean(token && sociedad?.cicloActual?.id),
+    queryKey: ['turnos', cicloSeleccionado?.id],
+    queryFn: () => listarTurnos(token ?? '', cicloSeleccionado?.id ?? ''),
+    enabled: Boolean(token && cicloSeleccionado?.id),
   });
   const { data: pagosSociedad = [] } = useQuery({
     queryKey: ['pagos-sociedad', id],
@@ -95,33 +105,41 @@ export default function DetalleSociedad() {
   const participantesActivos = participantesOrdenables.length;
   const montoEntregaEstimado = sociedad ? sociedad.montoCuota * participantesActivos : 0;
   const cuotasPorParticipante = turnos.length > 0 ? turnos.length : participantesActivos;
+  const etiquetaCicloSeleccionado = cicloSeleccionado ? `Ciclo #${cicloSeleccionado.numeroCiclo}` : 'Sin ciclo';
   const participantesConTurnoOrdenados = useMemo(
-    () =>
-      participantes
-        .map((participante) => ({
-          participante,
-          turno: turnos.find((item) => item.participante.id === participante.usuario.id),
-        }))
-        .sort((a, b) => {
-          if (a.turno && b.turno) {
-            return a.turno.numeroTurno - b.turno.numeroTurno;
-          }
+    () => {
+      if (turnos.length > 0) {
+        return [...turnos]
+          .sort((a, b) => a.numeroTurno - b.numeroTurno)
+          .map((turno) => {
+            const participanteExistente = participantes.find((participante) => participante.usuario.id === turno.participante.id);
 
-          if (a.turno) {
-            return -1;
-          }
+            return {
+              participante:
+                participanteExistente ??
+                {
+                  id: turno.participante.id,
+                  turno: turno.numeroTurno,
+                  estadoParticipante: 'HISTORICO',
+                  usuario: turno.participante,
+                },
+              turno,
+            };
+          });
+      }
 
-          if (b.turno) {
-            return 1;
-          }
-
-          return `${a.participante.usuario.nombres} ${a.participante.usuario.apellidos}`.localeCompare(
+      return participantes
+        .map((participante) => ({ participante, turno: undefined }))
+        .sort((a, b) =>
+          `${a.participante.usuario.nombres} ${a.participante.usuario.apellidos}`.localeCompare(
             `${b.participante.usuario.nombres} ${b.participante.usuario.apellidos}`,
-          );
-        }),
+          ),
+        );
+    },
     [participantes, turnos],
   );
-  const misPagosSociedad = misPagos.filter((pago) => pago.sociedad.id === id);
+  const pagosSociedadCiclo = pagosSociedad.filter((pago) => pago.sociedad.id === id && (!cicloSeleccionado || pago.ciclo.id === cicloSeleccionado.id));
+  const misPagosSociedad = misPagos.filter((pago) => pago.sociedad.id === id && (!cicloSeleccionado || pago.ciclo.id === cicloSeleccionado.id));
   const miTurno = turnos.find((turno) => turno.participante.id === usuarioActual?.id);
   const misPagosConfirmados = misPagosSociedad.filter((pago) => pago.estado === 'CONFIRMADO');
   const misPagosPendientes = misPagosSociedad.filter((pago) => ['PENDIENTE', 'REPORTADO', 'RECHAZADO', 'ATRASADO'].includes(pago.estado));
@@ -130,6 +148,19 @@ export default function DetalleSociedad() {
   const proximoPago = [...misPagosPendientes].sort(
     (a, b) => new Date(a.fechaVencimiento).getTime() - new Date(b.fechaVencimiento).getTime(),
   )[0];
+
+  useEffect(() => {
+    if (ciclosDisponibles.length === 0) {
+      if (cicloSeleccionadoId !== null) {
+        setCicloSeleccionadoId(null);
+      }
+      return;
+    }
+
+    if (!cicloSeleccionadoId || !ciclosDisponibles.some((ciclo) => ciclo.id === cicloSeleccionadoId)) {
+      setCicloSeleccionadoId(ciclosDisponibles[0].id);
+    }
+  }, [cicloSeleccionadoId, ciclosDisponibles]);
 
   useEffect(() => {
     const idsActivos = participantesOrdenables.map((participante) => participante.id);
@@ -163,7 +194,7 @@ export default function DetalleSociedad() {
 
   const participantePorId = (participanteId: string) => participantesOrdenables.find((participante) => participante.id === participanteId);
   const obtenerResumenEntrega = (numeroTurno: number) => {
-    const pagosDelTurno = pagosSociedad.filter((pago) => pago.numeroCuota === numeroTurno);
+    const pagosDelTurno = pagosSociedadCiclo.filter((pago) => pago.numeroCuota === numeroTurno);
     const pagosConfirmados = pagosDelTurno.filter((pago) => pago.estado === 'CONFIRMADO');
     const montoConfirmado = pagosConfirmados.reduce((total, pago) => total + pago.monto, 0);
 
@@ -422,9 +453,42 @@ export default function DetalleSociedad() {
           </View>
         ) : null}
 
+        {ciclosDisponibles.length > 0 ? (
+          <View className="rounded-lg bg-white p-4">
+            <Text className="text-lg font-semibold text-marca-texto">Ciclo consultado</Text>
+            <Text className="mt-1 text-sm text-slate-600">Pagos, turnos y reportes por ciclo.</Text>
+            <View className="mt-3 flex-row flex-wrap gap-2">
+              {ciclosDisponibles.map((ciclo) => {
+                const activo = ciclo.id === cicloSeleccionado?.id;
+
+                return (
+                  <Pressable
+                    key={ciclo.id}
+                    className={`rounded-lg border px-3 py-3 ${
+                      activo ? 'border-marca-verde bg-emerald-50' : 'border-slate-200 bg-slate-50'
+                    }`}
+                    onPress={() => setCicloSeleccionadoId(ciclo.id)}
+                  >
+                    <Text className={`text-sm font-bold ${activo ? 'text-marca-verde' : 'text-slate-600'}`}>
+                      Ciclo #{ciclo.numeroCiclo}
+                    </Text>
+                    <Text className="mt-1 text-xs font-semibold text-slate-500">{etiquetaEstadoOperativo(ciclo.estado)}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+            {cicloSeleccionado ? (
+              <Text className="mt-3 text-sm text-slate-600">
+                Inicio: {new Date(cicloSeleccionado.fechaInicio).toLocaleDateString()}
+                {cicloSeleccionado.fechaFin ? ` - Fin: ${new Date(cicloSeleccionado.fechaFin).toLocaleDateString()}` : ''}
+              </Text>
+            ) : null}
+          </View>
+        ) : null}
+
         {resumen ? (
           <View className="rounded-lg bg-white p-4">
-            <Text className="text-lg font-semibold text-marca-texto">Reporte</Text>
+            <Text className="text-lg font-semibold text-marca-texto">Reporte - {etiquetaCicloSeleccionado}</Text>
             <Text className="mt-2 text-slate-600">Total confirmado: {formatearMonto(resumen.totalConfirmado, resumen.moneda)}</Text>
             <Text className="mt-1 text-slate-600">Pagos confirmados: {resumen.pagosConfirmados}</Text>
             <View className="mt-3 gap-2">
@@ -495,7 +559,7 @@ export default function DetalleSociedad() {
 
         {sociedad && (miTurno || misPagosSociedad.length > 0) ? (
           <View className="rounded-lg bg-white p-4">
-            <Text className="text-lg font-semibold text-marca-texto">Mi estado en este SAN</Text>
+            <Text className="text-lg font-semibold text-marca-texto">Mi estado - {etiquetaCicloSeleccionado}</Text>
             <View className="mt-3 gap-3">
               <View className="rounded-lg bg-slate-50 p-3">
                 <Text className="text-xs font-bold uppercase text-slate-500">Mi turno</Text>
@@ -545,7 +609,7 @@ export default function DetalleSociedad() {
                 <View className="rounded-lg bg-slate-50 p-3">
                   <Text className="text-xs font-bold uppercase text-slate-500">Proximo pago</Text>
                   <Text className="mt-1 font-semibold text-marca-texto">
-                    Cuota #{proximoPago.numeroCuota} - {formatearMonto(proximoPago.monto, sociedad.moneda)}
+                    Cuota #{proximoPago.numeroCuota} ciclo #{proximoPago.ciclo.numeroCiclo} - {formatearMonto(proximoPago.monto, sociedad.moneda)}
                   </Text>
                   <Text className="mt-1 text-sm text-slate-600">
                     Vence {new Date(proximoPago.fechaVencimiento).toLocaleDateString()} - {etiquetaEstadoOperativo(proximoPago.estado)}
@@ -607,7 +671,7 @@ export default function DetalleSociedad() {
                   disabled={crearCicloMutation.isPending}
                 />
               ) : null}
-              {puedeOperarSociedad && sociedad?.cicloActual && sociedad.cicloActual.estado === 'CONFIGURACION' ? (
+              {puedeOperarSociedad && esCicloActualSeleccionado && sociedad?.cicloActual && sociedad.cicloActual.estado === 'CONFIGURACION' ? (
                 <>
                   <View className="gap-3 rounded-lg bg-slate-50 p-3">
                     <View>
@@ -712,7 +776,7 @@ export default function DetalleSociedad() {
                   />
                 </>
               ) : null}
-              {puedeOperarSociedad && sociedad?.cicloActual?.estado === 'ACTIVO' ? (
+              {puedeOperarSociedad && esCicloActualSeleccionado && sociedad?.cicloActual?.estado === 'ACTIVO' ? (
                 <AppButton
                   titulo={finalizarCicloMutation.isPending ? 'Finalizando...' : 'Finalizar ciclo'}
                   variante="secundario"
@@ -743,7 +807,7 @@ export default function DetalleSociedad() {
         ) : null}
 
         <View className="rounded-lg bg-white p-4">
-          <Text className="text-lg font-semibold text-marca-texto">Participantes y turnos</Text>
+          <Text className="text-lg font-semibold text-marca-texto">Participantes y turnos - {etiquetaCicloSeleccionado}</Text>
           <View className="mt-3 gap-3">
             {participantesConTurnoOrdenados.map(({ participante, turno }) => {
               const esOrganizadorEnSuPropiaFila = esOrganizador && participante.usuario.id === usuarioActual?.id;
@@ -817,7 +881,7 @@ export default function DetalleSociedad() {
                       ) : null}
                     </View>
                   </View>
-                  {puedeOperarSociedad && esOrganizador && sociedad?.cicloActual?.estado === 'ACTIVO' && turno && turno.estado !== 'PAGADO' ? (
+                  {puedeOperarSociedad && esCicloActualSeleccionado && esOrganizador && sociedad?.cicloActual?.estado === 'ACTIVO' && turno && turno.estado !== 'PAGADO' ? (
                     <AppButton
                       titulo={entregarTurnoMutation.isPending ? 'Registrando...' : 'Registrar entrega'}
                       variante="secundario"
@@ -893,12 +957,12 @@ export default function DetalleSociedad() {
 
         {esOrganizador ? (
           <View className="rounded-lg bg-white p-4">
-            <Text className="text-lg font-semibold text-marca-texto">Pagos reportados</Text>
+            <Text className="text-lg font-semibold text-marca-texto">Pagos reportados - {etiquetaCicloSeleccionado}</Text>
             <View className="mt-3 gap-4">
-              {pagosSociedad.filter((pago) => pago.estado === 'REPORTADO').length === 0 ? (
+              {pagosSociedadCiclo.filter((pago) => pago.estado === 'REPORTADO').length === 0 ? (
                 <Text className="text-slate-600">No hay pagos reportados pendientes de revision.</Text>
               ) : (
-                pagosSociedad
+                pagosSociedadCiclo
                   .filter((pago) => pago.estado === 'REPORTADO')
                   .map((pago) => {
                     const requiereComprobante = pago.metodoPagoReportado !== 'EFECTIVO';
@@ -906,7 +970,7 @@ export default function DetalleSociedad() {
                     return (
                     <View key={pago.id} className="gap-2 border-b border-slate-100 pb-4">
                       <Text className="font-semibold text-marca-texto">
-                        {pago.participante.nombres} {pago.participante.apellidos} - cuota #{pago.numeroCuota}
+                        {pago.participante.nombres} {pago.participante.apellidos} - cuota #{pago.numeroCuota} ciclo #{pago.ciclo.numeroCiclo}
                       </Text>
                       <Text className="text-slate-600">{formatearMonto(pago.monto, pago.sociedad.moneda)}</Text>
                       <Text className="text-sm font-semibold text-slate-600">

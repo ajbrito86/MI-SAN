@@ -94,7 +94,7 @@ export class PagosRepository {
           usuarioId,
           realizadoPor: usuarioId,
           accion: TipoMovimientoHistorial.PAGO_REPORTADO,
-          descripcion: `Pago reportado por ${cuota.participante.usuario.nombres} ${cuota.participante.usuario.apellidos}.`,
+          descripcion: `Cuota #${cuota.numeroCuota} ciclo #${cuota.ciclo.numeroCiclo} reportada por ${cuota.participante.usuario.nombres} ${cuota.participante.usuario.apellidos}.`,
         },
       });
 
@@ -102,10 +102,11 @@ export class PagosRepository {
         data: {
           usuarioId: cuota.ciclo.sociedad.organizadorId,
           titulo: 'Pago reportado',
-          mensaje: `${cuota.participante.usuario.nombres} reporto una cuota en ${cuota.ciclo.sociedad.nombre}.`,
+          mensaje: `${cuota.participante.usuario.nombres} reporto la cuota #${cuota.numeroCuota} del ciclo #${cuota.ciclo.numeroCiclo} en ${cuota.ciclo.sociedad.nombre}.`,
           tipo: TipoNotificacion.RECORDATORIO_PAGO,
           metadataJson: {
             sociedadId: cuota.ciclo.sociedadId,
+            cicloId: cuota.cicloId,
             cuotaPagoId: cuota.id,
             destino: 'DETALLE_SAN',
           },
@@ -134,7 +135,7 @@ export class PagosRepository {
           usuarioId: cuota.participante.usuarioId,
           realizadoPor: usuarioId,
           accion: TipoMovimientoHistorial.PAGO_CONFIRMADO,
-          descripcion: 'Pago confirmado por el organizador.',
+          descripcion: `Cuota #${cuota.numeroCuota} ciclo #${cuota.ciclo.numeroCiclo} confirmada por el organizador.`,
         },
       });
 
@@ -142,10 +143,11 @@ export class PagosRepository {
         data: {
           usuarioId: cuota.participante.usuarioId,
           titulo: 'Pago confirmado',
-          mensaje: 'Tu pago fue confirmado por el organizador.',
+          mensaje: `Tu cuota #${cuota.numeroCuota} del ciclo #${cuota.ciclo.numeroCiclo} fue confirmada por el organizador.`,
           tipo: TipoNotificacion.PAGO_CONFIRMADO,
           metadataJson: {
             sociedadId: cuota.ciclo.sociedadId,
+            cicloId: cuota.cicloId,
             cuotaPagoId: cuota.id,
             destino: 'PAGOS',
           },
@@ -174,7 +176,7 @@ export class PagosRepository {
           usuarioId: cuota.participante.usuarioId,
           realizadoPor: usuarioId,
           accion: TipoMovimientoHistorial.PAGO_RECHAZADO,
-          descripcion: observacion,
+          descripcion: `Cuota #${cuota.numeroCuota} ciclo #${cuota.ciclo.numeroCiclo} rechazada: ${observacion}`,
         },
       });
 
@@ -186,6 +188,7 @@ export class PagosRepository {
           tipo: TipoNotificacion.PAGO_RECHAZADO,
           metadataJson: {
             sociedadId: cuota.ciclo.sociedadId,
+            cicloId: cuota.cicloId,
             cuotaPagoId: cuota.id,
             destino: 'PAGOS',
           },

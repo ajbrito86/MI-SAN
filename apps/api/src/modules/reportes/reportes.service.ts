@@ -10,7 +10,7 @@ export class ReportesService {
     private readonly jobsService: JobsService,
   ) {}
 
-  async resumenSociedad(usuarioId: string, sociedadId: string) {
+  async resumenSociedad(usuarioId: string, sociedadId: string, cicloId?: string) {
     await this.jobsService.marcarPagosAtrasados();
     const sociedad = await this.reportesRepository.buscarSociedad(sociedadId);
 
@@ -26,9 +26,13 @@ export class ReportesService {
       }
     }
 
-    const cicloActual = sociedad.ciclos[0] ?? null;
+    const cicloActual = cicloId ? (sociedad.ciclos.find((ciclo) => ciclo.id === cicloId) ?? null) : (sociedad.ciclos[0] ?? null);
 
     if (!cicloActual) {
+      if (cicloId) {
+        throw new NotFoundException('No encontramos ese ciclo en esta sociedad.');
+      }
+
       return {
         sociedadId: sociedad.id,
         nombre: sociedad.nombre,

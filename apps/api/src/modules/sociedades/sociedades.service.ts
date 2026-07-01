@@ -48,6 +48,7 @@ export class SociedadesService {
         usuario: participante.usuario,
       })),
       cicloActual: sociedad.ciclos[0] ?? null,
+      ciclos: sociedad.ciclos,
     };
   }
 

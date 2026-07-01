@@ -1,4 +1,4 @@
-import { Controller, Get, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
 import { UsuarioActual } from '../../common/decorators/usuario-actual.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { UsuarioAutenticado } from '../../common/types/usuario-autenticado.type';
@@ -10,7 +10,11 @@ export class ReportesController {
   constructor(private readonly reportesService: ReportesService) {}
 
   @Get('societies/:id/summary')
-  resumenSociedad(@UsuarioActual() usuario: UsuarioAutenticado, @Param('id') sociedadId: string) {
-    return this.reportesService.resumenSociedad(usuario.id, sociedadId);
+  resumenSociedad(
+    @UsuarioActual() usuario: UsuarioAutenticado,
+    @Param('id') sociedadId: string,
+    @Query('cicloId') cicloId?: string,
+  ) {
+    return this.reportesService.resumenSociedad(usuario.id, sociedadId, cicloId);
   }
 }

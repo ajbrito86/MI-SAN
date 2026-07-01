@@ -37,11 +37,12 @@ export type CicloSociedad = {
   estado: string;
   fechaInicio: string;
   fechaFin: string | null;
-} | null;
+};
 
 export type DetalleSociedad = Sociedad & {
   participantes: ParticipanteSociedad[];
-  cicloActual: CicloSociedad;
+  cicloActual: CicloSociedad | null;
+  ciclos: CicloSociedad[];
 };
 
 export type MovimientoHistorial = {
@@ -149,8 +150,9 @@ export function listarTurnos(token: string, cicloId: string) {
   return apiRequestAutenticado<TurnoCobro[]>(`/cycles/${cicloId}/turns`);
 }
 
-export function obtenerResumenSociedad(token: string, sociedadId: string) {
-  return apiRequestAutenticado<ResumenSociedad>(`/reports/societies/${sociedadId}/summary`);
+export function obtenerResumenSociedad(token: string, sociedadId: string, cicloId?: string) {
+  const query = cicloId ? `?cicloId=${encodeURIComponent(cicloId)}` : '';
+  return apiRequestAutenticado<ResumenSociedad>(`/reports/societies/${sociedadId}/summary${query}`);
 }
 
 export function crearSociedad(token: string, payload: CrearSociedadPayload) {

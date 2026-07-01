@@ -9,6 +9,11 @@ export type Pago = {
     tipoPago: string;
     moneda: 'DOP' | 'USD';
   };
+  ciclo: {
+    id: string;
+    numeroCiclo: number;
+    estado: string;
+  };
   numeroCuota: number;
   monto: number;
   fechaVencimiento: string;

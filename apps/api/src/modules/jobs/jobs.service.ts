@@ -40,10 +40,11 @@ export class JobsService {
       data: cuotas.map((cuota) => ({
         usuarioId: cuota.participante.usuarioId,
         titulo: 'Pago atrasado',
-        mensaje: `La cuota #${cuota.numeroCuota} de ${cuota.ciclo.sociedad.nombre} esta atrasada.`,
+        mensaje: `La cuota #${cuota.numeroCuota} del ciclo #${cuota.ciclo.numeroCiclo} de ${cuota.ciclo.sociedad.nombre} esta atrasada.`,
         tipo: TipoNotificacion.PROXIMO_VENCIMIENTO,
         metadataJson: {
           sociedadId: cuota.ciclo.sociedadId,
+          cicloId: cuota.cicloId,
           cuotaPagoId: cuota.id,
           destino: 'PAGOS',
         },
