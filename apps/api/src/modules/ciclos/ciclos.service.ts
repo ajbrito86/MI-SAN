@@ -18,6 +18,12 @@ export class CiclosService {
       throw new BadRequestException('Una sociedad debe tener al menos 2 participantes activos.');
     }
 
+    const ultimoCiclo = sociedad.ciclos[0] ?? null;
+
+    if (ultimoCiclo && ultimoCiclo.estado !== EstadoCiclo.COMPLETADO && ultimoCiclo.estado !== EstadoCiclo.CANCELADO) {
+      throw new BadRequestException('Debe finalizar el ciclo actual antes de crear uno nuevo.');
+    }
+
     const numeroCiclo = (sociedad.ciclos[0]?.numeroCiclo ?? 0) + 1;
     return this.ciclosRepository.crear(sociedadId, usuarioId, numeroCiclo, dto.fechaInicio ?? sociedad.fechaInicio);
   }
@@ -46,6 +52,10 @@ export class CiclosService {
 
     if (ciclo.estado !== EstadoCiclo.ACTIVO) {
       throw new BadRequestException('Solo un ciclo activo puede finalizarse.');
+    }
+
+    if (ciclo.turnos.length === 0 || ciclo.turnos.some((turno) => turno.estado !== 'PAGADO')) {
+      throw new BadRequestException('Debe registrar todas las entregas antes de finalizar el ciclo.');
     }
 
     return this.ciclosRepository.finalizar(cicloId, usuarioId);

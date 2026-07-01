@@ -512,9 +512,9 @@ export default function DetalleSociedad() {
                   Este san ya inicio y esta cerrado para nuevos invitados.
                 </Text>
               ) : null}
-              {!sociedad?.cicloActual ? (
+              {!sociedad?.cicloActual || sociedad.cicloActual.estado === 'COMPLETADO' || sociedad.cicloActual.estado === 'CANCELADO' ? (
                 <AppButton
-                  titulo={crearCicloMutation.isPending ? 'Creando...' : 'Crear ciclo'}
+                  titulo={crearCicloMutation.isPending ? 'Creando...' : sociedad?.cicloActual ? 'Crear nuevo ciclo' : 'Crear ciclo'}
                   variante="secundario"
                   onPress={() => crearCicloMutation.mutate()}
                   disabled={crearCicloMutation.isPending}
@@ -630,7 +630,7 @@ export default function DetalleSociedad() {
                   titulo={finalizarCicloMutation.isPending ? 'Finalizando...' : 'Finalizar ciclo'}
                   variante="secundario"
                   onPress={() =>
-                    Alert.alert('Finalizar ciclo', 'Esta accion marca el ciclo como completado. La sociedad quedara lista para consulta o cierre.', [
+                    Alert.alert('Finalizar ciclo', 'Esta accion marca el ciclo como completado. Deben estar registradas todas las entregas del ciclo.', [
                       { text: 'Cancelar', style: 'cancel' },
                       { text: 'Finalizar', style: 'destructive', onPress: () => finalizarCicloMutation.mutate() },
                     ])
