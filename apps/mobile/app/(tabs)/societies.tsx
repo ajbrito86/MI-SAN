@@ -2,10 +2,9 @@ import { Link, router } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { ScrollView, Text, View } from 'react-native';
 import { AppButton } from '@/components/app-button';
-import { AppCard } from '@/components/app-card';
 import { AppHeader } from '@/components/app-header';
 import { formatearMonto } from '@/lib/moneda';
-import { listarSociedades } from '@/services/sociedades-service';
+import { listarSociedades, type Sociedad } from '@/services/sociedades-service';
 import { useAuthStore } from '@/stores/auth-store';
 
 export default function Sociedades() {
@@ -45,16 +44,52 @@ function SeccionSociedades({ titulo, sociedades }: { titulo: string; sociedades:
       {sociedades.length === 0 ? (
         <Text className="rounded-lg bg-white p-4 text-slate-600">No hay sociedades en esta seccion.</Text>
       ) : (
-        sociedades.map((sociedad) => (
-          <AppCard
-            key={sociedad.id}
-            titulo={sociedad.nombre}
-            detalle={`${formatearMonto(sociedad.montoCuota, sociedad.moneda)} ${sociedad.frecuencia.toLowerCase()}`}
-            estado={sociedad.estado}
-            onPress={() => router.push({ pathname: '/societies/[id]', params: { id: sociedad.id } })}
-          />
-        ))
+        sociedades.map((sociedad) => <SociedadCard key={sociedad.id} sociedad={sociedad} />)
       )}
+    </View>
+  );
+}
+
+function SociedadCard({ sociedad }: { sociedad: Sociedad }) {
+  const participantes = sociedad.participantesRegistrados ?? 0;
+  const textoParticipantes =
+    participantes > 0 ? `${participantes}/${sociedad.cantidadParticipantes} participantes` : `${sociedad.cantidadParticipantes} planificados`;
+
+  return (
+    <View className="rounded-lg bg-white p-4">
+      <View className="flex-row items-start justify-between gap-3">
+        <View className="flex-1">
+          <Text className="text-lg font-semibold text-marca-texto">{sociedad.nombre}</Text>
+          <Text className="mt-1 text-slate-600">
+            {formatearMonto(sociedad.montoCuota, sociedad.moneda)} {sociedad.frecuencia.toLowerCase()}
+          </Text>
+        </View>
+        <Text
+          className={`rounded-full px-3 py-1 text-xs font-bold ${
+            sociedad.estado === 'ACTIVA' ? 'bg-emerald-50 text-marca-verde' : 'bg-slate-100 text-slate-600'
+          }`}
+        >
+          {sociedad.estado}
+        </Text>
+      </View>
+      <View className="mt-3 flex-row gap-2">
+        <View className="flex-1 rounded-lg bg-slate-50 p-3">
+          <Text className="text-xs font-bold uppercase text-slate-500">Rol</Text>
+          <Text className="mt-1 font-semibold text-marca-texto">{sociedad.rol}</Text>
+        </View>
+        <View className="flex-1 rounded-lg bg-slate-50 p-3">
+          <Text className="text-xs font-bold uppercase text-slate-500">Inicio</Text>
+          <Text className="mt-1 font-semibold text-marca-texto">{new Date(sociedad.fechaInicio).toLocaleDateString()}</Text>
+        </View>
+      </View>
+      <Text className="mt-3 text-sm font-semibold text-slate-600">{textoParticipantes}</Text>
+      <View className="mt-3">
+        <AppButton
+          titulo="Abrir SAN"
+          variante="secundario"
+          onPress={() => router.push({ pathname: '/societies/[id]', params: { id: sociedad.id } })}
+        />
+      </View>
     </View>
   );
 }

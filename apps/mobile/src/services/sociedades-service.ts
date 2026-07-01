@@ -12,6 +12,8 @@ export type Sociedad = {
   tipoPago: 'EFECTIVO' | 'DEPOSITO_BANCARIO' | 'TRANSFERENCIA' | 'MIXTO';
   estado: string;
   cantidadParticipantes: number;
+  participantesRegistrados?: number;
+  ciclosRegistrados?: number;
   fechaInicio: string;
   fechaFinEstimada: string | null;
 };
