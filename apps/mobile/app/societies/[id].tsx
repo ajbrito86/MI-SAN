@@ -3,6 +3,7 @@ import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { Alert, Image, Linking, Modal, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { AppButton } from '@/components/app-button';
+import { AppCard } from '@/components/app-card';
 import { AppHeader } from '@/components/app-header';
 import { formatearMonto } from '@/lib/moneda';
 import { getPublicFileUrl } from '@/services/api';
@@ -39,7 +40,12 @@ export default function DetalleSociedad() {
   const [ordenManual, setOrdenManual] = useState<string[]>([]);
   const [evidenciaVistaPrevia, setEvidenciaVistaPrevia] = useState<{ nombre: string; url: string } | null>(null);
 
-  const { data: sociedad } = useQuery({
+  const {
+    data: sociedad,
+    isLoading: sociedadCargando,
+    isError: sociedadError,
+    refetch: recargarSociedad,
+  } = useQuery({
     queryKey: ['sociedad', id],
     queryFn: () => obtenerSociedad(token ?? '', id),
     enabled: Boolean(token && id),
@@ -283,6 +289,32 @@ export default function DetalleSociedad() {
     },
     onError: (err) => setMensajeAccion(err instanceof Error ? err.message : 'No pudimos cerrar la sociedad.'),
   });
+
+  if (sociedadCargando) {
+    return (
+      <ScrollView className="flex-1 bg-marca-fondo px-5 pt-12">
+        <Stack.Screen options={{ headerShown: false }} />
+        <AppHeader titulo="Sociedad" subtitulo="Cargando detalle del SAN" mostrarAtras />
+        <View className="mt-5">
+          <AppCard titulo="Cargando" detalle="Buscando la informacion de esta sociedad." estado="PENDIENTE" />
+        </View>
+      </ScrollView>
+    );
+  }
+
+  if (sociedadError || !sociedad) {
+    return (
+      <ScrollView className="flex-1 bg-marca-fondo px-5 pt-12">
+        <Stack.Screen options={{ headerShown: false }} />
+        <AppHeader titulo="Sociedad" subtitulo="No pudimos cargar este SAN" mostrarAtras />
+        <View className="mt-5 gap-3 rounded-lg bg-white p-4">
+          <Text className="font-semibold text-red-600">No pudimos cargar el detalle de esta sociedad.</Text>
+          <Text className="text-sm text-slate-600">Revisa tu conexion o vuelve a intentarlo en unos segundos.</Text>
+          <AppButton titulo="Reintentar" variante="secundario" onPress={() => recargarSociedad()} />
+        </View>
+      </ScrollView>
+    );
+  }
 
   return (
     <ScrollView className="flex-1 bg-marca-fondo px-5 pt-12">
@@ -929,12 +961,16 @@ export default function DetalleSociedad() {
         <View className="rounded-lg bg-white p-4">
           <Text className="text-lg font-semibold text-marca-texto">Historial</Text>
           <View className="mt-3 gap-3">
-            {historial.slice(0, 10).map((movimiento) => (
-              <View key={movimiento.id} className="border-b border-slate-100 pb-3">
-                <Text className="font-semibold text-marca-texto">{movimiento.accion}</Text>
-                <Text className="text-slate-600">{movimiento.descripcion}</Text>
-              </View>
-            ))}
+            {historial.length === 0 ? (
+              <Text className="text-slate-600">Aun no hay movimientos registrados en este SAN.</Text>
+            ) : (
+              historial.slice(0, 10).map((movimiento) => (
+                <View key={movimiento.id} className="border-b border-slate-100 pb-3">
+                  <Text className="font-semibold text-marca-texto">{movimiento.accion}</Text>
+                  <Text className="text-slate-600">{movimiento.descripcion}</Text>
+                </View>
+              ))
+            )}
           </View>
         </View>
       </View>
