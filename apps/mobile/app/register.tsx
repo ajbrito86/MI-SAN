@@ -1,7 +1,8 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, SafeAreaView, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Text, TextInput, View } from 'react-native';
 import { AppButton } from '@/components/app-button';
+import { ScreenTopView } from '@/components/screen';
 import { registrar } from '@/services/auth-service';
 import { useAuthStore } from '@/stores/auth-store';
 
@@ -60,7 +61,7 @@ export default function Registro() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-marca-fondo px-5">
+    <ScreenTopView className="flex-1 bg-marca-fondo">
       <View className="flex-1 justify-center gap-5">
         <Text className="text-3xl font-bold text-marca-texto">Crear cuenta</Text>
         <View className="gap-3">
@@ -74,6 +75,6 @@ export default function Registro() {
           {cargando ? <ActivityIndicator color="#168A5B" /> : null}
         </View>
       </View>
-    </SafeAreaView>
+    </ScreenTopView>
   );
 }

@@ -1,7 +1,8 @@
 import { Link, router } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, SafeAreaView, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Text, TextInput, View } from 'react-native';
 import { AppButton } from '@/components/app-button';
+import { ScreenTopView } from '@/components/screen';
 import { login } from '@/services/auth-service';
 import { useAuthStore } from '@/stores/auth-store';
 
@@ -35,7 +36,7 @@ export default function Login() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-marca-fondo px-5">
+    <ScreenTopView className="flex-1 bg-marca-fondo">
       <View className="flex-1 justify-center gap-5">
         <View className="gap-2">
           <Text className="text-3xl font-bold text-marca-texto">Bienvenido</Text>
@@ -55,6 +56,6 @@ export default function Login() {
           <Link href="/register" className="font-semibold text-marca-verde">Registrarme</Link>
         </View>
       </View>
-    </SafeAreaView>
+    </ScreenTopView>
   );
 }

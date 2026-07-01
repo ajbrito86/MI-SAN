@@ -1,6 +1,7 @@
 import { Link, Redirect } from 'expo-router';
-import { SafeAreaView, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { AppButton } from '@/components/app-button';
+import { ScreenTopView } from '@/components/screen';
 import { useAuthStore } from '@/stores/auth-store';
 
 export default function InicioPublico() {
@@ -11,7 +12,7 @@ export default function InicioPublico() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-marca-fondo px-5">
+    <ScreenTopView className="flex-1 bg-marca-fondo">
       <View className="flex-1 justify-center gap-8">
         <View className="gap-3">
           <Text className="text-4xl font-bold text-marca-texto">Mi-San</Text>
@@ -29,6 +30,6 @@ export default function InicioPublico() {
           </Link>
         </View>
       </View>
-    </SafeAreaView>
+    </ScreenTopView>
   );
 }
