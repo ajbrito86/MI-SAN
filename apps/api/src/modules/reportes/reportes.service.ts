@@ -89,6 +89,8 @@ export class ReportesService {
       } else if (cuota.estado === EstadoPago.ATRASADO || cuota.estado === EstadoPago.INCUMPLIDO) {
         existente.totalAtrasado += monto;
         existente.cuotasAtrasadas += 1;
+      } else if (cuota.estado === EstadoPago.CANCELADO) {
+        // Las cuotas canceladas quedan como historico, no como deuda activa.
       } else {
         existente.totalPendiente += monto;
         existente.cuotasPendientes += 1;

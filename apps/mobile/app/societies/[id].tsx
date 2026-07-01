@@ -6,7 +6,7 @@ import { AppButton } from '@/components/app-button';
 import { AppCard } from '@/components/app-card';
 import { AppHeader } from '@/components/app-header';
 import { ScreenScrollView } from '@/components/screen';
-import { etiquetaEstadoSociedad } from '@/lib/estados';
+import { etiquetaEstadoOperativo, etiquetaEstadoSociedad } from '@/lib/estados';
 import { formatearMonto } from '@/lib/moneda';
 import { getPublicFileUrl } from '@/services/api';
 import { confirmarPago, listarMisPagos, listarPagosSociedad, rechazarPago } from '@/services/pagos-service';
@@ -124,7 +124,7 @@ export default function DetalleSociedad() {
   const misPagosSociedad = misPagos.filter((pago) => pago.sociedad.id === id);
   const miTurno = turnos.find((turno) => turno.participante.id === usuarioActual?.id);
   const misPagosConfirmados = misPagosSociedad.filter((pago) => pago.estado === 'CONFIRMADO');
-  const misPagosPendientes = misPagosSociedad.filter((pago) => ['PENDIENTE', 'REPORTADO', 'RECHAZADO', 'ATRASADO', 'INCUMPLIDO'].includes(pago.estado));
+  const misPagosPendientes = misPagosSociedad.filter((pago) => ['PENDIENTE', 'REPORTADO', 'RECHAZADO', 'ATRASADO'].includes(pago.estado));
   const totalPagado = misPagosConfirmados.reduce((total, pago) => total + pago.monto, 0);
   const totalPendiente = misPagosPendientes.reduce((total, pago) => total + pago.monto, 0);
   const proximoPago = [...misPagosPendientes].sort(
@@ -430,7 +430,7 @@ export default function DetalleSociedad() {
             <View className="mt-3 gap-2">
               {Object.entries(resumen.cuotasPorEstado).map(([estado, datos]) => (
                 <Text key={estado} className="text-slate-700">
-                  {estado}: {datos.cantidad} cuota(s), {formatearMonto(datos.monto, resumen.moneda)}
+                  {etiquetaEstadoOperativo(estado)}: {datos.cantidad} cuota(s), {formatearMonto(datos.monto, resumen.moneda)}
                 </Text>
               ))}
             </View>
@@ -442,7 +442,7 @@ export default function DetalleSociedad() {
             <Text className="text-lg font-semibold text-marca-texto">Estado por participante</Text>
             <View className="mt-3 gap-3">
               {resumen.participantesResumen.map((item) => {
-                const tieneAtraso = item.cuotasAtrasadas > 0;
+                const tieneAtraso = !sociedadCerrada && item.cuotasAtrasadas > 0;
                 const estaAlDia = item.cuotasAtrasadas === 0 && item.cuotasPendientes === 0;
 
                 return (
@@ -465,7 +465,7 @@ export default function DetalleSociedad() {
                               : 'bg-amber-50 text-amber-700'
                         }`}
                       >
-                        {tieneAtraso ? 'ATRASADO' : estaAlDia ? 'AL DIA' : 'PENDIENTE'}
+                        {sociedadCerrada ? 'CERRADO' : tieneAtraso ? 'ATRASADO' : estaAlDia ? 'AL DIA' : 'PENDIENTE'}
                       </Text>
                     </View>
                     <View className="mt-3 flex-row gap-2">
@@ -503,7 +503,9 @@ export default function DetalleSociedad() {
                   <>
                     <Text className="mt-1 font-semibold text-marca-texto">
                       #{miTurno.numeroTurno} -{' '}
-                      {miTurno.montoEntregado !== null
+                      {miTurno.estado === 'CANCELADO'
+                        ? `entrega cancelada ${formatearMonto(miTurno.montoCobro, sociedad.moneda)}`
+                        : miTurno.montoEntregado !== null
                         ? `recibido ${formatearMonto(miTurno.montoEntregado, sociedad.moneda)}`
                         : `entrega planificada ${formatearMonto(miTurno.montoCobro, sociedad.moneda)}`}
                     </Text>
@@ -516,7 +518,11 @@ export default function DetalleSociedad() {
                       Fecha prevista: {new Date(miTurno.fechaProgramada).toLocaleDateString()}
                     </Text>
                     <Text className={`mt-1 text-sm font-semibold ${miTurno.estado === 'PAGADO' ? 'text-marca-verde' : 'text-slate-600'}`}>
-                      {miTurno.estado === 'PAGADO' ? 'Entrega registrada' : 'Pendiente de entrega'}
+                      {miTurno.estado === 'PAGADO'
+                        ? 'Entrega registrada'
+                        : miTurno.estado === 'CANCELADO'
+                          ? 'Entrega cancelada por cierre del SAN'
+                          : 'Pendiente de entrega'}
                     </Text>
                   </>
                 ) : (
@@ -542,7 +548,7 @@ export default function DetalleSociedad() {
                     Cuota #{proximoPago.numeroCuota} - {formatearMonto(proximoPago.monto, sociedad.moneda)}
                   </Text>
                   <Text className="mt-1 text-sm text-slate-600">
-                    Vence {new Date(proximoPago.fechaVencimiento).toLocaleDateString()} - {proximoPago.estado}
+                    Vence {new Date(proximoPago.fechaVencimiento).toLocaleDateString()} - {etiquetaEstadoOperativo(proximoPago.estado)}
                   </Text>
                 </View>
               ) : misPagosSociedad.length > 0 ? (
@@ -758,7 +764,9 @@ export default function DetalleSociedad() {
                       {turno ? (
                         <>
                           <Text className="font-semibold text-slate-700">
-                            {turno.montoEntregado !== null
+                            {turno.estado === 'CANCELADO'
+                              ? `Entrega cancelada: ${formatearMonto(turno.montoCobro, sociedad?.moneda)}`
+                              : turno.montoEntregado !== null
                               ? `Entregado: ${formatearMonto(turno.montoEntregado, sociedad?.moneda)}`
                               : `Entrega planificada: ${formatearMonto(turno.montoCobro, sociedad?.moneda)}`}
                           </Text>
@@ -783,12 +791,12 @@ export default function DetalleSociedad() {
                     <View className="items-end gap-2">
                       <Text
                         className={`rounded-full px-3 py-1 text-xs font-bold ${
-                          participante.estadoParticipante === 'ACTIVO'
+                          !sociedadCerrada && participante.estadoParticipante === 'ACTIVO'
                             ? 'bg-emerald-50 text-marca-verde'
                             : 'bg-slate-100 text-slate-600'
                         }`}
                       >
-                        {participante.estadoParticipante}
+                        {sociedadCerrada ? 'CERRADO' : participante.estadoParticipante}
                       </Text>
                       {turno ? (
                         <Text
@@ -800,7 +808,11 @@ export default function DetalleSociedad() {
                                 : 'bg-slate-100 text-slate-600'
                           }`}
                         >
-                          {turno.entregaIncompleta ? 'INCOMPLETO' : turno.estado === 'PAGADO' ? 'ENTREGADO' : 'PENDIENTE'}
+                          {turno.entregaIncompleta
+                            ? 'INCOMPLETO'
+                            : turno.estado === 'PAGADO'
+                              ? 'ENTREGADO'
+                              : etiquetaEstadoOperativo(turno.estado)}
                         </Text>
                       ) : null}
                     </View>

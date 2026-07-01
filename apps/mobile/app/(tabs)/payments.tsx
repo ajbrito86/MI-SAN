@@ -6,6 +6,7 @@ import { AppButton } from '@/components/app-button';
 import { AppCard } from '@/components/app-card';
 import { AppHeader } from '@/components/app-header';
 import { ScreenScrollView } from '@/components/screen';
+import { etiquetaEstadoOperativo } from '@/lib/estados';
 import { formatearMonto } from '@/lib/moneda';
 import { getPublicFileUrl } from '@/services/api';
 import { subirEvidenciaPago, type ArchivoEvidencia } from '@/services/evidencias-service';
@@ -37,7 +38,7 @@ export default function Pagos() {
   const metodoSeleccionado = METODOS.find((metodo) => metodo.valor === metodoPago) ?? METODOS[0];
   const pagosPorHacer = pagos.filter((pago) => ['PENDIENTE', 'ATRASADO', 'RECHAZADO'].includes(pago.estado));
   const pagosEnRevision = pagos.filter((pago) => pago.estado === 'REPORTADO');
-  const pagosHistorial = pagos.filter((pago) => ['CONFIRMADO', 'INCUMPLIDO'].includes(pago.estado));
+  const pagosHistorial = pagos.filter((pago) => ['CONFIRMADO', 'INCUMPLIDO', 'CANCELADO'].includes(pago.estado));
   const totalPagado = pagos.filter((pago) => pago.estado === 'CONFIRMADO').reduce((total, pago) => total + pago.monto, 0);
   const totalDebe = pagosPorHacer.reduce((total, pago) => total + pago.monto, 0);
 
@@ -310,7 +311,7 @@ function SeccionPagos({
 function BadgePago({ estado }: { estado: string }) {
   const estilo = estilosEstadoPago(estado);
 
-  return <Text className={`rounded-full px-3 py-1 text-xs font-bold ${estilo}`}>{estado}</Text>;
+  return <Text className={`rounded-full px-3 py-1 text-xs font-bold ${estilo}`}>{etiquetaEstadoOperativo(estado)}</Text>;
 }
 
 function estilosEstadoPago(estado: string) {
@@ -324,6 +325,7 @@ function estilosEstadoPago(estado: string) {
     case 'ATRASADO':
       return 'bg-orange-50 text-orange-700';
     case 'INCUMPLIDO':
+    case 'CANCELADO':
     case 'RECHAZADO':
       return 'bg-red-50 text-red-700';
     default:

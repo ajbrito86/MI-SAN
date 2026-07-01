@@ -1,5 +1,13 @@
 import { Injectable } from '@nestjs/common';
-import { EstadoParticipante, EstadoSociedad, Prisma, TipoMovimientoHistorial } from '@prisma/client';
+import {
+  EstadoCiclo,
+  EstadoPago,
+  EstadoParticipante,
+  EstadoSociedad,
+  EstadoTurno,
+  Prisma,
+  TipoMovimientoHistorial,
+} from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CrearSociedadDto } from './dto/crear-sociedad.dto';
 
@@ -109,6 +117,47 @@ export class SociedadesRepository {
         where: { id: sociedadId },
         data: { estado: EstadoSociedad.CANCELADA },
       });
+
+      const ciclos = await tx.cicloSociedad.findMany({
+        where: { sociedadId },
+        select: { id: true },
+      });
+      const cicloIds = ciclos.map((ciclo) => ciclo.id);
+
+      if (cicloIds.length > 0) {
+        await tx.cuotaPago.updateMany({
+          where: {
+            cicloId: { in: cicloIds },
+            estado: { notIn: [EstadoPago.CONFIRMADO, EstadoPago.CANCELADO] },
+          },
+          data: {
+            estado: EstadoPago.CANCELADO,
+            observacion: 'Cancelado por cierre de sociedad.',
+          },
+        });
+
+        await tx.turnoCobro.updateMany({
+          where: {
+            cicloId: { in: cicloIds },
+            estado: { notIn: [EstadoTurno.PAGADO, EstadoTurno.CANCELADO] },
+          },
+          data: {
+            estado: EstadoTurno.CANCELADO,
+          },
+        });
+
+        await tx.cicloSociedad.updateMany({
+          where: {
+            id: { in: cicloIds },
+            OR: [
+              { estado: { in: [EstadoCiclo.CONFIGURACION, EstadoCiclo.ACTIVO] } },
+              { turnos: { some: { estado: EstadoTurno.CANCELADO } } },
+              { cuotas: { some: { estado: EstadoPago.CANCELADO } } },
+            ],
+          },
+          data: { estado: EstadoCiclo.CANCELADO, fechaFin: new Date() },
+        });
+      }
 
       await tx.historialMovimiento.create({
         data: {

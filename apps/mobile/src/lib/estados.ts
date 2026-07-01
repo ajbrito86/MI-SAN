@@ -5,3 +5,11 @@ export function etiquetaEstadoSociedad(estado: string) {
 
   return estado;
 }
+
+export function etiquetaEstadoOperativo(estado: string) {
+  if (estado === 'CANCELADO') {
+    return 'CERRADO';
+  }
+
+  return estado;
+}

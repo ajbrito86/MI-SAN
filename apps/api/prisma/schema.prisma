@@ -67,6 +67,7 @@ enum EstadoTurno {
   PENDIENTE
   PAGADO
   REPROGRAMADO
+  CANCELADO
 }
 
 enum EstadoPago {
@@ -76,6 +77,7 @@ enum EstadoPago {
   RECHAZADO
   ATRASADO
   INCUMPLIDO
+  CANCELADO
 }
 
 enum TipoNotificacion {
