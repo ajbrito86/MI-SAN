@@ -6,6 +6,7 @@ import { AppButton } from '@/components/app-button';
 import { AppCard } from '@/components/app-card';
 import { AppHeader } from '@/components/app-header';
 import { ScreenScrollView } from '@/components/screen';
+import { etiquetaEstadoSociedad } from '@/lib/estados';
 import { formatearMonto } from '@/lib/moneda';
 import { getPublicFileUrl } from '@/services/api';
 import { confirmarPago, listarMisPagos, listarPagosSociedad, rechazarPago } from '@/services/pagos-service';
@@ -372,7 +373,11 @@ export default function DetalleSociedad() {
           </View>
         </View>
       </Modal>
-      <AppHeader titulo={sociedad?.nombre ?? 'Sociedad'} subtitulo={sociedad ? `${sociedad.estado} - ${sociedad.rol}` : 'Cargando...'} mostrarAtras />
+      <AppHeader
+        titulo={sociedad?.nombre ?? 'Sociedad'}
+        subtitulo={sociedad ? `${etiquetaEstadoSociedad(sociedad.estado)} - ${sociedad.rol}` : 'Cargando...'}
+        mostrarAtras
+      />
       <View className="mt-5 gap-4 pb-8">
         {sociedad ? (
           <View className="rounded-lg bg-white p-4">
@@ -381,7 +386,9 @@ export default function DetalleSociedad() {
                 <Text className="text-lg font-semibold text-marca-texto">Resumen</Text>
                 <Text className="mt-1 text-slate-600">Inicio: {new Date(sociedad.fechaInicio).toLocaleDateString()}</Text>
               </View>
-              <Text className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-marca-verde">{sociedad.estado}</Text>
+              <Text className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-marca-verde">
+                {etiquetaEstadoSociedad(sociedad.estado)}
+              </Text>
             </View>
             <View className="mt-4 gap-3">
               <View className="rounded-lg bg-slate-50 p-3">

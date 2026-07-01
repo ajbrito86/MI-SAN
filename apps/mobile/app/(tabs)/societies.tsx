@@ -4,6 +4,7 @@ import { Text, View } from 'react-native';
 import { AppButton } from '@/components/app-button';
 import { AppHeader } from '@/components/app-header';
 import { ScreenScrollView } from '@/components/screen';
+import { etiquetaEstadoSociedad } from '@/lib/estados';
 import { formatearMonto } from '@/lib/moneda';
 import { listarSociedades, type Sociedad } from '@/services/sociedades-service';
 import { useAuthStore } from '@/stores/auth-store';
@@ -70,7 +71,7 @@ function SociedadCard({ sociedad }: { sociedad: Sociedad }) {
             sociedad.estado === 'ACTIVA' ? 'bg-emerald-50 text-marca-verde' : 'bg-slate-100 text-slate-600'
           }`}
         >
-          {sociedad.estado}
+          {etiquetaEstadoSociedad(sociedad.estado)}
         </Text>
       </View>
       <View className="mt-3 flex-row gap-2">
