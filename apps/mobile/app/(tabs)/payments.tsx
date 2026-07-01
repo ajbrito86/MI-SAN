@@ -22,8 +22,10 @@ export default function Pagos() {
   const queryClient = useQueryClient();
   const [mensaje, setMensaje] = useState<string | null>(null);
   const [pagoActivo, setPagoActivo] = useState<string | null>(null);
+  const [comprobanteActivo, setComprobanteActivo] = useState<string | null>(null);
   const [metodoPago, setMetodoPago] = useState<MetodoPago>('EFECTIVO');
   const [archivo, setArchivo] = useState<ArchivoEvidencia | null>(null);
+  const [archivoComprobante, setArchivoComprobante] = useState<ArchivoEvidencia | null>(null);
 
   const { data: pagos = [] } = useQuery({
     queryKey: ['mis-pagos'],
@@ -38,7 +40,7 @@ export default function Pagos() {
   const totalPagado = pagos.filter((pago) => pago.estado === 'CONFIRMADO').reduce((total, pago) => total + pago.monto, 0);
   const totalDebe = pagosPorHacer.reduce((total, pago) => total + pago.monto, 0);
 
-  const seleccionarArchivo = async () => {
+  const seleccionarArchivo = async (onSelect: (archivo: ArchivoEvidencia) => void) => {
     const resultado = await DocumentPicker.getDocumentAsync({
       type: ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'],
       copyToCacheDirectory: true,
@@ -49,7 +51,7 @@ export default function Pagos() {
     }
 
     const elegido = resultado.assets[0];
-    setArchivo({
+    onSelect({
       uri: elegido.uri,
       name: elegido.name,
       mimeType: elegido.mimeType,
@@ -62,11 +64,11 @@ export default function Pagos() {
         throw new Error('Debes adjuntar un comprobante para deposito o transferencia.');
       }
 
-      await reportarPago(token ?? '', cuotaPagoId, metodoPago);
-
       if (archivo) {
         await subirEvidenciaPago(token ?? '', cuotaPagoId, archivo);
       }
+
+      await reportarPago(token ?? '', cuotaPagoId, metodoPago);
     },
     onSuccess: async () => {
       setMensaje('Pago enviado al organizador para revision.');
@@ -78,16 +80,46 @@ export default function Pagos() {
     onError: (error) => setMensaje(error instanceof Error ? error.message : 'No pudimos reportar el pago.'),
   });
 
+  const adjuntarComprobanteMutation = useMutation({
+    mutationFn: async (cuotaPagoId: string) => {
+      if (!archivoComprobante) {
+        throw new Error('Debes elegir el comprobante antes de adjuntarlo.');
+      }
+
+      await subirEvidenciaPago(token ?? '', cuotaPagoId, archivoComprobante);
+    },
+    onSuccess: async () => {
+      setMensaje('Comprobante adjuntado. El organizador ya puede revisarlo.');
+      setComprobanteActivo(null);
+      setArchivoComprobante(null);
+      await queryClient.invalidateQueries({ queryKey: ['mis-pagos'] });
+    },
+    onError: (error) => setMensaje(error instanceof Error ? error.message : 'No pudimos adjuntar el comprobante.'),
+  });
+
   const iniciarReporte = (cuotaPagoId: string) => {
     setMensaje(null);
     setArchivo(null);
     setMetodoPago('EFECTIVO');
     setPagoActivo(cuotaPagoId);
+    setComprobanteActivo(null);
+    setArchivoComprobante(null);
+  };
+
+  const iniciarAdjuntoComprobante = (cuotaPagoId: string) => {
+    setMensaje(null);
+    setPagoActivo(null);
+    setArchivo(null);
+    setComprobanteActivo(cuotaPagoId);
+    setArchivoComprobante(null);
   };
 
   const renderPago = (pago: Pago) => {
     const puedeReportar = ['PENDIENTE', 'ATRASADO', 'RECHAZADO'].includes(pago.estado);
     const estaActivo = pagoActivo === pago.id;
+    const adjuntoActivo = comprobanteActivo === pago.id;
+    const requiereComprobantePendiente =
+      pago.estado === 'REPORTADO' && pago.metodoPagoReportado !== null && pago.metodoPagoReportado !== 'EFECTIVO' && pago.evidencias.length === 0;
 
     return (
       <View key={pago.id} className="gap-2 rounded-lg bg-white p-4">
@@ -109,7 +141,9 @@ export default function Pagos() {
 
         {pago.estado === 'REPORTADO' ? (
           <Text className="rounded-lg bg-blue-50 p-3 text-sm font-semibold text-marca-azul">
-            Este pago esta en revision del organizador.
+            {requiereComprobantePendiente
+              ? 'Este pago necesita comprobante para que el organizador pueda confirmarlo.'
+              : 'Este pago esta en revision del organizador.'}
           </Text>
         ) : null}
 
@@ -146,7 +180,11 @@ export default function Pagos() {
 
             {metodoSeleccionado.requiereComprobante ? (
               <View className="gap-2">
-                <AppButton titulo={archivo ? 'Cambiar comprobante' : 'Adjuntar comprobante'} variante="secundario" onPress={seleccionarArchivo} />
+                <AppButton
+                  titulo={archivo ? 'Cambiar comprobante' : 'Adjuntar comprobante'}
+                  variante="secundario"
+                  onPress={() => seleccionarArchivo(setArchivo)}
+                />
                 {archivo ? <Text className="text-sm font-semibold text-slate-600">{archivo.name}</Text> : null}
               </View>
             ) : (
@@ -160,6 +198,36 @@ export default function Pagos() {
                 disabled={reportarMutation.isPending}
               />
               <AppButton titulo="Cancelar" variante="secundario" onPress={() => setPagoActivo(null)} disabled={reportarMutation.isPending} />
+            </View>
+          </View>
+        ) : null}
+
+        {requiereComprobantePendiente && !adjuntoActivo ? (
+          <AppButton titulo="Adjuntar comprobante pendiente" variante="secundario" onPress={() => iniciarAdjuntoComprobante(pago.id)} />
+        ) : null}
+
+        {requiereComprobantePendiente && adjuntoActivo ? (
+          <View className="gap-3 rounded-lg bg-amber-50 p-4">
+            <Text className="text-base font-semibold text-marca-texto">Comprobante pendiente</Text>
+            <Text className="text-sm text-slate-600">Adjunta la evidencia para que el organizador pueda confirmar este pago.</Text>
+            <AppButton
+              titulo={archivoComprobante ? 'Cambiar comprobante' : 'Elegir comprobante'}
+              variante="secundario"
+              onPress={() => seleccionarArchivo(setArchivoComprobante)}
+            />
+            {archivoComprobante ? <Text className="text-sm font-semibold text-slate-600">{archivoComprobante.name}</Text> : null}
+            <View className="gap-2">
+              <AppButton
+                titulo={adjuntarComprobanteMutation.isPending ? 'Adjuntando...' : 'Adjuntar'}
+                onPress={() => adjuntarComprobanteMutation.mutate(pago.id)}
+                disabled={adjuntarComprobanteMutation.isPending}
+              />
+              <AppButton
+                titulo="Cancelar"
+                variante="secundario"
+                onPress={() => setComprobanteActivo(null)}
+                disabled={adjuntarComprobanteMutation.isPending}
+              />
             </View>
           </View>
         ) : null}

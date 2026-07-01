@@ -5,6 +5,7 @@ import { Pressable, SafeAreaView, ScrollView, Text, TextInput, View } from 'reac
 import { AppButton } from '@/components/app-button';
 import { AppHeader } from '@/components/app-header';
 import { CalendarDatePicker } from '@/components/calendar-date-picker';
+import { prepararSociedadPayload } from '@/lib/sociedad-form';
 import {
   actualizarSociedad,
   obtenerSociedad,
@@ -57,17 +58,7 @@ export default function EditarSociedad() {
   }, [sociedad]);
 
   const actualizarMutation = useMutation({
-    mutationFn: () =>
-      actualizarSociedad(token ?? '', id, {
-        nombre: formulario.nombre,
-        montoCuota: Number(formulario.montoCuota),
-        moneda: formulario.moneda,
-        cantidadParticipantes: Number(formulario.cantidadParticipantes),
-        fechaInicio: new Date(formulario.fechaInicio).toISOString(),
-        frecuencia: formulario.frecuencia,
-        modalidadTurnos: formulario.modalidadTurnos,
-        tipoPago: formulario.tipoPago,
-      }),
+    mutationFn: (payload: CrearSociedadPayload) => actualizarSociedad(token ?? '', id, payload),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['sociedad', id] });
       await queryClient.invalidateQueries({ queryKey: ['sociedades'] });
@@ -83,7 +74,14 @@ export default function EditarSociedad() {
 
   function enviar() {
     setError('');
-    actualizarMutation.mutate();
+    const resultado = prepararSociedadPayload(formulario);
+
+    if (!resultado.ok) {
+      setError(resultado.error);
+      return;
+    }
+
+    actualizarMutation.mutate(resultado.payload);
   }
 
   const puedeEditar = sociedad?.rol === 'ORGANIZADOR' && sociedad.estado === 'CONFIGURACION';

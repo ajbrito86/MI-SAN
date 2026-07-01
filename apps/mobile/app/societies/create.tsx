@@ -5,6 +5,7 @@ import { Pressable, SafeAreaView, ScrollView, Text, TextInput, View } from 'reac
 import { AppButton } from '@/components/app-button';
 import { CalendarDatePicker } from '@/components/calendar-date-picker';
 import { AppHeader } from '@/components/app-header';
+import { prepararSociedadPayload } from '@/lib/sociedad-form';
 import { crearSociedad, type CrearSociedadPayload } from '@/services/sociedades-service';
 import { useAuthStore } from '@/stores/auth-store';
 
@@ -29,17 +30,7 @@ export default function CrearSociedad() {
   const [error, setError] = useState('');
 
   const crearMutation = useMutation({
-    mutationFn: () =>
-      crearSociedad(token ?? '', {
-        nombre: formulario.nombre,
-        montoCuota: Number(formulario.montoCuota),
-        moneda: formulario.moneda,
-        cantidadParticipantes: Number(formulario.cantidadParticipantes),
-        fechaInicio: new Date(formulario.fechaInicio).toISOString(),
-        frecuencia: formulario.frecuencia,
-        modalidadTurnos: formulario.modalidadTurnos,
-        tipoPago: formulario.tipoPago,
-      }),
+    mutationFn: (payload: CrearSociedadPayload) => crearSociedad(token ?? '', payload),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['sociedades'] });
       router.replace('/(tabs)/societies');
@@ -55,7 +46,14 @@ export default function CrearSociedad() {
 
   function enviar() {
     setError('');
-    crearMutation.mutate();
+    const resultado = prepararSociedadPayload(formulario);
+
+    if (!resultado.ok) {
+      setError(resultado.error);
+      return;
+    }
+
+    crearMutation.mutate(resultado.payload);
   }
 
   return (
