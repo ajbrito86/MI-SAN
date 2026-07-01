@@ -18,7 +18,13 @@ export class CiclosRepository {
     return this.prisma.sociedad.findUnique({
       where: { id: sociedadId },
       include: {
-        ciclos: { orderBy: { numeroCiclo: 'desc' }, take: 1 },
+        ciclos: {
+          orderBy: { numeroCiclo: 'desc' },
+          take: 1,
+          include: {
+            turnos: { orderBy: { numeroTurno: 'desc' }, take: 1 },
+          },
+        },
         participantes: { where: { isActive: true, estadoParticipante: 'ACTIVO' } },
       },
     });
@@ -61,7 +67,7 @@ export class CiclosRepository {
     });
   }
 
-  iniciar(cicloId: string, usuarioId: string) {
+  iniciar(cicloId: string, usuarioId: string, fechaInicioOperativa?: Date) {
     return this.prisma.$transaction(async (tx) => {
       const ciclo = await tx.cicloSociedad.findUniqueOrThrow({
         where: { id: cicloId },
@@ -71,10 +77,22 @@ export class CiclosRepository {
           cuotas: true,
         },
       });
+      const fechaInicio = fechaInicioOperativa ?? ciclo.fechaInicio;
 
       const participantes = await tx.participanteSociedad.findMany({
         where: { sociedadId: ciclo.sociedadId, isActive: true, estadoParticipante: 'ACTIVO' },
       });
+
+      if (fechaInicioOperativa) {
+        await Promise.all(
+          ciclo.turnos.map((turno) =>
+            tx.turnoCobro.update({
+              where: { id: turno.id },
+              data: { fechaProgramada: this.calcularFecha(fechaInicio, ciclo.sociedad.frecuencia, turno.numeroTurno - 1) },
+            }),
+          ),
+        );
+      }
 
       if (ciclo.cuotas.length === 0) {
         const cuotas = participantes.flatMap((participante) =>
@@ -83,7 +101,7 @@ export class CiclosRepository {
             participanteId: participante.id,
             numeroCuota: index + 1,
             monto: ciclo.sociedad.montoCuota,
-            fechaVencimiento: this.calcularFecha(ciclo.fechaInicio, ciclo.sociedad.frecuencia, index),
+            fechaVencimiento: this.calcularFecha(fechaInicio, ciclo.sociedad.frecuencia, index),
             estado: EstadoPago.PENDIENTE,
           })),
         );
@@ -98,7 +116,7 @@ export class CiclosRepository {
 
       const actualizado = await tx.cicloSociedad.update({
         where: { id: cicloId },
-        data: { estado: EstadoCiclo.ACTIVO },
+        data: { estado: EstadoCiclo.ACTIVO, fechaInicio },
       });
 
       await tx.sociedad.update({
