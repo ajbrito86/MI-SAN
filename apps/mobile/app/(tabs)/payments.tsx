@@ -8,7 +8,7 @@ import { AppHeader } from '@/components/app-header';
 import { formatearMonto } from '@/lib/moneda';
 import { getPublicFileUrl } from '@/services/api';
 import { subirEvidenciaPago, type ArchivoEvidencia } from '@/services/evidencias-service';
-import { listarMisPagos, type MetodoPago, reportarPago } from '@/services/pagos-service';
+import { listarMisPagos, type MetodoPago, type Pago, reportarPago } from '@/services/pagos-service';
 import { useAuthStore } from '@/stores/auth-store';
 
 const METODOS: { valor: MetodoPago; etiqueta: string; requiereComprobante: boolean }[] = [
@@ -32,6 +32,11 @@ export default function Pagos() {
   });
 
   const metodoSeleccionado = METODOS.find((metodo) => metodo.valor === metodoPago) ?? METODOS[0];
+  const pagosPorHacer = pagos.filter((pago) => ['PENDIENTE', 'ATRASADO', 'RECHAZADO'].includes(pago.estado));
+  const pagosEnRevision = pagos.filter((pago) => pago.estado === 'REPORTADO');
+  const pagosHistorial = pagos.filter((pago) => ['CONFIRMADO', 'INCUMPLIDO'].includes(pago.estado));
+  const totalPagado = pagos.filter((pago) => pago.estado === 'CONFIRMADO').reduce((total, pago) => total + pago.monto, 0);
+  const totalDebe = pagosPorHacer.reduce((total, pago) => total + pago.monto, 0);
 
   const seleccionarArchivo = async () => {
     const resultado = await DocumentPicker.getDocumentAsync({
@@ -80,6 +85,103 @@ export default function Pagos() {
     setPagoActivo(cuotaPagoId);
   };
 
+  const renderPago = (pago: Pago) => {
+    const puedeReportar = ['PENDIENTE', 'ATRASADO', 'RECHAZADO'].includes(pago.estado);
+    const estaActivo = pagoActivo === pago.id;
+
+    return (
+      <View key={pago.id} className="gap-2 rounded-lg bg-white p-4">
+        <View className="flex-row items-start justify-between gap-3">
+          <View className="flex-1">
+            <Text className="font-semibold text-marca-texto">
+              {pago.sociedad.nombre} - cuota #{pago.numeroCuota}
+            </Text>
+            <Text className="mt-1 text-slate-600">
+              {formatearMonto(pago.monto, pago.sociedad.moneda)} vence {new Date(pago.fechaVencimiento).toLocaleDateString()}
+            </Text>
+          </View>
+          <BadgePago estado={pago.estado} />
+        </View>
+
+        {pago.estado === 'RECHAZADO' && pago.observacion ? (
+          <Text className="rounded-lg bg-red-50 p-3 text-sm font-semibold text-red-700">Motivo: {pago.observacion}</Text>
+        ) : null}
+
+        {pago.estado === 'REPORTADO' ? (
+          <Text className="rounded-lg bg-blue-50 p-3 text-sm font-semibold text-marca-azul">
+            Este pago esta en revision del organizador.
+          </Text>
+        ) : null}
+
+        {pago.metodoPagoReportado ? (
+          <Text className="text-sm font-semibold text-slate-600">Metodo reportado: {etiquetaMetodo(pago.metodoPagoReportado)}</Text>
+        ) : null}
+
+        {puedeReportar && !estaActivo ? (
+          <AppButton titulo={pago.estado === 'RECHAZADO' ? 'Reportar nuevamente' : 'Hacer pago'} onPress={() => iniciarReporte(pago.id)} />
+        ) : null}
+
+        {puedeReportar && estaActivo ? (
+          <View className="gap-3 rounded-lg bg-slate-50 p-4">
+            <Text className="text-base font-semibold text-marca-texto">Metodo de pago</Text>
+            <View className="flex-row flex-wrap gap-2">
+              {METODOS.map((metodo) => {
+                const activo = metodo.valor === metodoPago;
+                return (
+                  <Pressable
+                    key={metodo.valor}
+                    className={`rounded-lg border px-3 py-3 ${activo ? 'border-marca-verde bg-emerald-50' : 'border-slate-200 bg-white'}`}
+                    onPress={() => {
+                      setMetodoPago(metodo.valor);
+                      if (!metodo.requiereComprobante) {
+                        setArchivo(null);
+                      }
+                    }}
+                  >
+                    <Text className={`text-sm font-semibold ${activo ? 'text-marca-verde' : 'text-slate-600'}`}>{metodo.etiqueta}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            {metodoSeleccionado.requiereComprobante ? (
+              <View className="gap-2">
+                <AppButton titulo={archivo ? 'Cambiar comprobante' : 'Adjuntar comprobante'} variante="secundario" onPress={seleccionarArchivo} />
+                {archivo ? <Text className="text-sm font-semibold text-slate-600">{archivo.name}</Text> : null}
+              </View>
+            ) : (
+              <Text className="text-sm text-slate-600">El pago en efectivo no requiere comprobante.</Text>
+            )}
+
+            <View className="gap-2">
+              <AppButton
+                titulo={reportarMutation.isPending ? 'Enviando...' : 'Enviar pago'}
+                onPress={() => reportarMutation.mutate(pago.id)}
+                disabled={reportarMutation.isPending}
+              />
+              <AppButton titulo="Cancelar" variante="secundario" onPress={() => setPagoActivo(null)} disabled={reportarMutation.isPending} />
+            </View>
+          </View>
+        ) : null}
+
+        {pago.evidencias.length > 0 ? (
+          <View className="rounded-lg bg-slate-50 p-3">
+            <Text className="text-sm font-semibold text-marca-texto">Comprobantes</Text>
+            {pago.evidencias.map((evidencia) => (
+              <Text
+                key={evidencia.id}
+                className="mt-2 text-sm font-semibold text-marca-azul"
+                onPress={() => Linking.openURL(getPublicFileUrl(evidencia.urlArchivo))}
+              >
+                {evidencia.nombreArchivo}
+              </Text>
+            ))}
+          </View>
+        ) : null}
+      </View>
+    );
+  };
+
   return (
     <ScrollView className="flex-1 bg-marca-fondo px-5 pt-12">
       <AppHeader titulo="Pagos" subtitulo="Reporta tus cuotas y consulta su estado" />
@@ -88,86 +190,25 @@ export default function Pagos() {
         {pagos.length === 0 ? (
           <AppCard titulo="Sin cuotas" detalle="Cuando inicie un ciclo veras tus cuotas aqui." estado="AL DIA" />
         ) : (
-          pagos.map((pago) => {
-            const puedeReportar = ['PENDIENTE', 'ATRASADO', 'RECHAZADO'].includes(pago.estado);
-            const estaActivo = pagoActivo === pago.id;
-
-            return (
-              <View key={pago.id} className="gap-2">
-                <AppCard
-                  titulo={`${pago.sociedad.nombre} - cuota #${pago.numeroCuota}`}
-                  detalle={`${formatearMonto(pago.monto, pago.sociedad.moneda)} vence ${new Date(pago.fechaVencimiento).toLocaleDateString()}`}
-                  estado={pago.estado}
-                />
-
-                {pago.metodoPagoReportado ? (
-                  <Text className="text-sm font-semibold text-slate-600">Metodo reportado: {etiquetaMetodo(pago.metodoPagoReportado)}</Text>
-                ) : null}
-
-                {puedeReportar && !estaActivo ? (
-                  <AppButton titulo="Hacer pago" onPress={() => iniciarReporte(pago.id)} />
-                ) : null}
-
-                {puedeReportar && estaActivo ? (
-                  <View className="gap-3 rounded-lg bg-white p-4">
-                    <Text className="text-base font-semibold text-marca-texto">Metodo de pago</Text>
-                    <View className="flex-row flex-wrap gap-2">
-                      {METODOS.map((metodo) => {
-                        const activo = metodo.valor === metodoPago;
-                        return (
-                          <Pressable
-                            key={metodo.valor}
-                            className={`rounded-lg border px-3 py-3 ${activo ? 'border-marca-verde bg-emerald-50' : 'border-slate-200 bg-white'}`}
-                            onPress={() => {
-                              setMetodoPago(metodo.valor);
-                              if (!metodo.requiereComprobante) {
-                                setArchivo(null);
-                              }
-                            }}
-                          >
-                            <Text className={`text-sm font-semibold ${activo ? 'text-marca-verde' : 'text-slate-600'}`}>{metodo.etiqueta}</Text>
-                          </Pressable>
-                        );
-                      })}
-                    </View>
-
-                    {metodoSeleccionado.requiereComprobante ? (
-                      <View className="gap-2">
-                        <AppButton titulo={archivo ? 'Cambiar comprobante' : 'Adjuntar comprobante'} variante="secundario" onPress={seleccionarArchivo} />
-                        {archivo ? <Text className="text-sm font-semibold text-slate-600">{archivo.name}</Text> : null}
-                      </View>
-                    ) : (
-                      <Text className="text-sm text-slate-600">El pago en efectivo no requiere comprobante.</Text>
-                    )}
-
-                    <View className="gap-2">
-                      <AppButton
-                        titulo={reportarMutation.isPending ? 'Enviando...' : 'Enviar pago'}
-                        onPress={() => reportarMutation.mutate(pago.id)}
-                        disabled={reportarMutation.isPending}
-                      />
-                      <AppButton titulo="Cancelar" variante="secundario" onPress={() => setPagoActivo(null)} disabled={reportarMutation.isPending} />
-                    </View>
-                  </View>
-                ) : null}
-
-                {pago.evidencias.length > 0 ? (
-                  <View className="rounded-lg bg-white p-3">
-                    <Text className="text-sm font-semibold text-marca-texto">Comprobantes</Text>
-                    {pago.evidencias.map((evidencia) => (
-                      <Text
-                        key={evidencia.id}
-                        className="mt-2 text-sm font-semibold text-marca-azul"
-                        onPress={() => Linking.openURL(getPublicFileUrl(evidencia.urlArchivo))}
-                      >
-                        {evidencia.nombreArchivo}
-                      </Text>
-                    ))}
-                  </View>
-                ) : null}
+          <>
+            <View className="rounded-lg bg-white p-4">
+              <Text className="text-lg font-semibold text-marca-texto">Resumen</Text>
+              <View className="mt-3 flex-row gap-3">
+                <View className="flex-1 rounded-lg bg-emerald-50 p-3">
+                  <Text className="text-xs font-bold uppercase text-marca-verde">Pagado</Text>
+                  <Text className="mt-1 font-semibold text-marca-texto">{formatearMonto(totalPagado, pagos[0]?.sociedad.moneda)}</Text>
+                </View>
+                <View className="flex-1 rounded-lg bg-amber-50 p-3">
+                  <Text className="text-xs font-bold uppercase text-amber-700">Por pagar</Text>
+                  <Text className="mt-1 font-semibold text-marca-texto">{formatearMonto(totalDebe, pagos[0]?.sociedad.moneda)}</Text>
+                </View>
               </View>
-            );
-          })
+            </View>
+
+            <SeccionPagos titulo="Por pagar" vacio="No tienes cuotas pendientes." pagos={pagosPorHacer} renderPago={renderPago} />
+            <SeccionPagos titulo="En revision" vacio="No tienes pagos esperando revision." pagos={pagosEnRevision} renderPago={renderPago} />
+            <SeccionPagos titulo="Historial" vacio="Aun no tienes pagos confirmados o cerrados." pagos={pagosHistorial} renderPago={renderPago} />
+          </>
         )}
       </View>
     </ScrollView>
@@ -176,4 +217,47 @@ export default function Pagos() {
 
 function etiquetaMetodo(metodo: string) {
   return METODOS.find((item) => item.valor === metodo)?.etiqueta ?? metodo;
+}
+
+function SeccionPagos({
+  titulo,
+  vacio,
+  pagos,
+  renderPago,
+}: {
+  titulo: string;
+  vacio: string;
+  pagos: Pago[];
+  renderPago: (pago: Pago) => React.ReactNode;
+}) {
+  return (
+    <View className="gap-3">
+      <Text className="text-base font-bold text-marca-texto">{titulo}</Text>
+      {pagos.length === 0 ? <Text className="rounded-lg bg-white p-4 text-slate-600">{vacio}</Text> : pagos.map(renderPago)}
+    </View>
+  );
+}
+
+function BadgePago({ estado }: { estado: string }) {
+  const estilo = estilosEstadoPago(estado);
+
+  return <Text className={`rounded-full px-3 py-1 text-xs font-bold ${estilo}`}>{estado}</Text>;
+}
+
+function estilosEstadoPago(estado: string) {
+  switch (estado) {
+    case 'PENDIENTE':
+      return 'bg-amber-50 text-amber-700';
+    case 'REPORTADO':
+      return 'bg-blue-50 text-marca-azul';
+    case 'CONFIRMADO':
+      return 'bg-emerald-50 text-marca-verde';
+    case 'ATRASADO':
+      return 'bg-orange-50 text-orange-700';
+    case 'INCUMPLIDO':
+    case 'RECHAZADO':
+      return 'bg-red-50 text-red-700';
+    default:
+      return 'bg-slate-100 text-slate-600';
+  }
 }
