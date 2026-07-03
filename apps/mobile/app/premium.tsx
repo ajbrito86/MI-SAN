@@ -10,11 +10,14 @@ import { useConfiguracionMobile } from '@/hooks/use-configuracion-mobile';
 import { useSuscripcion } from '@/hooks/use-suscripcion';
 import { registrarError, registrarEvento } from '@/services/analytics-service';
 import { comprarPremium, restaurarCompra } from '@/services/suscripciones-service';
+import { useAuthStore } from '@/stores/auth-store';
 
 export default function PantallaPremium() {
   const queryClient = useQueryClient();
   const { data: configuracion } = useConfiguracionMobile();
   const { data: suscripcion } = useSuscripcion();
+  const usuario = useAuthStore((state) => state.usuario);
+  const actualizarUsuario = useAuthStore((state) => state.actualizarUsuario);
   const plataformaCompra = Platform.OS === 'ios' ? 'APP_STORE' : Platform.OS === 'android' ? 'GOOGLE_PLAY' : 'MANUAL';
 
   useEffect(() => {
@@ -25,6 +28,9 @@ export default function PantallaPremium() {
     mutationFn: () => comprarPremium({ plataformaCompra }),
     onSuccess: () => {
       registrarEvento({ nombre: 'premium_comprado', metadataJson: { plataformaCompra } });
+      if (usuario) {
+        actualizarUsuario({ ...usuario, rolGlobal: 'ORGANIZADOR' });
+      }
       queryClient.invalidateQueries({ queryKey: ['suscripcion-actual'] });
       router.back();
     },
@@ -35,6 +41,9 @@ export default function PantallaPremium() {
     mutationFn: () => restaurarCompra({ plataformaCompra }),
     onSuccess: () => {
       registrarEvento({ nombre: 'premium_restaurado', metadataJson: { plataformaCompra } });
+      if (usuario) {
+        actualizarUsuario({ ...usuario, rolGlobal: 'ORGANIZADOR' });
+      }
       queryClient.invalidateQueries({ queryKey: ['suscripcion-actual'] });
       router.back();
     },
@@ -53,11 +62,11 @@ export default function PantallaPremium() {
             <Sparkles color="#168A5B" size={26} />
           </View>
           <Text className="mt-4 text-2xl font-bold text-marca-texto">US${configuracion.monetizacion.precioPremiumUsd.toFixed(2)} pago unico</Text>
-          <Text className="mt-2 text-slate-600">Mantén tus SANes organizadas con una experiencia limpia y sin anuncios.</Text>
+          <Text className="mt-2 text-slate-600">Mantente como organizador, crea nuevos SANes y usa MI-SAN sin anuncios.</Text>
         </View>
 
         <View className="rounded-lg bg-white p-4">
-          {['Sin banners publicitarios', 'Sin interstitials entre secciones', 'Apoyo al desarrollo continuo'].map((beneficio) => (
+          {['Rol organizador activo', 'Crear nuevos SANes', 'Sin banners publicitarios', 'Sin interstitials entre secciones'].map((beneficio) => (
             <View key={beneficio} className="flex-row items-center gap-3 border-b border-slate-100 py-3 last:border-b-0">
               <Check color="#168A5B" size={20} />
               <Text className="flex-1 text-slate-700">{beneficio}</Text>

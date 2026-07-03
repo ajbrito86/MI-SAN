@@ -28,6 +28,7 @@ export default function Home() {
       <AppHeader titulo="Inicio" subtitulo={usuario ? `Hola, ${usuario.nombres}` : 'Resumen de tus sociedades'} />
       <View className="mt-5 gap-4 pb-8">
         <BannerPublicidad />
+        <AvisoTrial suscripcion={suscripcion} />
         {suscripcion?.mostrarAds ? <TarjetaPremium /> : null}
 
         <View className="rounded-lg bg-white p-4">
@@ -108,5 +109,40 @@ export default function Home() {
         </View>
       </View>
     </ScreenScrollView>
+  );
+}
+
+function AvisoTrial({
+  suscripcion,
+}: {
+  suscripcion:
+    | {
+        esTrial: boolean;
+        diasRestantes: number | null;
+      }
+    | null
+    | undefined;
+}) {
+  if (!suscripcion?.esTrial || suscripcion.diasRestantes === null || suscripcion.diasRestantes > 7) {
+    return null;
+  }
+
+  const titulo =
+    suscripcion.diasRestantes <= 0
+      ? 'Tu prueba Premium termina hoy'
+      : suscripcion.diasRestantes === 1
+        ? 'Tu prueba Premium termina manana'
+        : `Tu prueba Premium termina en ${suscripcion.diasRestantes} dias`;
+
+  return (
+    <View className="rounded-lg bg-amber-50 p-4">
+      <Text className="text-base font-bold text-amber-800">{titulo}</Text>
+      <Text className="mt-1 text-sm leading-5 text-amber-700">
+        Activa Premium por US$0.99 para seguir creando SANes como organizador y mantener la app sin anuncios.
+      </Text>
+      <View className="mt-3">
+        <AppButton titulo="Mantener Premium" onPress={() => router.push('/premium' as never)} />
+      </View>
+    </View>
   );
 }

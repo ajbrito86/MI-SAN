@@ -4,6 +4,7 @@ import { Text, View } from 'react-native';
 import { AppButton } from '@/components/app-button';
 import { AppHeader } from '@/components/app-header';
 import { ScreenScrollView } from '@/components/screen';
+import { useSuscripcion } from '@/hooks/use-suscripcion';
 import { etiquetaEstadoSociedad } from '@/lib/estados';
 import { formatearMonto } from '@/lib/moneda';
 import { listarSociedades, type Sociedad } from '@/services/sociedades-service';
@@ -12,6 +13,7 @@ import { useAuthStore } from '@/stores/auth-store';
 export default function Sociedades() {
   const token = useAuthStore((state) => state.accessToken);
   const usuario = useAuthStore((state) => state.usuario);
+  const { data: suscripcion } = useSuscripcion();
   const { data: sociedades = [] } = useQuery({
     queryKey: ['sociedades'],
     queryFn: () => listarSociedades(token ?? ''),
@@ -24,10 +26,12 @@ export default function Sociedades() {
     <ScreenScrollView>
       <AppHeader titulo="Mis sociedades" subtitulo="Organiza y consulta tus turnos" />
       <View className="mt-5 gap-4 pb-8">
-        {usuario?.rolGlobal === 'ORGANIZADOR' ? (
+        {usuario?.rolGlobal === 'ORGANIZADOR' || suscripcion?.premium ? (
           <AppButton titulo="Crear sociedad como organizador" onPress={() => router.push('/societies/create' as never)} />
         ) : (
-          <Text className="rounded-lg bg-white p-4 text-slate-600">Tu usuario es participante. Veras aqui los san donde participas.</Text>
+          <Text className="rounded-lg bg-white p-4 text-slate-600">
+            Tu prueba Premium termino. Puedes participar en SANes; activa Premium para crear nuevos SANes como organizador.
+          </Text>
         )}
 
         <SeccionSociedades titulo="Organizo" sociedades={sociedadesOrganizadas} />

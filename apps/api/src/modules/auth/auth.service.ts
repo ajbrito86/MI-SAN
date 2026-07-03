@@ -1,6 +1,7 @@
 import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
+import { RolUsuario } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import { LoginDto } from './dto/login.dto';
 import { RegistroDto } from './dto/registro.dto';
@@ -38,6 +39,7 @@ export class AuthService {
       apellidos: dto.apellidos.trim(),
       telefono: dto.telefono.trim(),
       email,
+      rolGlobal: RolUsuario.ORGANIZADOR,
       passwordHash,
     });
 
@@ -67,9 +69,10 @@ export class AuthService {
     const tokens = await this.generarTokens(usuario.id, usuario.email, usuario.telefono);
     await this.guardarRefreshToken(usuario.id, tokens.refreshToken);
     const suscripcion = await this.suscripcionesService.obtenerActual(usuario.id);
+    const usuarioActualizado = (await this.authRepository.buscarPorId(usuario.id)) ?? usuario;
 
     return {
-      usuario: { ...this.mapearUsuario(usuario), suscripcion },
+      usuario: { ...this.mapearUsuario(usuarioActualizado), suscripcion },
       ...tokens,
     };
   }

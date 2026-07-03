@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { EstadoUsuarioPlan, PlataformaCompra, Prisma, TipoAuditoriaMonetizacion } from '@prisma/client';
+import { EstadoUsuarioPlan, PlataformaCompra, Prisma, RolUsuario, TipoAuditoriaMonetizacion } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ConfiguracionService } from '../configuracion/configuracion.service';
 import { ComprarPremiumDto } from './dto/comprar-premium.dto';
@@ -56,18 +56,25 @@ export class SuscripcionesService {
     const fechaInicio = new Date();
     const fechaFin = this.sumarDias(fechaInicio, configuracion.monetizacion.duracionTrialDias);
 
-    const suscripcion = await this.prisma.usuarioPlan.create({
-      data: {
-        usuarioId,
-        planId: plan.id,
-        fechaInicio,
-        fechaFin,
-        estado: EstadoUsuarioPlan.ACTIVO,
-        plataformaCompra: PlataformaCompra.MANUAL,
-        esTrial: true,
-        isActive: true,
-      },
-      include: { plan: true },
+    const suscripcion = await this.prisma.$transaction(async (tx) => {
+      await tx.usuario.update({
+        where: { id: usuarioId },
+        data: { rolGlobal: RolUsuario.ORGANIZADOR },
+      });
+
+      return tx.usuarioPlan.create({
+        data: {
+          usuarioId,
+          planId: plan.id,
+          fechaInicio,
+          fechaFin,
+          estado: EstadoUsuarioPlan.ACTIVO,
+          plataformaCompra: PlataformaCompra.MANUAL,
+          esTrial: true,
+          isActive: true,
+        },
+        include: { plan: true },
+      });
     });
 
     await this.registrarEvento(usuarioId, 'trial_iniciado', { plan: CODIGO_TRIAL });
@@ -91,6 +98,12 @@ export class SuscripcionesService {
     if (!suscripcion) {
       return this.asignarTrialInicial(usuarioId);
     }
+
+    if (this.trialExpirado(suscripcion)) {
+      return this.expirarTrialUsuario(usuarioId, suscripcion.id);
+    }
+
+    await this.sincronizarRolPorPlan(usuarioId, suscripcion.plan.codigo);
 
     return this.mapearSuscripcion(suscripcion);
   }
@@ -121,6 +134,11 @@ export class SuscripcionesService {
       await tx.usuarioPlan.updateMany({
         where: { usuarioId, estado: EstadoUsuarioPlan.ACTIVO, isActive: true },
         data: { estado: EstadoUsuarioPlan.CANCELADO, isActive: false },
+      });
+
+      await tx.usuario.update({
+        where: { id: usuarioId },
+        data: { rolGlobal: RolUsuario.ORGANIZADOR },
       });
 
       return tx.usuarioPlan.create({
@@ -188,6 +206,11 @@ export class SuscripcionesService {
           },
         });
 
+        await tx.usuario.update({
+          where: { id: trial.usuarioId },
+          data: { rolGlobal: RolUsuario.PARTICIPANTE },
+        });
+
         await tx.eventoAnalitica.create({
           data: {
             usuarioId: trial.usuarioId,
@@ -209,6 +232,72 @@ export class SuscripcionesService {
     }
 
     return { trialsExpirados: trialsVencidos.length };
+  }
+
+  private async expirarTrialUsuario(usuarioId: string, usuarioPlanId: string) {
+    const ahora = new Date();
+    const planGratisAds = await this.buscarPlanActivo(CODIGO_GRATIS_ADS);
+
+    const suscripcion = await this.prisma.$transaction(async (tx) => {
+      await tx.usuarioPlan.update({
+        where: { id: usuarioPlanId },
+        data: { estado: EstadoUsuarioPlan.EXPIRADO, isActive: false },
+      });
+
+      await tx.usuario.update({
+        where: { id: usuarioId },
+        data: { rolGlobal: RolUsuario.PARTICIPANTE },
+      });
+
+      await tx.eventoAnalitica.create({
+        data: {
+          usuarioId,
+          nombre: 'trial_expirado',
+          tipo: 'NEGOCIO',
+          metadataJson: { planAnterior: CODIGO_TRIAL, planNuevo: CODIGO_GRATIS_ADS },
+        },
+      });
+
+      await tx.auditoriaMonetizacion.create({
+        data: {
+          usuarioId,
+          tipo: TipoAuditoriaMonetizacion.TRIAL_EXPIRADO,
+          planAnterior: CODIGO_TRIAL,
+          planNuevo: CODIGO_GRATIS_ADS,
+        },
+      });
+
+      return tx.usuarioPlan.create({
+        data: {
+          usuarioId,
+          planId: planGratisAds.id,
+          fechaInicio: ahora,
+          fechaFin: null,
+          estado: EstadoUsuarioPlan.ACTIVO,
+          plataformaCompra: PlataformaCompra.MANUAL,
+          esTrial: false,
+          isActive: true,
+        },
+        include: { plan: true },
+      });
+    });
+
+    return this.mapearSuscripcion(suscripcion);
+  }
+
+  private async sincronizarRolPorPlan(usuarioId: string, codigoPlan: string) {
+    const rolGlobal = codigoPlan === CODIGO_GRATIS_ADS ? RolUsuario.PARTICIPANTE : RolUsuario.ORGANIZADOR;
+
+    await this.prisma.usuario
+      .update({
+        where: { id: usuarioId },
+        data: { rolGlobal },
+      })
+      .catch(() => null);
+  }
+
+  private trialExpirado(suscripcion: { esTrial: boolean; fechaFin: Date | null; plan: { codigo: string } }) {
+    return suscripcion.esTrial && suscripcion.plan.codigo === CODIGO_TRIAL && Boolean(suscripcion.fechaFin && suscripcion.fechaFin <= new Date());
   }
 
   private async buscarPlanActivo(codigo: string) {
