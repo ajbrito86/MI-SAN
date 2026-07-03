@@ -129,6 +129,10 @@ function validarAppJson() {
 
 function validarDocs() {
   [
+    'compose.production.yml',
+    'deploy-prod.sh',
+    'backup-db.sh',
+    'restore-db.sh',
     'docs_first_deploy/store-metadata-mi-san.md',
     'docs_first_deploy/assets-exportados-mi-san.md',
     'docs_first_deploy/release-readiness-mi-san.md',
