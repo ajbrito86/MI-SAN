@@ -1,8 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
+import { Bell, ChevronRight } from 'lucide-react-native';
 import { Pressable, Text, View } from 'react-native';
 import { AppButton } from '@/components/app-button';
-import { AppCard } from '@/components/app-card';
 import { AppHeader } from '@/components/app-header';
 import { ScreenScrollView } from '@/components/screen';
 import {
@@ -71,8 +71,15 @@ export default function Notificaciones() {
     <ScreenScrollView>
       <AppHeader titulo="Avisos" subtitulo={noLeidas > 0 ? `${noLeidas} aviso(s) nuevo(s)` : 'Recordatorios y actividad reciente'} />
       <View className="mt-5 gap-4 pb-8">
-        <View className="gap-3 rounded-lg bg-white p-4">
-          <AppButton titulo="Ver invitaciones" variante="secundario" onPress={() => router.push('/invitations' as never)} />
+        <View className="gap-3">
+          <Pressable
+            className="min-h-16 flex-row items-center gap-4 rounded-xl border border-marca-verde bg-white px-5 shadow-sm"
+            onPress={() => router.push('/invitations' as never)}
+          >
+            <Bell color="#168A5B" size={24} />
+            <Text className="flex-1 text-base font-bold text-marca-verde">Ver invitaciones</Text>
+            <ChevronRight color="#168A5B" size={20} />
+          </Pressable>
           {noLeidas > 0 ? (
             <AppButton
               titulo={marcarTodasMutation.isPending ? 'Marcando...' : 'Marcar todas como leidas'}
@@ -83,12 +90,30 @@ export default function Notificaciones() {
           ) : null}
         </View>
         {notificaciones.length === 0 ? (
-          <AppCard titulo="Sin avisos" detalle="No tienes notificaciones por ahora." estado="AL DIA" />
+          <View className="gap-8">
+            <View className="flex-row items-center justify-between rounded-2xl bg-white p-5 shadow-sm">
+              <View className="flex-row items-center gap-4">
+                <View className="h-14 w-14 items-center justify-center rounded-full bg-emerald-100">
+                  <Bell color="#168A5B" size={29} />
+                </View>
+                <View className="max-w-[190px]">
+                  <Text className="text-lg font-bold text-marca-texto">Sin avisos</Text>
+                  <Text className="mt-1 text-base leading-6 text-slate-600">No tienes notificaciones por ahora.</Text>
+                </View>
+              </View>
+              <Text className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-extrabold text-marca-verde">AL DIA</Text>
+            </View>
+            <View className="items-center justify-center pt-10 opacity-60">
+              <View className="h-44 w-44 items-center justify-center rounded-full bg-emerald-50">
+                <Bell color="#168A5B" size={128} strokeWidth={1.2} />
+              </View>
+            </View>
+          </View>
         ) : (
           notificaciones.map((notificacion) => (
             <Pressable
               key={notificacion.id}
-              className={`rounded-lg p-4 ${notificacion.leida ? 'bg-white' : 'bg-emerald-50'}`}
+              className={`rounded-2xl p-4 shadow-sm ${notificacion.leida ? 'bg-white' : 'bg-emerald-50'}`}
               onPress={() => abrirNotificacion(notificacion)}
             >
               <View className="flex-row items-start justify-between gap-3">

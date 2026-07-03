@@ -23,6 +23,20 @@ export default function TabsLayout() {
         headerShown: false,
         tabBarActiveTintColor: '#168A5B',
         tabBarInactiveTintColor: '#64748B',
+        tabBarStyle: {
+          height: 78,
+          paddingBottom: 10,
+          paddingTop: 8,
+          borderTopWidth: 0,
+          elevation: 10,
+          shadowOpacity: 0.08,
+          shadowRadius: 12,
+          shadowOffset: { width: 0, height: -3 },
+        },
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontWeight: '600',
+        },
       }}
     >
       <Tabs.Screen name="home" options={{ title: 'Inicio', tabBarIcon: ({ color, size }) => <Home color={color} size={size} /> }} />

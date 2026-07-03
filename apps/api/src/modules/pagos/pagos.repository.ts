@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { EstadoPago, TipoMovimientoHistorial, TipoNotificacion, TipoPago } from '@prisma/client';
+import { EstadoCiclo, EstadoPago, FrecuenciaSociedad, TipoMovimientoHistorial, TipoNotificacion, TipoPago } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
@@ -15,6 +15,59 @@ export class PagosRepository {
         evidencias: true,
       },
     });
+  }
+
+  async asegurarCuotasActivasUsuario(usuarioId: string) {
+    const ciclos = await this.prisma.cicloSociedad.findMany({
+      where: {
+        estado: EstadoCiclo.ACTIVO,
+        sociedad: {
+          participantes: {
+            some: { usuarioId, isActive: true, estadoParticipante: 'ACTIVO' },
+          },
+        },
+      },
+      include: {
+        sociedad: {
+          include: {
+            participantes: {
+              where: { isActive: true, estadoParticipante: 'ACTIVO' },
+              select: { id: true },
+            },
+          },
+        },
+        cuotas: {
+          select: { participanteId: true, numeroCuota: true },
+        },
+      },
+    });
+
+    for (const ciclo of ciclos) {
+      const participantes = ciclo.sociedad.participantes;
+      const cuotasExistentes = new Set(ciclo.cuotas.map((cuota) => `${cuota.participanteId}:${cuota.numeroCuota}`));
+      const cuotasFaltantes = participantes.flatMap((participante) =>
+        Array.from({ length: participantes.length }, (_, index) => {
+          const numeroCuota = index + 1;
+
+          if (cuotasExistentes.has(`${participante.id}:${numeroCuota}`)) {
+            return null;
+          }
+
+          return {
+            cicloId: ciclo.id,
+            participanteId: participante.id,
+            numeroCuota,
+            monto: ciclo.sociedad.montoCuota,
+            fechaVencimiento: this.calcularFecha(ciclo.fechaInicio, ciclo.sociedad.frecuencia, index),
+            estado: EstadoPago.PENDIENTE,
+          };
+        }).filter((cuota): cuota is NonNullable<typeof cuota> => cuota !== null),
+      );
+
+      if (cuotasFaltantes.length > 0) {
+        await this.prisma.cuotaPago.createMany({ data: cuotasFaltantes, skipDuplicates: true });
+      }
+    }
   }
 
   listarMisPagos(usuarioId: string) {
@@ -197,5 +250,12 @@ export class PagosRepository {
 
       return cuota;
     });
+  }
+
+  private calcularFecha(inicio: Date, frecuencia: FrecuenciaSociedad, indice: number) {
+    const fecha = new Date(inicio);
+    const dias = frecuencia === FrecuenciaSociedad.SEMANAL ? 7 : frecuencia === FrecuenciaSociedad.QUINCENAL ? 15 : 30;
+    fecha.setUTCDate(fecha.getUTCDate() + dias * indice);
+    return fecha;
   }
 }

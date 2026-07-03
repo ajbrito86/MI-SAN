@@ -9,7 +9,7 @@ export default function AcercaDe() {
         'MI-SAN ayuda a organizar SANes desde el telefono: participantes, turnos, cuotas, pagos, historial y avisos.',
         'La primera version comercial busca validar uso real, recibir retroalimentacion y mejorar de forma continua.',
         'MI-SAN no es una entidad financiera. Es una herramienta de organizacion para grupos que ya tienen sus propios acuerdos.',
-        'Soporte: soporte@mi-san.app.',
+        'Soporte: support@kingdom-devs.net.',
       ]}
     />
   );

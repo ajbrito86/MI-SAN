@@ -1,10 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
+import { Bell, CreditCard, FileText, ShieldCheck, Wallet } from 'lucide-react-native';
+import { type ReactNode } from 'react';
 import { Text, View } from 'react-native';
 import { AppButton } from '@/components/app-button';
 import { AppCard } from '@/components/app-card';
 import { BannerPublicidad } from '@/components/banner-publicidad';
-import { AppHeader } from '@/components/app-header';
 import { ScreenScrollView } from '@/components/screen';
 import { TarjetaPremium } from '@/components/tarjeta-premium';
 import { formatearMonto } from '@/lib/moneda';
@@ -25,26 +26,34 @@ export default function Home() {
 
   return (
     <ScreenScrollView>
-      <AppHeader titulo="Inicio" subtitulo={usuario ? `Hola, ${usuario.nombres}` : 'Resumen de tus sociedades'} />
-      <View className="mt-5 gap-4 pb-8">
+      <View className="flex-row items-center justify-between">
+        <Text className="text-3xl font-extrabold text-marca-texto">{usuario ? `Hola, ${usuario.nombres}` : 'Hola'}</Text>
+        <View className="h-11 w-11 items-center justify-center rounded-full bg-white shadow-sm">
+          <Bell color="#17231F" size={22} />
+        </View>
+      </View>
+      <View className="mt-6 gap-4 pb-8">
         <BannerPublicidad />
         <AvisoTrial suscripcion={suscripcion} />
         {suscripcion?.mostrarAds ? <TarjetaPremium /> : null}
 
-        <View className="rounded-lg bg-white p-4">
-          <Text className="text-lg font-semibold text-marca-texto">Resumen</Text>
+        <View className="rounded-2xl bg-white p-5 shadow-sm">
+          <Text className="text-xl font-bold text-marca-texto">Resumen</Text>
           <View className="mt-3 flex-row gap-3">
-            <View className="flex-1 rounded-lg bg-slate-50 p-3">
-              <Text className="text-xs font-bold uppercase text-slate-500">SAN activos</Text>
+            <View className="flex-1 rounded-xl bg-blue-50/70 p-4">
+              <ShieldCheck color="#1F7AAD" size={22} />
+              <Text className="mt-2 text-xs font-bold uppercase text-[#1F7AAD]">SAN activos</Text>
               <Text className="mt-1 text-xl font-bold text-marca-texto">{resumen?.sociedadesActivas ?? 0}</Text>
             </View>
-            <View className="flex-1 rounded-lg bg-amber-50 p-3">
-              <Text className="text-xs font-bold uppercase text-amber-700">Cuotas pendientes</Text>
+            <View className="flex-1 rounded-xl bg-amber-50 p-4">
+              <FileText color="#C25B00" size={22} />
+              <Text className="mt-2 text-xs font-bold uppercase text-[#C25B00]">Cuotas pendientes</Text>
               <Text className="mt-1 text-xl font-bold text-marca-texto">{resumen?.pagosPendientes ?? 0}</Text>
             </View>
           </View>
-          <View className="mt-3 rounded-lg bg-emerald-50 p-3">
-            <Text className="text-xs font-bold uppercase text-marca-verde">Pendiente total</Text>
+          <View className="mt-3 rounded-xl bg-emerald-50 p-4">
+            <Wallet color="#168A5B" size={23} />
+            <Text className="mt-2 text-xs font-bold uppercase text-marca-verde">Pendiente total</Text>
             <Text className="mt-1 text-base font-semibold text-marca-texto">
               {formatearMonto(resumen?.totalPendiente ?? 0, resumen?.proximoPago?.moneda ?? 'DOP')}
             </Text>
@@ -83,16 +92,15 @@ export default function Home() {
         />
 
         <View className="flex-row gap-3">
-          <View className="flex-1">
-            <AppButton titulo="Ver pagos" variante="secundario" onPress={() => router.push('/payments' as never)} />
-          </View>
-          <View className="flex-1">
-            <AppButton titulo="Mis SAN" variante="secundario" onPress={() => router.push('/societies' as never)} />
-          </View>
+          <AccesoRapido icono={<CreditCard color="#168A5B" size={25} />} titulo="Ver pagos" onPress={() => router.push('/payments' as never)} />
+          <AccesoRapido icono={<ShieldCheck color="#168A5B" size={25} />} titulo="Mis SAN" onPress={() => router.push('/societies' as never)} />
         </View>
 
-        <View className="rounded-lg bg-white p-4">
-          <Text className="text-lg font-semibold text-marca-texto">Alertas</Text>
+        <View className="rounded-2xl bg-white p-5 shadow-sm">
+          <View className="flex-row items-center gap-3">
+            <Bell color="#17231F" size={22} />
+            <Text className="text-lg font-semibold text-marca-texto">Alertas</Text>
+          </View>
           {resumen?.alertas.length ? (
             <View className="mt-3 gap-3">
               {resumen.alertas.map((alerta) => (
@@ -109,6 +117,17 @@ export default function Home() {
         </View>
       </View>
     </ScreenScrollView>
+  );
+}
+
+function AccesoRapido({ icono, titulo, onPress }: { icono: ReactNode; titulo: string; onPress: () => void }) {
+  return (
+    <View className="flex-1">
+      <AppButton titulo={titulo} variante="secundario" onPress={onPress} className="min-h-20" />
+      <View pointerEvents="none" className="absolute left-5 top-7">
+        {icono}
+      </View>
+    </View>
   );
 }
 

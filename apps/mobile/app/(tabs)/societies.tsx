@@ -1,8 +1,8 @@
 import { router } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
+import { Users } from 'lucide-react-native';
 import { Text, View } from 'react-native';
 import { AppButton } from '@/components/app-button';
-import { AppHeader } from '@/components/app-header';
 import { ScreenScrollView } from '@/components/screen';
 import { useSuscripcion } from '@/hooks/use-suscripcion';
 import { etiquetaEstadoSociedad } from '@/lib/estados';
@@ -24,8 +24,14 @@ export default function Sociedades() {
 
   return (
     <ScreenScrollView>
-      <AppHeader titulo="Mis sociedades" subtitulo="Organiza y consulta tus turnos" />
-      <View className="mt-5 gap-4 pb-8">
+      <View className="items-center">
+        <View className="h-16 w-16 items-center justify-center rounded-full bg-[#07985E] shadow-sm">
+          <Users color="#FFFFFF" size={32} />
+        </View>
+        <Text className="mt-4 text-center text-3xl font-extrabold text-marca-texto">Mis sociedades</Text>
+        <Text className="mt-1 text-center text-base text-slate-600">Organiza y consulta tus turnos</Text>
+      </View>
+      <View className="mt-6 gap-4 pb-8">
         {usuario?.rolGlobal === 'ORGANIZADOR' || suscripcion?.premium ? (
           <AppButton titulo="Crear sociedad como organizador" onPress={() => router.push('/societies/create' as never)} />
         ) : (
@@ -43,12 +49,17 @@ export default function Sociedades() {
 
 function SeccionSociedades({ titulo, sociedades }: { titulo: string; sociedades: Awaited<ReturnType<typeof listarSociedades>> }) {
   return (
-    <View className="gap-3">
+    <View className="rounded-2xl bg-white p-4 shadow-sm">
       <Text className="text-base font-bold text-marca-texto">{titulo}</Text>
       {sociedades.length === 0 ? (
-        <Text className="rounded-lg bg-white p-4 text-slate-600">No hay sociedades en esta seccion.</Text>
+        <View className="mt-4 flex-row items-center gap-4 rounded-xl bg-emerald-50/60 p-4">
+          <View className="h-12 w-12 items-center justify-center rounded-full bg-emerald-100">
+            <Users color="#168A5B" size={24} />
+          </View>
+          <Text className="flex-1 text-slate-600">No hay sociedades en esta seccion.</Text>
+        </View>
       ) : (
-        sociedades.map((sociedad) => <SociedadCard key={sociedad.id} sociedad={sociedad} />)
+        <View className="mt-3 gap-3">{sociedades.map((sociedad) => <SociedadCard key={sociedad.id} sociedad={sociedad} />)}</View>
       )}
     </View>
   );
@@ -60,7 +71,7 @@ function SociedadCard({ sociedad }: { sociedad: Sociedad }) {
     participantes > 0 ? `${participantes}/${sociedad.cantidadParticipantes} participantes` : `${sociedad.cantidadParticipantes} planificados`;
 
   return (
-    <View className="rounded-lg bg-white p-4">
+    <View className="rounded-2xl border border-slate-100 bg-white p-4">
       <View className="flex-row items-start justify-between gap-3">
         <View className="flex-1">
           <Text className="text-lg font-semibold text-marca-texto">{sociedad.nombre}</Text>

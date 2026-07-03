@@ -94,19 +94,28 @@ export class CiclosRepository {
         );
       }
 
-      if (ciclo.cuotas.length === 0) {
-        const cuotas = participantes.flatMap((participante) =>
-          Array.from({ length: participantes.length }, (_, index) => ({
+      const cuotasExistentes = new Set(ciclo.cuotas.map((cuota) => `${cuota.participanteId}:${cuota.numeroCuota}`));
+      const cuotasFaltantes = participantes.flatMap((participante) =>
+        Array.from({ length: participantes.length }, (_, index) => {
+          const numeroCuota = index + 1;
+
+          if (cuotasExistentes.has(`${participante.id}:${numeroCuota}`)) {
+            return null;
+          }
+
+          return {
             cicloId,
             participanteId: participante.id,
-            numeroCuota: index + 1,
+            numeroCuota,
             monto: ciclo.sociedad.montoCuota,
             fechaVencimiento: this.calcularFecha(fechaInicio, ciclo.sociedad.frecuencia, index),
             estado: EstadoPago.PENDIENTE,
-          })),
-        );
+          };
+        }).filter((cuota): cuota is NonNullable<typeof cuota> => cuota !== null),
+      );
 
-        await tx.cuotaPago.createMany({ data: cuotas });
+      if (cuotasFaltantes.length > 0) {
+        await tx.cuotaPago.createMany({ data: cuotasFaltantes, skipDuplicates: true });
       }
 
       await tx.turnoCobro.updateMany({

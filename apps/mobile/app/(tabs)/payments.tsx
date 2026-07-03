@@ -1,9 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as DocumentPicker from 'expo-document-picker';
-import { useState } from 'react';
+import { useFocusEffect } from 'expo-router';
+import { CreditCard, Wallet } from 'lucide-react-native';
+import { useCallback, useState, type ReactNode } from 'react';
 import { Linking, Pressable, Text, View } from 'react-native';
 import { AppButton } from '@/components/app-button';
-import { AppCard } from '@/components/app-card';
 import { AppHeader } from '@/components/app-header';
 import { ScreenScrollView } from '@/components/screen';
 import { etiquetaEstadoOperativo } from '@/lib/estados';
@@ -29,11 +30,19 @@ export default function Pagos() {
   const [archivo, setArchivo] = useState<ArchivoEvidencia | null>(null);
   const [archivoComprobante, setArchivoComprobante] = useState<ArchivoEvidencia | null>(null);
 
-  const { data: pagos = [] } = useQuery({
+  const { data: pagos = [], refetch: recargarPagos } = useQuery({
     queryKey: ['mis-pagos'],
     queryFn: () => listarMisPagos(token ?? ''),
     enabled: Boolean(token),
   });
+
+  useFocusEffect(
+    useCallback(() => {
+      if (token) {
+        void recargarPagos();
+      }
+    }, [recargarPagos, token]),
+  );
 
   const metodoSeleccionado = METODOS.find((metodo) => metodo.valor === metodoPago) ?? METODOS[0];
   const pagosPorHacer = pagos.filter((pago) => ['PENDIENTE', 'ATRASADO', 'RECHAZADO'].includes(pago.estado));
@@ -259,10 +268,15 @@ export default function Pagos() {
       <View className="mt-5 gap-4 pb-24">
         {mensaje ? <Text className="rounded-lg bg-white p-3 text-sm font-semibold text-marca-verde">{mensaje}</Text> : null}
         {pagos.length === 0 ? (
-          <AppCard titulo="Sin cuotas" detalle="Cuando inicie un ciclo veras tus cuotas aqui." estado="AL DIA" />
+          <EstadoVacio
+            icono={<Wallet color="#168A5B" size={31} />}
+            titulo="Sin cuotas"
+            detalle="Cuando inicie un ciclo veras tus cuotas aqui."
+            ilustracion={<CreditCard color="#168A5B" size={118} strokeWidth={1.4} />}
+          />
         ) : (
           <>
-            <View className="rounded-lg bg-white p-4">
+            <View className="rounded-2xl bg-white p-5 shadow-sm">
               <Text className="text-lg font-semibold text-marca-texto">Resumen</Text>
               <View className="mt-3 flex-row gap-3">
                 <View className="flex-1 rounded-lg bg-emerald-50 p-3">
@@ -304,7 +318,27 @@ function SeccionPagos({
   return (
     <View className="gap-3">
       <Text className="text-base font-bold text-marca-texto">{titulo}</Text>
-      {pagos.length === 0 ? <Text className="rounded-lg bg-white p-4 text-slate-600">{vacio}</Text> : pagos.map(renderPago)}
+      {pagos.length === 0 ? <Text className="rounded-2xl bg-white p-4 text-slate-600 shadow-sm">{vacio}</Text> : pagos.map(renderPago)}
+    </View>
+  );
+}
+
+function EstadoVacio({ icono, titulo, detalle, ilustracion }: { icono: ReactNode; titulo: string; detalle: string; ilustracion: ReactNode }) {
+  return (
+    <View className="gap-8">
+      <View className="flex-row items-center justify-between rounded-2xl bg-white p-5 shadow-sm">
+        <View className="flex-row items-center gap-4">
+          <View className="h-14 w-14 items-center justify-center rounded-full bg-emerald-100">{icono}</View>
+          <View className="max-w-[190px]">
+            <Text className="text-lg font-bold text-marca-texto">{titulo}</Text>
+            <Text className="mt-1 text-base leading-6 text-slate-600">{detalle}</Text>
+          </View>
+        </View>
+        <Text className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-extrabold text-marca-verde">AL DIA</Text>
+      </View>
+      <View className="items-center justify-center pt-10 opacity-70">
+        <View className="h-44 w-44 items-center justify-center rounded-full bg-emerald-50">{ilustracion}</View>
+      </View>
     </View>
   );
 }

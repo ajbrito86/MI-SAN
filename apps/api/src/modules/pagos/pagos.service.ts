@@ -15,6 +15,7 @@ export class PagosService {
 
   async listarMisPagos(usuarioId: string) {
     await this.jobsService.marcarPagosAtrasados();
+    await this.pagosRepository.asegurarCuotasActivasUsuario(usuarioId);
     const pagos = await this.pagosRepository.listarMisPagos(usuarioId);
     return pagos.map((pago) => ({
       id: pago.id,

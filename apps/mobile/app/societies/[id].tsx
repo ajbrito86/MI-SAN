@@ -42,6 +42,7 @@ export default function DetalleSociedad() {
   const [ordenManual, setOrdenManual] = useState<string[]>([]);
   const [evidenciaVistaPrevia, setEvidenciaVistaPrevia] = useState<{ nombre: string; url: string } | null>(null);
   const [cicloSeleccionadoId, setCicloSeleccionadoId] = useState<string | null>(null);
+  const [cicloIniciadoLocalmenteId, setCicloIniciadoLocalmenteId] = useState<string | null>(null);
 
   const {
     data: sociedad,
@@ -72,6 +73,7 @@ export default function DetalleSociedad() {
   const esCicloActualSeleccionado = Boolean(
     sociedad?.cicloActual && cicloSeleccionado && sociedad.cicloActual.id === cicloSeleccionado.id,
   );
+  const cicloActualIniciadoLocalmente = Boolean(sociedad?.cicloActual && cicloIniciadoLocalmenteId === sociedad.cicloActual.id);
   const { data: resumen } = useQuery({
     queryKey: ['reporte-sociedad', id, cicloSeleccionado?.id],
     queryFn: () => obtenerResumenSociedad(token ?? '', id, cicloSeleccionado?.id),
@@ -165,6 +167,12 @@ export default function DetalleSociedad() {
       setCicloSeleccionadoId(ciclosDisponibles[0].id);
     }
   }, [cicloSeleccionadoId, ciclosDisponibles]);
+
+  useEffect(() => {
+    if (!sociedad?.cicloActual || sociedad.cicloActual.estado !== 'CONFIGURACION') {
+      setCicloIniciadoLocalmenteId(null);
+    }
+  }, [sociedad?.cicloActual]);
 
   useEffect(() => {
     const idsActivos = participantesOrdenables.map((participante) => participante.id);
@@ -290,6 +298,7 @@ export default function DetalleSociedad() {
     mutationFn: () => iniciarCiclo(token ?? '', sociedad?.cicloActual?.id ?? ''),
     onSuccess: async () => {
       setMensajeAccion('Ciclo iniciado.');
+      setCicloIniciadoLocalmenteId(sociedad?.cicloActual?.id ?? null);
       await invalidarSociedad();
       await queryClient.invalidateQueries({ queryKey: ['mis-pagos'] });
     },
@@ -415,7 +424,7 @@ export default function DetalleSociedad() {
       />
       <View className="mt-5 gap-4 pb-8">
         {sociedad ? (
-          <View className="rounded-lg bg-white p-4">
+          <View className="rounded-2xl bg-white p-5 shadow-sm">
             <View className="flex-row items-start justify-between gap-3">
               <View className="flex-1">
                 <Text className="text-lg font-semibold text-marca-texto">Resumen</Text>
@@ -426,13 +435,13 @@ export default function DetalleSociedad() {
               </Text>
             </View>
             <View className="mt-4 gap-3">
-              <View className="rounded-lg bg-slate-50 p-3">
+              <View className="rounded-xl bg-slate-50 p-4">
                 <Text className="text-xs font-bold uppercase text-slate-500">Cuota individual</Text>
                 <Text className="mt-1 text-base font-semibold text-marca-texto">
                   {formatearMonto(sociedad.montoCuota, sociedad.moneda)} {sociedad.frecuencia.toLowerCase()} por participante
                 </Text>
               </View>
-              <View className="rounded-lg bg-emerald-50 p-3">
+              <View className="rounded-xl bg-emerald-50 p-4">
                 <Text className="text-xs font-bold uppercase text-marca-verde">Entrega por turno</Text>
                 <Text className="mt-1 text-xl font-bold text-marca-texto">
                   {formatearMonto(montoEntregaEstimado, sociedad.moneda)}
@@ -442,13 +451,13 @@ export default function DetalleSociedad() {
                 </Text>
               </View>
               <View className="flex-row gap-3">
-                <View className="flex-1 rounded-lg bg-slate-50 p-3">
+                <View className="flex-1 rounded-xl bg-slate-50 p-4">
                   <Text className="text-xs font-bold uppercase text-slate-500">Participantes</Text>
                   <Text className="mt-1 font-semibold text-marca-texto">
                     {participantesActivos}/{sociedad.cantidadParticipantes} activos
                   </Text>
                 </View>
-                <View className="flex-1 rounded-lg bg-slate-50 p-3">
+                <View className="flex-1 rounded-xl bg-slate-50 p-4">
                   <Text className="text-xs font-bold uppercase text-slate-500">Cuotas por persona</Text>
                   <Text className="mt-1 font-semibold text-marca-texto">{cuotasPorParticipante}</Text>
                 </View>
@@ -458,25 +467,28 @@ export default function DetalleSociedad() {
         ) : null}
 
         {ciclosDisponibles.length > 0 ? (
-          <View className="rounded-lg bg-white p-4">
+          <View className="rounded-2xl bg-white p-5 shadow-sm">
             <Text className="text-lg font-semibold text-marca-texto">Ciclo consultado</Text>
             <Text className="mt-1 text-sm text-slate-600">Pagos, turnos y reportes por ciclo.</Text>
-            <View className="mt-3 flex-row flex-wrap gap-2">
+            <View className="mt-4 gap-2">
               {ciclosDisponibles.map((ciclo) => {
                 const activo = ciclo.id === cicloSeleccionado?.id;
 
                 return (
                   <Pressable
                     key={ciclo.id}
-                    className={`rounded-lg border px-3 py-3 ${
-                      activo ? 'border-marca-verde bg-emerald-50' : 'border-slate-200 bg-slate-50'
+                    className={`flex-row items-center justify-between rounded-xl border px-4 py-4 ${
+                      activo ? 'border-marca-verde bg-white' : 'border-slate-200 bg-slate-50'
                     }`}
                     onPress={() => setCicloSeleccionadoId(ciclo.id)}
                   >
-                    <Text className={`text-sm font-bold ${activo ? 'text-marca-verde' : 'text-slate-600'}`}>
-                      Ciclo #{ciclo.numeroCiclo}
-                    </Text>
-                    <Text className="mt-1 text-xs font-semibold text-slate-500">{etiquetaEstadoOperativo(ciclo.estado)}</Text>
+                    <View>
+                      <Text className={`text-base font-bold ${activo ? 'text-marca-verde' : 'text-slate-700'}`}>
+                        Ciclo #{ciclo.numeroCiclo}
+                      </Text>
+                      <Text className="mt-1 text-xs font-semibold text-slate-500">{etiquetaEstadoOperativo(ciclo.estado)}</Text>
+                    </View>
+                    <Text className={`text-2xl ${activo ? 'text-marca-verde' : 'text-slate-400'}`}>›</Text>
                   </Pressable>
                 );
               })}
@@ -491,7 +503,7 @@ export default function DetalleSociedad() {
         ) : null}
 
         {resumen ? (
-          <View className="rounded-lg bg-white p-4">
+          <View className="rounded-2xl bg-white p-5 shadow-sm">
             <Text className="text-lg font-semibold text-marca-texto">Reporte - {etiquetaCicloSeleccionado}</Text>
             <Text className="mt-2 text-slate-600">Total confirmado: {formatearMonto(resumen.totalConfirmado, resumen.moneda)}</Text>
             <Text className="mt-1 text-slate-600">Pagos confirmados: {resumen.pagosConfirmados}</Text>
@@ -506,7 +518,7 @@ export default function DetalleSociedad() {
         ) : null}
 
         {esOrganizador && resumen?.participantesResumen?.length ? (
-          <View className="rounded-lg bg-white p-4">
+          <View className="rounded-2xl bg-white p-5 shadow-sm">
             <Text className="text-lg font-semibold text-marca-texto">Estado por participante</Text>
             <View className="mt-3 gap-3">
               {resumen.participantesResumen.map((item) => {
@@ -514,7 +526,7 @@ export default function DetalleSociedad() {
                 const estaAlDia = item.cuotasAtrasadas === 0 && item.cuotasPendientes === 0;
 
                 return (
-                  <View key={item.participanteId} className="rounded-lg border border-slate-100 p-3">
+                  <View key={item.participanteId} className="rounded-xl border border-slate-100 bg-white p-4 shadow-sm">
                     <View className="flex-row items-start justify-between gap-3">
                       <View className="flex-1">
                         <Text className="font-semibold text-marca-texto">
@@ -537,19 +549,19 @@ export default function DetalleSociedad() {
                       </Text>
                     </View>
                     <View className="mt-3 flex-row gap-2">
-                      <View className="flex-1 rounded-lg bg-red-50 p-2">
+                      <View className="flex-1 rounded-xl bg-red-50 p-3">
                         <Text className="text-xs font-bold uppercase text-red-700">Atrasado</Text>
                         <Text className="mt-1 text-sm font-semibold text-marca-texto">
                           {item.cuotasAtrasadas} / {formatearMonto(item.totalAtrasado, resumen.moneda)}
                         </Text>
                       </View>
-                      <View className="flex-1 rounded-lg bg-amber-50 p-2">
+                      <View className="flex-1 rounded-xl bg-amber-50 p-3">
                         <Text className="text-xs font-bold uppercase text-amber-700">Pendiente</Text>
                         <Text className="mt-1 text-sm font-semibold text-marca-texto">
                           {item.cuotasPendientes} / {formatearMonto(item.totalPendiente, resumen.moneda)}
                         </Text>
                       </View>
-                      <View className="flex-1 rounded-lg bg-emerald-50 p-2">
+                      <View className="flex-1 rounded-xl bg-emerald-50 p-3">
                         <Text className="text-xs font-bold uppercase text-marca-verde">Ok</Text>
                         <Text className="mt-1 text-sm font-semibold text-marca-texto">{item.cuotasConfirmadas}</Text>
                       </View>
@@ -562,10 +574,10 @@ export default function DetalleSociedad() {
         ) : null}
 
         {sociedad && (miTurno || misPagosSociedad.length > 0) ? (
-          <View className="rounded-lg bg-white p-4">
+          <View className="rounded-2xl bg-white p-5 shadow-sm">
             <Text className="text-lg font-semibold text-marca-texto">Mi estado - {etiquetaCicloSeleccionado}</Text>
             <View className="mt-3 gap-3">
-              <View className="rounded-lg bg-slate-50 p-3">
+              <View className="rounded-xl bg-slate-50 p-4">
                 <Text className="text-xs font-bold uppercase text-slate-500">Mi turno</Text>
                 {miTurno ? (
                   <>
@@ -598,19 +610,19 @@ export default function DetalleSociedad() {
                 )}
               </View>
               <View className="flex-row gap-3">
-                <View className="flex-1 rounded-lg bg-emerald-50 p-3">
+                <View className="flex-1 rounded-xl bg-emerald-50 p-4">
                   <Text className="text-xs font-bold uppercase text-marca-verde">Pagado</Text>
                   <Text className="mt-1 font-semibold text-marca-texto">{formatearMonto(totalPagado, sociedad.moneda)}</Text>
                   <Text className="mt-1 text-xs text-slate-600">{misPagosConfirmados.length} cuota(s)</Text>
                 </View>
-                <View className="flex-1 rounded-lg bg-amber-50 p-3">
+                <View className="flex-1 rounded-xl bg-amber-50 p-4">
                   <Text className="text-xs font-bold uppercase text-amber-700">Pendiente</Text>
                   <Text className="mt-1 font-semibold text-marca-texto">{formatearMonto(totalPendiente, sociedad.moneda)}</Text>
                   <Text className="mt-1 text-xs text-slate-600">{misPagosPendientes.length} cuota(s)</Text>
                 </View>
               </View>
               {proximoPago ? (
-                <View className="rounded-lg bg-slate-50 p-3">
+                <View className="rounded-xl bg-slate-50 p-4">
                   <Text className="text-xs font-bold uppercase text-slate-500">Proximo pago</Text>
                   <Text className="mt-1 font-semibold text-marca-texto">
                     Cuota #{proximoPago.numeroCuota}
@@ -630,7 +642,7 @@ export default function DetalleSociedad() {
         ) : null}
 
         {esOrganizador ? (
-          <View className="rounded-lg bg-white p-4">
+          <View className="rounded-2xl bg-white p-5 shadow-sm">
             <Text className="text-lg font-semibold text-marca-texto">Acciones</Text>
             {mensajeAccion ? <Text className="mt-2 text-sm font-semibold text-marca-verde">{mensajeAccion}</Text> : null}
             {!puedeOperarSociedad ? (
@@ -647,7 +659,7 @@ export default function DetalleSociedad() {
                 />
               ) : null}
               <TextInput
-                className={`rounded-lg border px-4 py-4 text-base ${
+                className={`rounded-xl border px-4 py-4 text-base ${
                   puedeInvitar ? 'border-slate-200 bg-white' : 'border-slate-200 bg-slate-100 text-slate-400'
                 }`}
                 placeholder="Telefono o correo del invitado"
@@ -678,7 +690,7 @@ export default function DetalleSociedad() {
               ) : null}
               {puedeOperarSociedad && esCicloActualSeleccionado && sociedad?.cicloActual && sociedad.cicloActual.estado === 'CONFIGURACION' ? (
                 <>
-                  <View className="gap-3 rounded-lg bg-slate-50 p-3">
+                  <View className="gap-3 rounded-2xl bg-slate-50 p-4">
                     <View>
                       <Text className="font-semibold text-marca-texto">Orden manual de turnos</Text>
                       <Text className="mt-1 text-sm text-slate-600">
@@ -697,7 +709,7 @@ export default function DetalleSociedad() {
                           }
 
                           return (
-                            <View key={participanteId} className="flex-row items-center gap-2 rounded-lg bg-white p-3">
+                            <View key={participanteId} className="flex-row items-center gap-3 rounded-xl bg-white p-4 shadow-sm">
                               <Text className="w-8 text-base font-bold text-marca-verde">#{index + 1}</Text>
                               <View className="flex-1">
                                 <Text className="font-semibold text-marca-texto">
@@ -709,7 +721,7 @@ export default function DetalleSociedad() {
                               </View>
                               <View className="flex-row gap-2">
                                 <Pressable
-                                  className={`h-10 w-10 items-center justify-center rounded-lg border ${
+                                  className={`h-10 w-10 items-center justify-center rounded-xl border ${
                                     index === 0 || generarTurnosManualesMutation.isPending
                                       ? 'border-slate-200 bg-slate-100'
                                       : 'border-marca-verde bg-white'
@@ -726,7 +738,7 @@ export default function DetalleSociedad() {
                                   </Text>
                                 </Pressable>
                                 <Pressable
-                                  className={`h-10 w-10 items-center justify-center rounded-lg border ${
+                                  className={`h-10 w-10 items-center justify-center rounded-xl border ${
                                     index === ordenManual.length - 1 || generarTurnosManualesMutation.isPending
                                       ? 'border-slate-200 bg-slate-100'
                                       : 'border-marca-verde bg-white'
@@ -766,7 +778,7 @@ export default function DetalleSociedad() {
                     disabled={generarTurnosMutation.isPending}
                   />
                   <AppButton
-                    titulo={iniciarCicloMutation.isPending ? 'Iniciando...' : 'Iniciar ciclo'}
+                    titulo={iniciarCicloMutation.isPending ? 'Iniciando...' : cicloActualIniciadoLocalmente ? 'Ciclo iniciado' : 'Iniciar ciclo'}
                     onPress={() =>
                       Alert.alert(
                         'Cerrar entrada de invitados',
@@ -777,8 +789,13 @@ export default function DetalleSociedad() {
                         ],
                       )
                     }
-                    disabled={iniciarCicloMutation.isPending}
+                    disabled={iniciarCicloMutation.isPending || cicloActualIniciadoLocalmente}
                   />
+                  {cicloActualIniciadoLocalmente ? (
+                    <Text className="text-sm font-semibold text-slate-600">
+                      Este san ya inicio y esta cerrado para nuevos invitados.
+                    </Text>
+                  ) : null}
                 </>
               ) : null}
               {puedeOperarSociedad && esCicloActualSeleccionado && sociedad?.cicloActual?.estado === 'ACTIVO' ? (
@@ -811,7 +828,7 @@ export default function DetalleSociedad() {
           </View>
         ) : null}
 
-        <View className="rounded-lg bg-white p-4">
+        <View className="rounded-2xl bg-white p-5 shadow-sm">
           <Text className="text-lg font-semibold text-marca-texto">Participantes y turnos - {etiquetaCicloSeleccionado}</Text>
           <View className="mt-3 gap-3">
             {participantesConTurnoOrdenados.map(({ participante, turno }) => {
@@ -823,7 +840,7 @@ export default function DetalleSociedad() {
                 (esOrganizador || participante.usuario.id === usuarioActual?.id);
 
               return (
-                <View key={participante.id} className="gap-2 border-b border-slate-100 pb-4">
+                <View key={participante.id} className="gap-3 rounded-xl border border-slate-100 bg-white p-4 shadow-sm">
                   <View className="flex-row items-start justify-between gap-3">
                     <View className="flex-1">
                       <Text className="font-semibold text-marca-texto">
@@ -961,7 +978,7 @@ export default function DetalleSociedad() {
         </View>
 
         {esOrganizador ? (
-          <View className="rounded-lg bg-white p-4">
+          <View className="rounded-2xl bg-white p-5 shadow-sm">
             <Text className="text-lg font-semibold text-marca-texto">Pagos reportados - {etiquetaCicloSeleccionado}</Text>
             <View className="mt-3 gap-4">
               {pagosSociedadCiclo.filter((pago) => pago.estado === 'REPORTADO').length === 0 ? (

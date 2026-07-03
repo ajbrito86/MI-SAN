@@ -11,7 +11,7 @@ export function AppCard({ titulo, detalle, estado, ...props }: AppCardProps) {
   const estadoEstilo = estilosEstado(estado);
 
   return (
-    <Pressable className="rounded-lg bg-white p-4" {...props}>
+    <Pressable className="rounded-2xl bg-white p-5 shadow-sm" {...props}>
       <View className="flex-row items-start justify-between gap-3">
         <View className="flex-1 gap-1">
           <Text className="text-lg font-semibold text-marca-texto">{titulo}</Text>

@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Mail } from 'lucide-react-native';
 import { useState } from 'react';
 import { Text, View } from 'react-native';
 import { AppButton } from '@/components/app-button';
@@ -47,15 +48,33 @@ export default function Invitaciones() {
         {isLoading ? (
           <AppCard titulo="Cargando" detalle="Buscando tus invitaciones pendientes." estado="PENDIENTE" />
         ) : isError ? (
-          <View className="gap-3 rounded-lg bg-white p-4">
+          <View className="gap-3 rounded-2xl bg-white p-4 shadow-sm">
             <Text className="font-semibold text-red-600">No pudimos cargar tus invitaciones.</Text>
             <AppButton titulo="Reintentar" variante="secundario" onPress={() => refetch()} />
           </View>
         ) : invitaciones.length === 0 ? (
-          <AppCard titulo="Sin invitaciones" detalle="No tienes invitaciones pendientes." estado="AL DIA" />
+          <View className="gap-8">
+            <View className="flex-row items-center justify-between rounded-2xl bg-white p-5 shadow-sm">
+              <View className="flex-row items-center gap-4">
+                <View className="h-14 w-14 items-center justify-center rounded-full bg-emerald-100">
+                  <Mail color="#168A5B" size={30} />
+                </View>
+                <View className="max-w-[190px]">
+                  <Text className="text-lg font-bold text-marca-texto">Sin invitaciones</Text>
+                  <Text className="mt-1 text-base leading-6 text-slate-600">No tienes invitaciones pendientes.</Text>
+                </View>
+              </View>
+              <Text className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-extrabold text-marca-verde">AL DIA</Text>
+            </View>
+            <View className="items-center justify-center pt-10 opacity-70">
+              <View className="h-48 w-48 items-center justify-center rounded-full bg-emerald-50">
+                <Mail color="#168A5B" size={136} strokeWidth={1.2} />
+              </View>
+            </View>
+          </View>
         ) : (
           invitaciones.map((invitacion) => (
-            <View key={invitacion.id} className="gap-3 rounded-lg bg-white p-4">
+            <View key={invitacion.id} className="gap-3 rounded-2xl bg-white p-4 shadow-sm">
               <View>
                 <Text className="text-lg font-semibold text-marca-texto">{invitacion.sociedad.nombre}</Text>
                 <Text className="mt-1 text-slate-600">

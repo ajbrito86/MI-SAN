@@ -1,6 +1,6 @@
-import { Pressable, Text, type PressableProps } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, type TouchableOpacityProps } from 'react-native';
 
-type AppButtonProps = PressableProps & {
+type AppButtonProps = TouchableOpacityProps & {
   titulo: string;
   variante?: 'primario' | 'secundario';
   className?: string;
@@ -8,16 +8,64 @@ type AppButtonProps = PressableProps & {
 
 export function AppButton({ titulo, variante = 'primario', className = '', ...props }: AppButtonProps) {
   const deshabilitado = Boolean(props.disabled);
-  const clases = deshabilitado
-    ? 'bg-slate-200'
-    : variante === 'primario'
-      ? 'bg-marca-verde'
-      : 'border border-marca-verde bg-white';
-  const texto = deshabilitado ? 'text-slate-500' : variante === 'primario' ? 'text-white' : 'text-marca-verde';
+  const estiloBoton = [
+    estilos.boton,
+    variante === 'primario' ? estilos.primario : estilos.secundario,
+    deshabilitado ? estilos.deshabilitado : null,
+    className.includes('min-h-20') ? estilos.alto : null,
+  ];
+  const estiloTexto = [estilos.texto, deshabilitado ? estilos.textoDeshabilitado : variante === 'primario' ? estilos.textoPrimario : estilos.textoSecundario];
 
   return (
-    <Pressable className={`min-h-14 items-center justify-center rounded-lg px-5 ${clases} ${className}`} {...props}>
-      <Text className={`text-base font-semibold ${texto}`}>{titulo}</Text>
-    </Pressable>
+    <TouchableOpacity
+      activeOpacity={0.82}
+      style={estiloBoton}
+      {...props}
+    >
+      <Text style={estiloTexto}>{titulo}</Text>
+    </TouchableOpacity>
   );
 }
+
+const estilos = StyleSheet.create({
+  boton: {
+    minHeight: 56,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 12,
+    paddingHorizontal: 20,
+    shadowColor: '#0F172A',
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 2,
+  },
+  alto: {
+    minHeight: 80,
+  },
+  primario: {
+    backgroundColor: '#07985E',
+  },
+  secundario: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
+  },
+  deshabilitado: {
+    backgroundColor: '#E2E8F0',
+    borderColor: '#E2E8F0',
+  },
+  texto: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  textoPrimario: {
+    color: '#FFFFFF',
+  },
+  textoSecundario: {
+    color: '#078955',
+  },
+  textoDeshabilitado: {
+    color: '#64748B',
+  },
+});

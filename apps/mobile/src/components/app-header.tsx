@@ -12,7 +12,7 @@ export function AppHeader({ titulo, subtitulo, mostrarAtras = false }: AppHeader
   return (
     <View className="gap-1">
       {mostrarAtras ? (
-        <Pressable className="mb-2 h-10 w-10 items-center justify-center rounded-full bg-white" onPress={() => router.back()}>
+        <Pressable className="mb-3 h-11 w-11 items-center justify-center rounded-full bg-white shadow-sm" onPress={() => router.back()}>
           <ChevronLeft color="#1F2A2E" size={22} />
         </Pressable>
       ) : null}

@@ -1,11 +1,13 @@
 import { router } from 'expo-router';
-import { useState } from 'react';
-import { ActivityIndicator, Text, TextInput, View } from 'react-native';
-import { AppHeader } from '@/components/app-header';
+import { ChevronLeft, Lock, Mail, Phone, User } from 'lucide-react-native';
+import { useState, type ComponentProps, type ReactNode } from 'react';
+import { ActivityIndicator, Image, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { AppButton } from '@/components/app-button';
 import { ScreenTopView } from '@/components/screen';
 import { registrar } from '@/services/auth-service';
 import { useAuthStore } from '@/stores/auth-store';
+
+const logoMiSan = require('../assets/Logo-mi-san.png');
 
 export default function Registro() {
   const guardarSesion = useAuthStore((state) => state.guardarSesion);
@@ -62,20 +64,55 @@ export default function Registro() {
   }
 
   return (
-    <ScreenTopView className="flex-1 bg-marca-fondo">
+    <ScreenTopView className="flex-1 bg-[#F6FCF8]">
+      <View className="absolute -left-20 top-20 h-64 w-64 rounded-full bg-emerald-100 opacity-50" />
+      <View className="absolute -right-24 top-4 h-72 w-72 rounded-full bg-white opacity-90" />
+      <TouchableOpacity
+        activeOpacity={0.82}
+        className="absolute left-5 top-14 z-10 h-11 w-11 items-center justify-center rounded-full bg-white shadow-sm"
+        onPress={() => router.back()}
+      >
+        <ChevronLeft color="#17231F" size={23} />
+      </TouchableOpacity>
       <View className="flex-1 justify-center gap-5">
-        <AppHeader titulo="Crear cuenta" subtitulo="Registra tus datos principales" mostrarAtras />
-        <View className="gap-3">
-          <TextInput className="rounded-lg border border-slate-200 bg-white px-4 py-4 text-base" placeholder="Nombres" value={formulario.nombres} onChangeText={(valor) => actualizar('nombres', valor)} />
-          <TextInput className="rounded-lg border border-slate-200 bg-white px-4 py-4 text-base" placeholder="Apellidos" value={formulario.apellidos} onChangeText={(valor) => actualizar('apellidos', valor)} />
-          <TextInput className="rounded-lg border border-slate-200 bg-white px-4 py-4 text-base" placeholder="Telefono" keyboardType="phone-pad" value={formulario.telefono} onChangeText={(valor) => actualizar('telefono', valor)} />
-          <TextInput className="rounded-lg border border-slate-200 bg-white px-4 py-4 text-base" placeholder="Correo" autoCapitalize="none" keyboardType="email-address" value={formulario.email} onChangeText={(valor) => actualizar('email', valor)} />
-          <TextInput className="rounded-lg border border-slate-200 bg-white px-4 py-4 text-base" placeholder="Contrasena" secureTextEntry value={formulario.contrasena} onChangeText={(valor) => actualizar('contrasena', valor)} />
-          {error ? <Text className="text-sm font-semibold text-red-600">{error}</Text> : null}
-          <AppButton titulo={cargando ? 'Creando...' : 'Crear cuenta'} disabled={cargando} onPress={enviar} />
-          {cargando ? <ActivityIndicator color="#168A5B" /> : null}
+        <View className="items-center">
+          <Image source={logoMiSan} className="h-28 w-28" resizeMode="contain" />
+        </View>
+        <View className="rounded-[28px] bg-white/95 p-5 shadow-sm">
+          <Text className="text-center text-3xl font-extrabold text-marca-texto">Crear cuenta</Text>
+          <Text className="mt-2 text-center text-base text-slate-500">Registra tus datos principales</Text>
+          <View className="mt-5 gap-3">
+            <CampoRegistro icono={<User size={20} color="#667085" />} placeholder="Nombres" value={formulario.nombres} onChangeText={(valor) => actualizar('nombres', valor)} />
+            <CampoRegistro icono={<User size={20} color="#667085" />} placeholder="Apellidos" value={formulario.apellidos} onChangeText={(valor) => actualizar('apellidos', valor)} />
+            <CampoRegistro icono={<Phone size={20} color="#667085" />} placeholder="Telefono" keyboardType="phone-pad" value={formulario.telefono} onChangeText={(valor) => actualizar('telefono', valor)} />
+            <CampoRegistro icono={<Mail size={20} color="#667085" />} placeholder="Correo" autoCapitalize="none" keyboardType="email-address" value={formulario.email} onChangeText={(valor) => actualizar('email', valor)} />
+            <CampoRegistro icono={<Lock size={20} color="#667085" />} placeholder="Contrasena" secureTextEntry value={formulario.contrasena} onChangeText={(valor) => actualizar('contrasena', valor)} />
+            {error ? <Text className="text-sm font-semibold text-red-600">{error}</Text> : null}
+            <AppButton titulo={cargando ? 'Creando...' : 'Crear cuenta'} disabled={cargando} onPress={enviar} />
+            {cargando ? <ActivityIndicator color="#168A5B" /> : null}
+            <Text className="text-center text-sm text-slate-500">
+              Ya tienes una cuenta?{' '}
+              <Text className="font-bold text-marca-verde" onPress={() => router.back()}>
+                Inicia sesion
+              </Text>
+            </Text>
+          </View>
         </View>
       </View>
     </ScreenTopView>
+  );
+}
+
+function CampoRegistro({
+  icono,
+  ...props
+}: ComponentProps<typeof TextInput> & {
+  icono: ReactNode;
+}) {
+  return (
+    <View className="min-h-14 flex-row items-center gap-3 rounded-xl border border-slate-200 bg-white px-4">
+      {icono}
+      <TextInput className="min-h-12 flex-1 text-base text-marca-texto" placeholderTextColor="#667085" {...props} />
+    </View>
   );
 }
