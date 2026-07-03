@@ -4,10 +4,22 @@ import { Controller, Get } from '@nestjs/common';
 export class SaludController {
   @Get()
   obtenerEstado() {
-    return {
-      estado: 'ok',
-      servicio: 'Mi-San API',
-      fecha: new Date().toISOString(),
-    };
+    return obtenerPayloadSalud();
   }
+}
+
+@Controller('health')
+export class HealthController {
+  @Get()
+  obtenerEstado() {
+    return obtenerPayloadSalud();
+  }
+}
+
+function obtenerPayloadSalud() {
+  return {
+    estado: 'ok',
+    servicio: 'Mi-San API',
+    fecha: new Date().toISOString(),
+  };
 }

@@ -5,6 +5,9 @@ import * as bcrypt from 'bcryptjs';
 import { LoginDto } from './dto/login.dto';
 import { RegistroDto } from './dto/registro.dto';
 import { AuthRepository } from './auth.repository';
+import { SuscripcionesService } from '../suscripciones/suscripciones.service';
+import { SolicitarRecuperacionDto } from './dto/solicitar-recuperacion.dto';
+import { ConfirmarRecuperacionDto } from './dto/confirmar-recuperacion.dto';
 
 type Tokens = {
   accessToken: string;
@@ -17,6 +20,7 @@ export class AuthService {
     private readonly authRepository: AuthRepository,
     private readonly configService: ConfigService,
     private readonly jwtService: JwtService,
+    private readonly suscripcionesService: SuscripcionesService,
   ) {}
 
   async registrar(dto: RegistroDto) {
@@ -39,9 +43,10 @@ export class AuthService {
 
     const tokens = await this.generarTokens(usuario.id, usuario.email, usuario.telefono);
     await this.guardarRefreshToken(usuario.id, tokens.refreshToken);
+    const suscripcion = await this.suscripcionesService.asignarTrialInicial(usuario.id);
 
     return {
-      usuario: this.mapearUsuario(usuario),
+      usuario: { ...this.mapearUsuario(usuario), suscripcion },
       ...tokens,
     };
   }
@@ -61,9 +66,10 @@ export class AuthService {
 
     const tokens = await this.generarTokens(usuario.id, usuario.email, usuario.telefono);
     await this.guardarRefreshToken(usuario.id, tokens.refreshToken);
+    const suscripcion = await this.suscripcionesService.obtenerActual(usuario.id);
 
     return {
-      usuario: this.mapearUsuario(usuario),
+      usuario: { ...this.mapearUsuario(usuario), suscripcion },
       ...tokens,
     };
   }
@@ -98,6 +104,51 @@ export class AuthService {
     return { mensaje: 'Sesion cerrada correctamente.' };
   }
 
+  async solicitarRecuperacion(dto: SolicitarRecuperacionDto) {
+    const identificador = dto.identificador.trim();
+    const usuario = await this.authRepository.buscarPorEmailOTelefono(identificador);
+    const respuesta: { mensaje: string; codigoRecuperacion?: string } = {
+      mensaje: 'Si encontramos una cuenta activa, enviaremos instrucciones para recuperar el acceso.',
+    };
+
+    if (!usuario || !usuario.isActive) {
+      return respuesta;
+    }
+
+    const codigo = this.generarCodigoRecuperacion();
+    const codigoHash = await bcrypt.hash(codigo, 12);
+    const expiraEn = new Date(Date.now() + 15 * 60 * 1000);
+
+    await this.authRepository.crearRecuperacionContrasena(usuario.id, codigoHash, expiraEn);
+
+    if (this.configService.get<string>('NODE_ENV') !== 'production') {
+      respuesta.codigoRecuperacion = codigo;
+    }
+
+    return respuesta;
+  }
+
+  async confirmarRecuperacion(dto: ConfirmarRecuperacionDto) {
+    const usuario = await this.authRepository.buscarPorEmailOTelefono(dto.identificador.trim());
+
+    if (!usuario || !usuario.isActive) {
+      throw new UnauthorizedException('Codigo invalido o expirado.');
+    }
+
+    const recuperaciones = await this.authRepository.listarRecuperacionesActivas(usuario.id);
+    const recuperacionValida = await this.buscarRecuperacionValida(recuperaciones, dto.codigo);
+
+    if (!recuperacionValida) {
+      throw new UnauthorizedException('Codigo invalido o expirado.');
+    }
+
+    const passwordHash = await bcrypt.hash(dto.nuevaContrasena, 12);
+    await this.authRepository.actualizarContrasena(usuario.id, passwordHash);
+    await this.authRepository.marcarRecuperacionUsada(recuperacionValida.id);
+
+    return { mensaje: 'Contrasena actualizada correctamente. Inicia sesion nuevamente.' };
+  }
+
   private async generarTokens(usuarioId: string, email: string, telefono: string): Promise<Tokens> {
     const payload = { sub: usuarioId, email, telefono };
     const [accessToken, refreshToken] = await Promise.all([
@@ -117,6 +168,22 @@ export class AuthService {
   private async guardarRefreshToken(usuarioId: string, refreshToken: string) {
     const refreshTokenHash = await bcrypt.hash(refreshToken, 12);
     await this.authRepository.actualizarRefreshTokenHash(usuarioId, refreshTokenHash);
+  }
+
+  private generarCodigoRecuperacion() {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+  }
+
+  private async buscarRecuperacionValida(recuperaciones: { id: string; codigoHash: string }[], codigo: string) {
+    for (const recuperacion of recuperaciones) {
+      const valido = await bcrypt.compare(codigo, recuperacion.codigoHash);
+
+      if (valido) {
+        return recuperacion;
+      }
+    }
+
+    return null;
   }
 
   private mapearUsuario(usuario: {

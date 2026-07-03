@@ -53,6 +53,7 @@ Usuarios de prueba:
 
 - Ana organizadora: `ana.prueba@misan.local` / `ClaveDemo123`
 - Luis participante: `luis.demo@misan.local` / `ClaveDemo123`
+- Revision tiendas: `usuario_demo@mi-san.app` / `Demo123*`
 
 ## Mobile
 
@@ -61,6 +62,28 @@ npm run mobile:start
 ```
 
 En Android emulator, la app usa `http://10.0.2.2:3000/api`. En web/iOS local usa `http://localhost:3000/api`.
+
+Para builds de publicacion, configurar:
+
+```bash
+EXPO_PUBLIC_API_BASE_URL=https://api.mi-san.app/api
+```
+
+Variables de Ads disponibles en `apps/mobile/.env.example`.
+
+Builds de tienda con EAS:
+
+```bash
+npm run release:preflight
+npm run mobile:build:android
+npm run mobile:build:ios
+```
+
+Ejecuta `release:preflight` antes de generar artefactos. El perfil `production` genera Android App Bundle (`.aab`) y build iOS para App Store Connect.
+
+## Backend Produccion
+
+Usar `apps/api/.env.production.example` como base. Los secretos JWT deben tener al menos 32 caracteres y no usar valores de desarrollo.
 
 ## Flujo Principal
 
@@ -86,4 +109,4 @@ docker compose ps
 
 ## Version
 
-Release objetivo: `v0.1.0`.
+Release objetivo: `v1.0.0`.

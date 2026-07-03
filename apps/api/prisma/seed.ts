@@ -12,12 +12,15 @@ import {
   TipoPago,
   RolUsuario,
   Moneda,
+  EstadoUsuarioPlan,
+  PlataformaCompra,
 } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
 const PASSWORD_DEMO = 'ClaveDemo123';
+const PASSWORD_REVISION = 'Demo123*';
 const SOCIEDAD_DEMO = 'San Demo Familiar';
 
 function sumarDias(fecha: Date, dias: number) {
@@ -28,8 +31,143 @@ function sumarDias(fecha: Date, dias: number) {
 
 async function main() {
   const passwordHash = await bcrypt.hash(PASSWORD_DEMO, 10);
+  const passwordRevisionHash = await bcrypt.hash(PASSWORD_REVISION, 10);
   const hoy = new Date();
   const inicio = sumarDias(hoy, -7);
+
+  await prisma.configuracionGlobal.upsert({
+    where: { clave: 'mobile_config' },
+    update: {
+      valorJson: {
+        mantenimiento: {
+          activo: false,
+          mensaje: 'MI-SAN esta en mantenimiento temporal. Intenta nuevamente en unos minutos.',
+        },
+        version: {
+          versionMinima: '1.0.0',
+          forzarActualizacion: false,
+          mensajeActualizacion: 'Hay una nueva version de MI-SAN disponible.',
+        },
+        featureFlags: {
+          anunciosActivos: true,
+          premiumActivo: true,
+          trialActivo: true,
+          comprasActivas: true,
+        },
+        monetizacion: {
+          duracionTrialDias: 45,
+          precioPremiumUsd: 0.99,
+          frecuenciaInterstitialMinutos: 10,
+        },
+        mensajes: {
+          global: null,
+        },
+      },
+      descripcion: 'Configuracion publica consumida por la app movil.',
+      isPublic: true,
+      isActive: true,
+    },
+    create: {
+      clave: 'mobile_config',
+      valorJson: {
+        mantenimiento: {
+          activo: false,
+          mensaje: 'MI-SAN esta en mantenimiento temporal. Intenta nuevamente en unos minutos.',
+        },
+        version: {
+          versionMinima: '1.0.0',
+          forzarActualizacion: false,
+          mensajeActualizacion: 'Hay una nueva version de MI-SAN disponible.',
+        },
+        featureFlags: {
+          anunciosActivos: true,
+          premiumActivo: true,
+          trialActivo: true,
+          comprasActivas: true,
+        },
+        monetizacion: {
+          duracionTrialDias: 45,
+          precioPremiumUsd: 0.99,
+          frecuenciaInterstitialMinutos: 10,
+        },
+        mensajes: {
+          global: null,
+        },
+      },
+      descripcion: 'Configuracion publica consumida por la app movil.',
+      isPublic: true,
+      isActive: true,
+    },
+  });
+
+  const planTrial = await prisma.plan.upsert({
+    where: { codigo: 'GRATIS_TRIAL' },
+    update: {
+      nombre: 'Gratis Trial',
+      descripcion: 'Prueba Premium inicial de 45 dias sin anuncios.',
+      precio: '0',
+      duracionDias: 45,
+      permiteAds: false,
+      isPagoUnico: false,
+      isActive: true,
+    },
+    create: {
+      codigo: 'GRATIS_TRIAL',
+      nombre: 'Gratis Trial',
+      descripcion: 'Prueba Premium inicial de 45 dias sin anuncios.',
+      precio: '0',
+      duracionDias: 45,
+      permiteAds: false,
+      isPagoUnico: false,
+      isActive: true,
+    },
+  });
+
+  await prisma.plan.upsert({
+    where: { codigo: 'GRATIS_ADS' },
+    update: {
+      nombre: 'Gratis con anuncios',
+      descripcion: 'Acceso gratuito con anuncios discretos.',
+      precio: '0',
+      duracionDias: null,
+      permiteAds: true,
+      isPagoUnico: false,
+      isActive: true,
+    },
+    create: {
+      codigo: 'GRATIS_ADS',
+      nombre: 'Gratis con anuncios',
+      descripcion: 'Acceso gratuito con anuncios discretos.',
+      precio: '0',
+      duracionDias: null,
+      permiteAds: true,
+      isPagoUnico: false,
+      isActive: true,
+    },
+  });
+
+  await prisma.plan.upsert({
+    where: { codigo: 'PREMIUM_SIN_ADS' },
+    update: {
+      nombre: 'Premium sin anuncios',
+      descripcion: 'Pago unico para eliminar anuncios.',
+      precio: '0.99',
+      duracionDias: null,
+      permiteAds: false,
+      isPagoUnico: true,
+      isActive: true,
+    },
+    create: {
+      codigo: 'PREMIUM_SIN_ADS',
+      nombre: 'Premium sin anuncios',
+      descripcion: 'Pago unico para eliminar anuncios.',
+      precio: '0.99',
+      duracionDias: null,
+      permiteAds: false,
+      isPagoUnico: true,
+      isActive: true,
+    },
+  });
 
   const ana = await prisma.usuario.upsert({
     where: { email: 'ana.prueba@misan.local' },
@@ -76,6 +214,50 @@ async function main() {
       isVerified: true,
     },
   });
+
+  const usuarioRevision = await prisma.usuario.upsert({
+    where: { email: 'usuario_demo@mi-san.app' },
+    update: {
+      nombres: 'Usuario',
+      apellidos: 'Demo',
+      telefono: '8090009999',
+      rolGlobal: RolUsuario.ORGANIZADOR,
+      passwordHash: passwordRevisionHash,
+      isActive: true,
+      isVerified: true,
+    },
+    create: {
+      nombres: 'Usuario',
+      apellidos: 'Demo',
+      telefono: '8090009999',
+      email: 'usuario_demo@mi-san.app',
+      rolGlobal: RolUsuario.ORGANIZADOR,
+      passwordHash: passwordRevisionHash,
+      isActive: true,
+      isVerified: true,
+    },
+  });
+
+  for (const usuario of [ana, luis, usuarioRevision]) {
+    const planActivo = await prisma.usuarioPlan.findFirst({
+      where: { usuarioId: usuario.id, estado: EstadoUsuarioPlan.ACTIVO, isActive: true },
+    });
+
+    if (!planActivo) {
+      await prisma.usuarioPlan.create({
+        data: {
+          usuarioId: usuario.id,
+          planId: planTrial.id,
+          fechaInicio: hoy,
+          fechaFin: sumarDias(hoy, 45),
+          estado: EstadoUsuarioPlan.ACTIVO,
+          plataformaCompra: PlataformaCompra.MANUAL,
+          esTrial: true,
+          isActive: true,
+        },
+      });
+    }
+  }
 
   const sociedadExistente = await prisma.sociedad.findFirst({
     where: { nombre: SOCIEDAD_DEMO, organizadorId: ana.id },
@@ -287,6 +469,7 @@ async function main() {
   console.log('Demo listo:');
   console.log(`- ${ana.email} / ${PASSWORD_DEMO}`);
   console.log(`- ${luis.email} / ${PASSWORD_DEMO}`);
+  console.log(`- ${usuarioRevision.email} / ${PASSWORD_REVISION}`);
   console.log(`- Sociedad: ${sociedad.nombre}`);
 }
 

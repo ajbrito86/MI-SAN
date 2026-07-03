@@ -1,10 +1,12 @@
 import { Platform } from 'react-native';
 import { useAuthStore } from '@/stores/auth-store';
 
-export const API_BASE_URL = Platform.select({
+const API_LOCAL_URL = Platform.select({
   android: 'http://10.0.2.2:3000/api',
   default: 'http://localhost:3000/api',
 });
+
+export const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || API_LOCAL_URL;
 
 export const API_PUBLIC_BASE_URL = API_BASE_URL.replace(/\/api$/, '');
 

@@ -1,4 +1,4 @@
-import { Link, router } from 'expo-router';
+import { router } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { Text, View } from 'react-native';
 import { AppButton } from '@/components/app-button';
@@ -25,9 +25,7 @@ export default function Sociedades() {
       <AppHeader titulo="Mis sociedades" subtitulo="Organiza y consulta tus turnos" />
       <View className="mt-5 gap-4 pb-8">
         {usuario?.rolGlobal === 'ORGANIZADOR' ? (
-          <Link href="/societies/create" asChild>
-            <AppButton titulo="Crear sociedad como organizador" />
-          </Link>
+          <AppButton titulo="Crear sociedad como organizador" onPress={() => router.push('/societies/create' as never)} />
         ) : (
           <Text className="rounded-lg bg-white p-4 text-slate-600">Tu usuario es participante. Veras aqui los san donde participas.</Text>
         )}

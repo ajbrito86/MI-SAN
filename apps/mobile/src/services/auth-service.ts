@@ -1,4 +1,5 @@
-import { apiRequest } from './api';
+import { apiRequest, apiRequestAutenticado } from './api';
+import { type Suscripcion } from './suscripciones-service';
 
 export type Usuario = {
   id: string;
@@ -9,6 +10,7 @@ export type Usuario = {
   rolGlobal: 'ORGANIZADOR' | 'PARTICIPANTE';
   fotoPerfilUrl?: string | null;
   isVerified?: boolean;
+  suscripcion?: Suscripcion;
 };
 
 export type AuthResponse = {
@@ -30,6 +32,13 @@ export type RegistroPayload = {
   contrasena: string;
 };
 
+export type ActualizarPerfilPayload = {
+  nombres?: string;
+  apellidos?: string;
+  telefono?: string;
+  email?: string;
+};
+
 export function login(payload: LoginPayload) {
   return apiRequest<AuthResponse>('/auth/login', {
     method: 'POST',
@@ -44,13 +53,41 @@ export function registrar(payload: RegistroPayload) {
   });
 }
 
+export function solicitarRecuperacionContrasena(identificador: string) {
+  return apiRequest<{ mensaje: string; codigoRecuperacion?: string }>('/auth/password-reset/request', {
+    method: 'POST',
+    body: JSON.stringify({ identificador }),
+  });
+}
+
+export function confirmarRecuperacionContrasena(payload: { identificador: string; codigo: string; nuevaContrasena: string }) {
+  return apiRequest<{ mensaje: string }>('/auth/password-reset/confirm', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
 export function obtenerPerfil(token: string) {
   return apiRequest<Usuario>('/users/me', { token });
+}
+
+export function actualizarPerfil(payload: ActualizarPerfilPayload) {
+  return apiRequestAutenticado<Usuario>('/users/me', {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  });
 }
 
 export function logout(token: string) {
   return apiRequest<{ mensaje: string }>('/auth/logout', {
     method: 'POST',
     token,
+  });
+}
+
+export function eliminarCuenta(contrasena: string) {
+  return apiRequestAutenticado<{ mensaje: string }>('/users/me', {
+    method: 'DELETE',
+    body: JSON.stringify({ contrasena }),
   });
 }

@@ -6,6 +6,8 @@ import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { RegistroDto } from './dto/registro.dto';
+import { SolicitarRecuperacionDto } from './dto/solicitar-recuperacion.dto';
+import { ConfirmarRecuperacionDto } from './dto/confirmar-recuperacion.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -24,6 +26,16 @@ export class AuthController {
   @Post('refresh')
   refrescar(@Body() dto: RefreshTokenDto) {
     return this.authService.refrescar(dto.refreshToken);
+  }
+
+  @Post('password-reset/request')
+  solicitarRecuperacion(@Body() dto: SolicitarRecuperacionDto) {
+    return this.authService.solicitarRecuperacion(dto);
+  }
+
+  @Post('password-reset/confirm')
+  confirmarRecuperacion(@Body() dto: ConfirmarRecuperacionDto) {
+    return this.authService.confirmarRecuperacion(dto);
   }
 
   @UseGuards(JwtAuthGuard)

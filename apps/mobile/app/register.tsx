@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, Text, TextInput, View } from 'react-native';
+import { AppHeader } from '@/components/app-header';
 import { AppButton } from '@/components/app-button';
 import { ScreenTopView } from '@/components/screen';
 import { registrar } from '@/services/auth-service';
@@ -63,7 +64,7 @@ export default function Registro() {
   return (
     <ScreenTopView className="flex-1 bg-marca-fondo">
       <View className="flex-1 justify-center gap-5">
-        <Text className="text-3xl font-bold text-marca-texto">Crear cuenta</Text>
+        <AppHeader titulo="Crear cuenta" subtitulo="Registra tus datos principales" mostrarAtras />
         <View className="gap-3">
           <TextInput className="rounded-lg border border-slate-200 bg-white px-4 py-4 text-base" placeholder="Nombres" value={formulario.nombres} onChangeText={(valor) => actualizar('nombres', valor)} />
           <TextInput className="rounded-lg border border-slate-200 bg-white px-4 py-4 text-base" placeholder="Apellidos" value={formulario.apellidos} onChangeText={(valor) => actualizar('apellidos', valor)} />

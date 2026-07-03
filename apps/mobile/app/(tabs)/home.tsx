@@ -3,15 +3,19 @@ import { router } from 'expo-router';
 import { Text, View } from 'react-native';
 import { AppButton } from '@/components/app-button';
 import { AppCard } from '@/components/app-card';
+import { BannerPublicidad } from '@/components/banner-publicidad';
 import { AppHeader } from '@/components/app-header';
 import { ScreenScrollView } from '@/components/screen';
+import { TarjetaPremium } from '@/components/tarjeta-premium';
 import { formatearMonto } from '@/lib/moneda';
+import { useSuscripcion } from '@/hooks/use-suscripcion';
 import { obtenerResumenDashboard } from '@/services/dashboard-service';
 import { useAuthStore } from '@/stores/auth-store';
 
 export default function Home() {
   const token = useAuthStore((state) => state.accessToken);
   const usuario = useAuthStore((state) => state.usuario);
+  const { data: suscripcion } = useSuscripcion();
   const { data: resumen } = useQuery({
     queryKey: ['dashboard-resumen'],
     queryFn: () => obtenerResumenDashboard(token ?? ''),
@@ -23,6 +27,9 @@ export default function Home() {
     <ScreenScrollView>
       <AppHeader titulo="Inicio" subtitulo={usuario ? `Hola, ${usuario.nombres}` : 'Resumen de tus sociedades'} />
       <View className="mt-5 gap-4 pb-8">
+        <BannerPublicidad />
+        {suscripcion?.mostrarAds ? <TarjetaPremium /> : null}
+
         <View className="rounded-lg bg-white p-4">
           <Text className="text-lg font-semibold text-marca-texto">Resumen</Text>
           <View className="mt-3 flex-row gap-3">

@@ -28,4 +28,45 @@ export class AuthRepository {
       data: { refreshTokenHash },
     });
   }
+
+  crearRecuperacionContrasena(usuarioId: string, codigoHash: string, expiraEn: Date) {
+    return this.prisma.recuperacionContrasena.create({
+      data: {
+        usuarioId,
+        codigoHash,
+        expiraEn,
+      },
+    });
+  }
+
+  listarRecuperacionesActivas(usuarioId: string) {
+    return this.prisma.recuperacionContrasena.findMany({
+      where: {
+        usuarioId,
+        usado: false,
+        expiraEn: { gt: new Date() },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  marcarRecuperacionUsada(id: string) {
+    return this.prisma.recuperacionContrasena.update({
+      where: { id },
+      data: {
+        usado: true,
+        usadoEn: new Date(),
+      },
+    });
+  }
+
+  actualizarContrasena(usuarioId: string, passwordHash: string) {
+    return this.prisma.usuario.update({
+      where: { id: usuarioId },
+      data: {
+        passwordHash,
+        refreshTokenHash: null,
+      },
+    });
+  }
 }

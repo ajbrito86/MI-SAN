@@ -8,6 +8,7 @@ import { login } from '@/services/auth-service';
 import { useAuthStore } from '@/stores/auth-store';
 
 const logoMiSan = require('../assets/Logo-mi-san.png');
+const logoGoogle = require('../assets/Google-G-Icon.png');
 
 export default function Login() {
   const guardarSesion = useAuthStore((state) => state.guardarSesion);
@@ -123,7 +124,7 @@ export default function Login() {
             </View>
 
             <Pressable className="h-14 flex-row items-center justify-center gap-3 rounded-lg border border-slate-200 bg-white">
-              <Text className="text-xl font-extrabold text-blue-500">G</Text>
+              <Image source={logoGoogle} className="h-5 w-5" resizeMode="contain" />
               <Text className="text-base font-semibold text-marca-texto">Continuar con Google</Text>
             </Pressable>
 

@@ -111,6 +111,35 @@ enum TipoMovimientoHistorial {
   EVIDENCIA_CARGADA
 }
 
+enum EstadoUsuarioPlan {
+  ACTIVO
+  EXPIRADO
+  CANCELADO
+  REEMBOLSADO
+}
+
+enum PlataformaCompra {
+  GOOGLE_PLAY
+  APP_STORE
+  MANUAL
+}
+
+enum TipoEventoAnalitica {
+  NEGOCIO
+  ADS
+  ERROR
+  SISTEMA
+}
+
+enum TipoAuditoriaMonetizacion {
+  TRIAL_INICIADO
+  TRIAL_EXPIRADO
+  PREMIUM_COMPRADO
+  PREMIUM_RESTAURADO
+  PLAN_CAMBIADO
+  REEMBOLSO_REGISTRADO
+}
+
 model Usuario {
   id                  String                 @id @default(uuid())
   nombres             String
@@ -136,6 +165,100 @@ model Usuario {
   movimientosRealizados HistorialMovimiento[] @relation("MovimientosRealizados")
   conversacionesOrganizadas ConversacionSociedad[] @relation("ConversacionesOrganizador")
   mensajesChat        MensajeChat[]
+  planes              UsuarioPlan[]
+  eventosAnalitica    EventoAnalitica[]
+  recuperaciones      RecuperacionContrasena[]
+  auditoriasMonetizacion AuditoriaMonetizacion[]
+}
+
+model ConfiguracionGlobal {
+  id          String   @id @default(uuid())
+  clave       String   @unique
+  valorJson   Json
+  descripcion String?
+  isPublic    Boolean  @default(false)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model AuditoriaMonetizacion {
+  id           String                    @id @default(uuid())
+  usuarioId    String?
+  tipo         TipoAuditoriaMonetizacion
+  planAnterior String?
+  planNuevo    String?
+  plataforma   PlataformaCompra?
+  transaccionExternaId String?
+  metadataJson Json?
+  createdAt    DateTime                  @default(now())
+  usuario      Usuario?                  @relation(fields: [usuarioId], references: [id])
+
+  @@index([usuarioId, createdAt])
+  @@index([tipo, createdAt])
+}
+
+model RecuperacionContrasena {
+  id           String    @id @default(uuid())
+  usuarioId    String
+  codigoHash   String
+  usado        Boolean   @default(false)
+  expiraEn     DateTime
+  usadoEn      DateTime?
+  createdAt    DateTime  @default(now())
+  usuario      Usuario   @relation(fields: [usuarioId], references: [id])
+
+  @@index([usuarioId, usado, expiraEn])
+}
+
+model EventoAnalitica {
+  id           String              @id @default(uuid())
+  usuarioId    String?
+  nombre       String
+  tipo         TipoEventoAnalitica @default(NEGOCIO)
+  plataforma   String?
+  versionApp   String?
+  metadataJson Json?
+  createdAt    DateTime            @default(now())
+  usuario      Usuario?            @relation(fields: [usuarioId], references: [id])
+
+  @@index([nombre, createdAt])
+  @@index([usuarioId, createdAt])
+}
+
+model Plan {
+  id             String        @id @default(uuid())
+  codigo         String        @unique
+  nombre         String
+  descripcion    String?
+  precio         Decimal       @db.Decimal(10, 2)
+  duracionDias   Int?
+  permiteAds     Boolean       @default(false)
+  isPagoUnico    Boolean       @default(false)
+  isActive       Boolean       @default(true)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  usuariosPlanes UsuarioPlan[]
+}
+
+model UsuarioPlan {
+  id                    String            @id @default(uuid())
+  usuarioId             String
+  planId                String
+  fechaInicio           DateTime          @default(now())
+  fechaFin              DateTime?
+  estado                EstadoUsuarioPlan @default(ACTIVO)
+  plataformaCompra      PlataformaCompra  @default(MANUAL)
+  transaccionExternaId  String?
+  esTrial               Boolean           @default(false)
+  isActive              Boolean           @default(true)
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+  usuario               Usuario           @relation(fields: [usuarioId], references: [id])
+  plan                  Plan              @relation(fields: [planId], references: [id])
+
+  @@index([usuarioId, estado, isActive])
+  @@index([planId])
 }
 
 model Sociedad {

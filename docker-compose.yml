@@ -27,6 +27,9 @@ services:
       - apps/api/.env.example
     environment:
       DATABASE_URL: postgresql://misan:misan_dev@postgres:5432/misan?schema=public
+      JWT_ACCESS_SECRET: local_docker_access_secret_mi_san_change_before_public_release_2026
+      JWT_REFRESH_SECRET: local_docker_refresh_secret_mi_san_change_before_public_release_2026
+      CORS_ORIGIN: http://localhost:8081,http://localhost:19006,http://localhost:3000
       PORT: 3000
     ports:
       - "3000:3000"
@@ -36,7 +39,7 @@ services:
       postgres:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/api/salud >/dev/null || exit 1"]
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/health >/dev/null || exit 1"]
       interval: 15s
       timeout: 5s
       retries: 5

@@ -6,5 +6,16 @@ export function validarEnv(config: Record<string, unknown>) {
     throw new Error(`Variables de entorno faltantes: ${faltantes.join(', ')}`);
   }
 
+  if (config.NODE_ENV === 'production') {
+    const secretosDebiles = ['JWT_ACCESS_SECRET', 'JWT_REFRESH_SECRET'].filter((clave) => {
+      const valor = String(config[clave] ?? '');
+      return valor.length < 32 || valor.includes('dev_') || valor.includes('change_me');
+    });
+
+    if (secretosDebiles.length > 0) {
+      throw new Error(`Secretos inseguros para produccion: ${secretosDebiles.join(', ')}`);
+    }
+  }
+
   return config;
 }

@@ -14,7 +14,14 @@
     "mobile:start": "npm run start -w @mi-san/mobile",
     "mobile:android": "npm run android -w @mi-san/mobile",
     "mobile:ios": "npm run ios -w @mi-san/mobile",
-    "mobile:web": "npm run web -w @mi-san/mobile"
+    "mobile:web": "npm run web -w @mi-san/mobile",
+    "mobile:build:android": "cd apps/mobile && eas build --platform android --profile production",
+    "mobile:build:ios": "cd apps/mobile && eas build --platform ios --profile production",
+    "mobile:build:all": "cd apps/mobile && eas build --platform all --profile production",
+    "typecheck": "npx tsc --noEmit -p apps/api/tsconfig.json && npx tsc --noEmit -p apps/mobile/tsconfig.json",
+    "lint": "npm run typecheck",
+    "test": "node -e \"console.log('No automated tests configured yet')\"",
+    "release:preflight": "node scripts/release-preflight.js"
   },
   "devDependencies": {
     "react": "18.3.1",

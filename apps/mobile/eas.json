@@ -1,0 +1,41 @@
+{
+  "cli": {
+    "version": ">= 12.0.0",
+    "appVersionSource": "local"
+  },
+  "build": {
+    "internal": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_BASE_URL": "https://api.mi-san.app/api",
+        "EXPO_PUBLIC_ENABLE_NATIVE_ADS": "true"
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "app-bundle"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_BASE_URL": "https://api.mi-san.app/api",
+        "EXPO_PUBLIC_ENABLE_NATIVE_ADS": "true"
+      }
+    },
+    "production": {
+      "autoIncrement": true,
+      "android": {
+        "buildType": "app-bundle"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_BASE_URL": "https://api.mi-san.app/api",
+        "EXPO_PUBLIC_ENABLE_NATIVE_ADS": "true"
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}
