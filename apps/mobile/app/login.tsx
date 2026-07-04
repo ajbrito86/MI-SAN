@@ -11,6 +11,11 @@ import { useAuthStore } from '@/stores/auth-store';
 
 const logoMiSan = require('../assets/Logo-mi-san.png');
 const logoGoogle = require('../assets/Google-G-Icon.png');
+const googleWebClientId =
+  process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || '107458796974-162ttfmbucdog5s8b47pq6ac25ctn0rh.apps.googleusercontent.com';
+const googleAndroidClientId =
+  process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID || '107458796974-sf1vc8erhk0l877234j7hm8brddfsj2v.apps.googleusercontent.com';
+const googleClientIdSufijo = '.apps.googleusercontent.com';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -19,14 +24,7 @@ function obtenerGoogleRedirectUriAndroid() {
     return undefined;
   }
 
-  const androidClientId = process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID;
-  const sufijo = '.apps.googleusercontent.com';
-
-  if (!androidClientId || !androidClientId.endsWith(sufijo)) {
-    return undefined;
-  }
-
-  return `com.googleusercontent.apps.${androidClientId.slice(0, -sufijo.length)}:/oauthredirect`;
+  return `com.googleusercontent.apps.${googleAndroidClientId.replace(googleClientIdSufijo, '')}:/oauthredirect`;
 }
 
 export default function Login() {
@@ -38,12 +36,17 @@ export default function Login() {
   const [cargandoGoogle, setCargandoGoogle] = useState(false);
   const [recordarme, setRecordarme] = useState(false);
   const [mostrarContrasena, setMostrarContrasena] = useState(false);
-  const [requestGoogle, respuestaGoogle, abrirGoogle] = Google.useIdTokenAuthRequest({
-    webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
-    androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID,
-    redirectUri: obtenerGoogleRedirectUriAndroid(),
-    selectAccount: true,
-  });
+  const [requestGoogle, respuestaGoogle, abrirGoogle] = Google.useIdTokenAuthRequest(
+    {
+      webClientId: googleWebClientId,
+      androidClientId: googleAndroidClientId,
+      redirectUri: obtenerGoogleRedirectUriAndroid(),
+      selectAccount: true,
+    },
+    {
+      native: obtenerGoogleRedirectUriAndroid(),
+    }
+  );
 
   useEffect(() => {
     async function autenticarConGoogle(idToken: string) {
