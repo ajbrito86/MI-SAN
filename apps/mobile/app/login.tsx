@@ -3,7 +3,7 @@ import { Link, router } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { Bell, Check, Eye, EyeOff, FileText, Lock, Mail, ShieldCheck, Users } from 'lucide-react-native';
 import { useEffect, useState, type ReactNode } from 'react';
-import { ActivityIndicator, Image, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Image, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { AppButton } from '@/components/app-button';
 import { ScreenTopView } from '@/components/screen';
 import { login, loginConGoogle } from '@/services/auth-service';
@@ -13,6 +13,21 @@ const logoMiSan = require('../assets/Logo-mi-san.png');
 const logoGoogle = require('../assets/Google-G-Icon.png');
 
 WebBrowser.maybeCompleteAuthSession();
+
+function obtenerGoogleRedirectUriAndroid() {
+  if (Platform.OS !== 'android') {
+    return undefined;
+  }
+
+  const androidClientId = process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID;
+  const sufijo = '.apps.googleusercontent.com';
+
+  if (!androidClientId || !androidClientId.endsWith(sufijo)) {
+    return undefined;
+  }
+
+  return `com.googleusercontent.apps.${androidClientId.slice(0, -sufijo.length)}:/oauthredirect`;
+}
 
 export default function Login() {
   const guardarSesion = useAuthStore((state) => state.guardarSesion);
@@ -26,6 +41,7 @@ export default function Login() {
   const [requestGoogle, respuestaGoogle, abrirGoogle] = Google.useIdTokenAuthRequest({
     webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
     androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID,
+    redirectUri: obtenerGoogleRedirectUriAndroid(),
     selectAccount: true,
   });
 

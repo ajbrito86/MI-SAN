@@ -13,6 +13,21 @@ function env(clave, fallback) {
   return process.env[clave] || fallback;
 }
 
+function valoresUnicos(valores) {
+  return [...new Set(valores.filter(Boolean))];
+}
+
+function esquemaGoogleAndroid() {
+  const clientId = process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID;
+  const sufijo = '.apps.googleusercontent.com';
+
+  if (!clientId || !clientId.endsWith(sufijo)) {
+    return null;
+  }
+
+  return `com.googleusercontent.apps.${clientId.slice(0, -sufijo.length)}`;
+}
+
 function sinPluginAds(plugins = []) {
   return plugins.filter((plugin) => {
     const nombre = Array.isArray(plugin) ? plugin[0] : plugin;
@@ -61,6 +76,10 @@ module.exports = ({ config }) => {
         },
       ],
     ],
+    scheme: valoresUnicos([
+      ...(Array.isArray(config.scheme) ? config.scheme : [config.scheme]),
+      esquemaGoogleAndroid(),
+    ]),
     extra: {
       ...config.extra,
       admob,
