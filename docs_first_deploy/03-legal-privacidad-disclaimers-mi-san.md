@@ -115,7 +115,7 @@ Debe existir un correo oficial de soporte.
 
 Ejemplo:
 
-soporte@mi-san.app
+soporte@mi-san.kingdom-devs.net
 
 Información mínima:
 

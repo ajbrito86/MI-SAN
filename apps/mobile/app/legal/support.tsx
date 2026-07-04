@@ -6,7 +6,7 @@ export default function Soporte() {
       titulo="Soporte"
       subtitulo="Ayuda y contacto"
       parrafos={[
-        'Correo oficial de soporte: soporte@mi-san.app.',
+        'Correo oficial de soporte: soporte@mi-san.kingdom-devs.net.',
         'Tiempo estimado de respuesta: 2 a 5 dias laborables durante la primera etapa comercial.',
         'Incluye en tu mensaje el correo de tu cuenta, una descripcion clara del problema y capturas si ayudan a entender el caso.',
       ]}

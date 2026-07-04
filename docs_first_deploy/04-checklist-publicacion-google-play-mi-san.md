@@ -150,7 +150,7 @@ Debe estar publicada en una URL pública.
 
 Ejemplos:
 
-https://mi-san.app/privacy
+https://mi-san.kingdom-devs.net/privacy
 
 ---
 
@@ -186,7 +186,7 @@ Crear cuenta demo para revisión.
 
 Ejemplo:
 
-usuario_demo@mi-san.app
+usuario_demo@mi-san.kingdom-devs.net
 
 Contraseña:
 

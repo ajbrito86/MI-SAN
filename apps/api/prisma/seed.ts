@@ -216,7 +216,7 @@ async function main() {
   });
 
   const usuarioRevision = await prisma.usuario.upsert({
-    where: { email: 'usuario_demo@mi-san.app' },
+    where: { email: 'usuario_demo@mi-san.kingdom-devs.net' },
     update: {
       nombres: 'Usuario',
       apellidos: 'Demo',
@@ -230,7 +230,7 @@ async function main() {
       nombres: 'Usuario',
       apellidos: 'Demo',
       telefono: '8090009999',
-      email: 'usuario_demo@mi-san.app',
+      email: 'usuario_demo@mi-san.kingdom-devs.net',
       rolGlobal: RolUsuario.ORGANIZADOR,
       passwordHash: passwordRevisionHash,
       isActive: true,

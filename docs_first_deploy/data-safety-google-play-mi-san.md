@@ -96,5 +96,5 @@ No se muestran anuncios en:
 
 ## Cuenta Demo Revision
 
-- Correo: `usuario_demo@mi-san.app`
+- Correo: `usuario_demo@mi-san.kingdom-devs.net`
 - Contrasena: `Demo123*`

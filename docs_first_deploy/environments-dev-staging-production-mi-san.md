@@ -33,9 +33,9 @@ Uso:
 Requerido:
 
 ```bash
-EXPO_PUBLIC_API_BASE_URL=https://api-staging.mi-san.app/api
+EXPO_PUBLIC_API_BASE_URL=https://api.mi-san.kingdom-devs.net/api
 NODE_ENV=production
-CORS_ORIGIN=https://staging.mi-san.app
+CORS_ORIGIN=https://mi-san.kingdom-devs.net
 ```
 
 Reglas:
@@ -55,9 +55,9 @@ Uso:
 Requerido:
 
 ```bash
-EXPO_PUBLIC_API_BASE_URL=https://api.mi-san.app/api
+EXPO_PUBLIC_API_BASE_URL=https://api.mi-san.kingdom-devs.net/api
 NODE_ENV=production
-CORS_ORIGIN=https://mi-san.app
+CORS_ORIGIN=https://mi-san.kingdom-devs.net
 ```
 
 Reglas:

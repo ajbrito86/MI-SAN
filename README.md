@@ -53,7 +53,7 @@ Usuarios de prueba:
 
 - Ana organizadora: `ana.prueba@misan.local` / `ClaveDemo123`
 - Luis participante: `luis.demo@misan.local` / `ClaveDemo123`
-- Revision tiendas: `usuario_demo@mi-san.app` / `Demo123*`
+- Revision tiendas: `usuario_demo@mi-san.kingdom-devs.net` / `Demo123*`
 
 ## Mobile
 
@@ -66,7 +66,7 @@ En Android emulator, la app usa `http://10.0.2.2:3000/api`. En web/iOS local usa
 Para builds de publicacion, configurar:
 
 ```bash
-EXPO_PUBLIC_API_BASE_URL=https://api.mi-san.app/api
+EXPO_PUBLIC_API_BASE_URL=https://api.mi-san.kingdom-devs.net/api
 ```
 
 Variables de Ads disponibles en `apps/mobile/.env.example`.

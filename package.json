@@ -18,7 +18,7 @@
     "mobile:build:android": "cd apps/mobile && eas build --platform android --profile production",
     "mobile:build:ios": "cd apps/mobile && eas build --platform ios --profile production",
     "mobile:build:all": "cd apps/mobile && eas build --platform all --profile production",
-    "postinstall": "patch-package",
+    "postinstall": "node scripts/apply-patches-if-available.js",
     "typecheck": "npx tsc --noEmit -p apps/api/tsconfig.json && npx tsc --noEmit -p apps/mobile/tsconfig.json",
     "lint": "npm run typecheck",
     "test": "node -e \"console.log('No automated tests configured yet')\"",

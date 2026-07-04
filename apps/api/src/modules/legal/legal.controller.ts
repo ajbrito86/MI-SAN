@@ -1,6 +1,6 @@
 import { Controller, Get, Header } from '@nestjs/common';
 
-const soporte = 'soporte@mi-san.app';
+const soporte = 'soporte@mi-san.kingdom-devs.net';
 
 @Controller('legal')
 export class LegalController {

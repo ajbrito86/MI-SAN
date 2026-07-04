@@ -14,7 +14,7 @@
 ## Variables Necesarias Mobile
 
 ```bash
-EXPO_PUBLIC_API_BASE_URL=https://api.mi-san.app/api
+EXPO_PUBLIC_API_BASE_URL=https://api.mi-san.kingdom-devs.net/api
 ADMOB_ANDROID_APP_ID=ca-app-pub-xxxxxxxxxxxxxxxx~yyyyyyyyyy
 ADMOB_ANDROID_BANNER_ID=ca-app-pub-xxxxxxxxxxxxxxxx/yyyyyyyyyy
 ADMOB_ANDROID_INTERSTITIAL_ID=ca-app-pub-xxxxxxxxxxxxxxxx/yyyyyyyyyy
@@ -36,7 +36,7 @@ Variables minimas:
 ```bash
 NODE_ENV=production
 PORT=3000
-CORS_ORIGIN=https://mi-san.app
+CORS_ORIGIN=https://mi-san.kingdom-devs.net
 DATABASE_URL=postgresql://usuario:contrasena@host:5432/misan?schema=public
 JWT_ACCESS_SECRET=...
 JWT_REFRESH_SECRET=...
@@ -98,7 +98,7 @@ Resultado esperado:
 ## Orden Recomendado
 
 1. Deploy backend en VPS.
-2. Verificar `https://api.mi-san.app/api/salud`.
+2. Verificar `https://api.mi-san.kingdom-devs.net/api/salud`.
 3. Verificar URLs legales publicas.
 4. Configurar AdMob real.
 5. Configurar productos Billing/IAP.

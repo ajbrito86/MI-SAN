@@ -36,16 +36,16 @@ MI-SAN no es una entidad financiera, banco ni institucion de inversion. La app f
 
 ## Cuenta Demo Para Revision
 
-Correo: usuario_demo@mi-san.app
+Correo: usuario_demo@mi-san.kingdom-devs.net
 
 Contrasena: Demo123*
 
 ## URLs Legales
 
-- Politica de privacidad: https://api.mi-san.app/api/legal/privacy
-- Terminos y condiciones: https://api.mi-san.app/api/legal/terms
-- Eliminacion de cuenta: https://api.mi-san.app/api/legal/account-deletion
-- Soporte: https://api.mi-san.app/api/legal/support
+- Politica de privacidad: https://api.mi-san.kingdom-devs.net/api/legal/privacy
+- Terminos y condiciones: https://api.mi-san.kingdom-devs.net/api/legal/terms
+- Eliminacion de cuenta: https://api.mi-san.kingdom-devs.net/api/legal/account-deletion
+- Soporte: https://api.mi-san.kingdom-devs.net/api/legal/support
 
 ## Notas De Release V1
 

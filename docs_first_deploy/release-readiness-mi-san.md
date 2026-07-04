@@ -66,8 +66,8 @@ Cuando existan VPS, dominio HTTPS, cuentas reales y credenciales de AdMob/Billin
 
 ## Pendiente Externo
 
-- Dominio `mi-san.app`.
-- Subdominio/API publica `api.mi-san.app`.
+- Dominio `mi-san.kingdom-devs.net`.
+- Subdominio/API publica `api.mi-san.kingdom-devs.net`.
 - HTTPS productivo.
 - Base de datos productiva.
 - Cuenta Google Play Developer.

@@ -3,6 +3,7 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 COPY apps/api/package.json ./apps/api/package.json
 COPY packages/shared/package.json ./packages/shared/package.json
+COPY scripts/apply-patches-if-available.js ./scripts/apply-patches-if-available.js
 RUN npm config set registry https://registry.npmjs.org/ \
   && npm config set maxsockets 1 \
   && npm config set fetch-retries 8 \
