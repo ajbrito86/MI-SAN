@@ -3,7 +3,13 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 COPY apps/api/package.json ./apps/api/package.json
 COPY packages/shared/package.json ./packages/shared/package.json
-RUN npm ci --workspace @mi-san/api --include-workspace-root=false --no-audit --no-fund
+RUN npm config set registry https://registry.npmjs.org/ \
+  && npm config set maxsockets 1 \
+  && npm config set fetch-retries 8 \
+  && npm config set fetch-retry-mintimeout 10000 \
+  && npm config set fetch-retry-maxtimeout 120000 \
+  && npm config set fetch-timeout 120000 \
+  && npm ci --workspace @mi-san/api --include-workspace-root=false --no-audit --no-fund --prefer-offline --loglevel http
 COPY apps/api ./apps/api
 WORKDIR /app/apps/api
 RUN npm run prisma:generate

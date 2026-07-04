@@ -3,6 +3,7 @@ import { UsuarioActual } from '../../common/decorators/usuario-actual.decorator'
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { UsuarioAutenticado } from '../../common/types/usuario-autenticado.type';
 import { AuthService } from './auth.service';
+import { GoogleLoginDto } from './dto/google-login.dto';
 import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { RegistroDto } from './dto/registro.dto';
@@ -21,6 +22,11 @@ export class AuthController {
   @Post('login')
   login(@Body() dto: LoginDto) {
     return this.authService.login(dto);
+  }
+
+  @Post('google')
+  loginConGoogle(@Body() dto: GoogleLoginDto) {
+    return this.authService.loginConGoogle(dto);
   }
 
   @Post('refresh')

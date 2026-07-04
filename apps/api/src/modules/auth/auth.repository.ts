@@ -14,6 +14,14 @@ export class AuthRepository {
     });
   }
 
+  buscarPorGoogleId(googleId: string) {
+    return this.prisma.usuario.findUnique({ where: { googleId } });
+  }
+
+  buscarPorEmail(email: string) {
+    return this.prisma.usuario.findUnique({ where: { email: email.toLowerCase() } });
+  }
+
   buscarPorId(id: string) {
     return this.prisma.usuario.findUnique({ where: { id } });
   }
@@ -26,6 +34,17 @@ export class AuthRepository {
     return this.prisma.usuario.update({
       where: { id: usuarioId },
       data: { refreshTokenHash },
+    });
+  }
+
+  vincularGoogle(usuarioId: string, data: { googleId: string; fotoPerfilUrl?: string | null; isVerified?: boolean }) {
+    return this.prisma.usuario.update({
+      where: { id: usuarioId },
+      data: {
+        googleId: data.googleId,
+        fotoPerfilUrl: data.fotoPerfilUrl,
+        isVerified: data.isVerified,
+      },
     });
   }
 

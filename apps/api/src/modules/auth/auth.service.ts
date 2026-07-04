@@ -1,14 +1,17 @@
-import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { ConflictException, Injectable, ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { RolUsuario } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
+import { OAuth2Client } from 'google-auth-library';
+import { randomBytes } from 'node:crypto';
 import { LoginDto } from './dto/login.dto';
 import { RegistroDto } from './dto/registro.dto';
 import { AuthRepository } from './auth.repository';
 import { SuscripcionesService } from '../suscripciones/suscripciones.service';
 import { SolicitarRecuperacionDto } from './dto/solicitar-recuperacion.dto';
 import { ConfirmarRecuperacionDto } from './dto/confirmar-recuperacion.dto';
+import { GoogleLoginDto } from './dto/google-login.dto';
 
 type Tokens = {
   accessToken: string;
@@ -73,6 +76,51 @@ export class AuthService {
 
     return {
       usuario: { ...this.mapearUsuario(usuarioActualizado), suscripcion },
+      ...tokens,
+    };
+  }
+
+  async loginConGoogle(dto: GoogleLoginDto) {
+    const perfilGoogle = await this.validarGoogleIdToken(dto.idToken);
+    const email = perfilGoogle.email.toLowerCase();
+    let usuario =
+      (await this.authRepository.buscarPorGoogleId(perfilGoogle.googleId)) ??
+      (await this.authRepository.buscarPorEmail(email));
+    let suscripcion = usuario ? await this.suscripcionesService.obtenerActual(usuario.id) : null;
+
+    if (usuario && !usuario.isActive) {
+      throw new UnauthorizedException('Tu cuenta no esta activa.');
+    }
+
+    if (usuario && usuario.googleId !== perfilGoogle.googleId) {
+      usuario = await this.authRepository.vincularGoogle(usuario.id, {
+        googleId: perfilGoogle.googleId,
+        fotoPerfilUrl: usuario.fotoPerfilUrl ?? perfilGoogle.fotoPerfilUrl,
+        isVerified: usuario.isVerified || perfilGoogle.emailVerificado,
+      });
+    }
+
+    if (!usuario) {
+      const passwordHash = await bcrypt.hash(randomBytes(32).toString('hex'), 12);
+      usuario = await this.authRepository.crear({
+        nombres: perfilGoogle.nombres,
+        apellidos: perfilGoogle.apellidos,
+        telefono: `google:${perfilGoogle.googleId}`,
+        email,
+        googleId: perfilGoogle.googleId,
+        rolGlobal: RolUsuario.ORGANIZADOR,
+        passwordHash,
+        fotoPerfilUrl: perfilGoogle.fotoPerfilUrl,
+        isVerified: perfilGoogle.emailVerificado,
+      });
+      suscripcion = await this.suscripcionesService.asignarTrialInicial(usuario.id);
+    }
+
+    const tokens = await this.generarTokens(usuario.id, usuario.email, usuario.telefono);
+    await this.guardarRefreshToken(usuario.id, tokens.refreshToken);
+
+    return {
+      usuario: { ...this.mapearUsuario(usuario), suscripcion },
       ...tokens,
     };
   }
@@ -189,6 +237,45 @@ export class AuthService {
     return null;
   }
 
+  private async validarGoogleIdToken(idToken: string) {
+    const googleClientId = this.configService.get<string>('GOOGLE_CLIENT_ID');
+
+    if (!googleClientId) {
+      throw new ServiceUnavailableException('Google Sign-In no esta configurado.');
+    }
+
+    try {
+      const cliente = new OAuth2Client(googleClientId);
+      const ticket = await cliente.verifyIdToken({
+        idToken,
+        audience: googleClientId,
+      });
+      const payload = ticket.getPayload();
+
+      if (!payload?.sub || !payload.email) {
+        throw new UnauthorizedException('Token de Google invalido.');
+      }
+
+      const nombres = (payload.given_name || payload.name || payload.email.split('@')[0]).trim();
+      const apellidos = (payload.family_name || '').trim();
+
+      return {
+        googleId: payload.sub,
+        email: payload.email,
+        nombres,
+        apellidos,
+        fotoPerfilUrl: payload.picture ?? null,
+        emailVerificado: Boolean(payload.email_verified),
+      };
+    } catch (error) {
+      if (error instanceof ServiceUnavailableException || error instanceof UnauthorizedException) {
+        throw error;
+      }
+
+      throw new UnauthorizedException('Token de Google invalido.');
+    }
+  }
+
   private mapearUsuario(usuario: {
     id: string;
     nombres: string;
@@ -196,6 +283,8 @@ export class AuthService {
     telefono: string;
     email: string;
     rolGlobal: string;
+    fotoPerfilUrl?: string | null;
+    isVerified?: boolean;
   }) {
     return {
       id: usuario.id,
@@ -204,6 +293,8 @@ export class AuthService {
       telefono: usuario.telefono,
       email: usuario.email,
       rolGlobal: usuario.rolGlobal,
+      fotoPerfilUrl: usuario.fotoPerfilUrl,
+      isVerified: usuario.isVerified,
     };
   }
 }

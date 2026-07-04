@@ -1,14 +1,18 @@
+import * as Google from 'expo-auth-session/providers/google';
 import { Link, router } from 'expo-router';
+import * as WebBrowser from 'expo-web-browser';
 import { Bell, Check, Eye, EyeOff, FileText, Lock, Mail, ShieldCheck, Users } from 'lucide-react-native';
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { ActivityIndicator, Image, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { AppButton } from '@/components/app-button';
 import { ScreenTopView } from '@/components/screen';
-import { login } from '@/services/auth-service';
+import { login, loginConGoogle } from '@/services/auth-service';
 import { useAuthStore } from '@/stores/auth-store';
 
 const logoMiSan = require('../assets/Logo-mi-san.png');
 const logoGoogle = require('../assets/Google-G-Icon.png');
+
+WebBrowser.maybeCompleteAuthSession();
 
 export default function Login() {
   const guardarSesion = useAuthStore((state) => state.guardarSesion);
@@ -16,8 +20,51 @@ export default function Login() {
   const [contrasena, setContrasena] = useState('');
   const [error, setError] = useState('');
   const [cargando, setCargando] = useState(false);
+  const [cargandoGoogle, setCargandoGoogle] = useState(false);
   const [recordarme, setRecordarme] = useState(false);
   const [mostrarContrasena, setMostrarContrasena] = useState(false);
+  const [requestGoogle, respuestaGoogle, abrirGoogle] = Google.useIdTokenAuthRequest({
+    webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+    androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID,
+    selectAccount: true,
+  });
+
+  useEffect(() => {
+    async function autenticarConGoogle(idToken: string) {
+      setCargandoGoogle(true);
+
+      try {
+        const respuesta = await loginConGoogle({ idToken });
+        guardarSesion(respuesta);
+        router.replace('/(tabs)/home');
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'No pudimos iniciar sesion con Google.');
+      } finally {
+        setCargandoGoogle(false);
+      }
+    }
+
+    if (!respuestaGoogle) {
+      return;
+    }
+
+    if (respuestaGoogle.type === 'success') {
+      const idToken = respuestaGoogle.params.id_token;
+
+      if (idToken) {
+        autenticarConGoogle(idToken);
+      } else {
+        setError('Google no devolvio un token valido.');
+        setCargandoGoogle(false);
+      }
+      return;
+    }
+
+    if (respuestaGoogle.type === 'error') {
+      setError('No pudimos iniciar sesion con Google.');
+      setCargandoGoogle(false);
+    }
+  }, [guardarSesion, respuestaGoogle]);
 
   async function enviar() {
     setError('');
@@ -38,6 +85,28 @@ export default function Login() {
       setError(err instanceof Error ? err.message : 'No pudimos iniciar sesion.');
     } finally {
       setCargando(false);
+    }
+  }
+
+  async function enviarGoogle() {
+    setError('');
+
+    if (!requestGoogle) {
+      setError('Google Sign-In no esta listo. Revisa la configuracion.');
+      return;
+    }
+
+    setCargandoGoogle(true);
+
+    try {
+      const resultado = await abrirGoogle();
+
+      if (resultado.type === 'cancel' || resultado.type === 'dismiss') {
+        setCargandoGoogle(false);
+      }
+    } catch {
+      setCargandoGoogle(false);
+      setError('No pudimos abrir Google Sign-In.');
     }
   }
 
@@ -114,7 +183,7 @@ export default function Login() {
 
             {error ? <Text className="rounded-lg bg-red-50 p-3 text-sm font-semibold text-red-600">{error}</Text> : null}
 
-            <AppButton titulo={cargando ? 'Iniciando...' : 'Iniciar sesion'} disabled={cargando} onPress={enviar} />
+            <AppButton titulo={cargando ? 'Iniciando...' : 'Iniciar sesion'} disabled={cargando || cargandoGoogle} onPress={enviar} />
             {cargando ? <ActivityIndicator color="#168A5B" /> : null}
 
             <View className="flex-row items-center gap-3 py-1">
@@ -123,9 +192,21 @@ export default function Login() {
               <View className="h-px flex-1 bg-slate-200" />
             </View>
 
-            <Pressable className="h-14 flex-row items-center justify-center gap-3 rounded-lg border border-slate-200 bg-white">
-              <Image source={logoGoogle} className="h-5 w-5" resizeMode="contain" />
-              <Text className="text-base font-semibold text-marca-texto">Continuar con Google</Text>
+            <Pressable
+              className={`h-14 flex-row items-center justify-center gap-3 rounded-lg border border-slate-200 bg-white ${
+                cargando || cargandoGoogle ? 'opacity-70' : ''
+              }`}
+              disabled={cargando || cargandoGoogle}
+              onPress={enviarGoogle}
+            >
+              {cargandoGoogle ? (
+                <ActivityIndicator color="#168A5B" />
+              ) : (
+                <Image source={logoGoogle} className="h-5 w-5" resizeMode="contain" />
+              )}
+              <Text className="text-base font-semibold text-marca-texto">
+                {cargandoGoogle ? 'Conectando...' : 'Continuar con Google'}
+              </Text>
             </Pressable>
 
             <View className="mt-1 flex-row justify-center gap-1">

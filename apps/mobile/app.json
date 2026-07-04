@@ -35,16 +35,16 @@
     },
     "plugins": [
       "expo-router",
-      [
-        "react-native-google-mobile-ads",
-        {
-          "androidAppId": "ca-app-pub-3940256099942544~3347511713",
-          "iosAppId": "ca-app-pub-3940256099942544~1458002511"
-        }
-      ]
+      "react-native-google-mobile-ads"
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "f2bd100e-8202-4c57-add8-30ffbf79cb38"
+      }
+    },
+    "owner": "ajbrito"
   }
 }

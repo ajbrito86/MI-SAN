@@ -18,13 +18,15 @@
     "mobile:build:android": "cd apps/mobile && eas build --platform android --profile production",
     "mobile:build:ios": "cd apps/mobile && eas build --platform ios --profile production",
     "mobile:build:all": "cd apps/mobile && eas build --platform all --profile production",
+    "postinstall": "patch-package",
     "typecheck": "npx tsc --noEmit -p apps/api/tsconfig.json && npx tsc --noEmit -p apps/mobile/tsconfig.json",
     "lint": "npm run typecheck",
     "test": "node -e \"console.log('No automated tests configured yet')\"",
     "release:preflight": "node scripts/release-preflight.js"
   },
   "devDependencies": {
+    "patch-package": "^8.0.1",
     "react": "18.3.1",
-    "react-native": "0.76.5"
+    "react-native": "^0.76.9"
   }
 }

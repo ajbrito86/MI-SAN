@@ -24,6 +24,10 @@ export type LoginPayload = {
   contrasena: string;
 };
 
+export type GoogleLoginPayload = {
+  idToken: string;
+};
+
 export type RegistroPayload = {
   nombres: string;
   apellidos: string;
@@ -41,6 +45,13 @@ export type ActualizarPerfilPayload = {
 
 export function login(payload: LoginPayload) {
   return apiRequest<AuthResponse>('/auth/login', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export function loginConGoogle(payload: GoogleLoginPayload) {
+  return apiRequest<AuthResponse>('/auth/google', {
     method: 'POST',
     body: JSON.stringify(payload),
   });

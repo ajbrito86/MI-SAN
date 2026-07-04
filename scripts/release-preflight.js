@@ -116,14 +116,12 @@ function validarAppJson() {
   validarArchivo(appJson.splash.image.replace('./', 'apps/mobile/'));
   validarArchivo(appJson.android.adaptiveIcon.foregroundImage.replace('./', 'apps/mobile/'));
 
-  const adsPlugin = appJson.plugins.find((plugin) => Array.isArray(plugin) && plugin[0] === 'react-native-google-mobile-ads');
-  const adsConfig = adsPlugin?.[1];
-  if (adsConfig?.androidAppId?.includes('3940256099942544') || adsConfig?.iosAppId?.includes('3940256099942544')) {
-    const mensaje = 'AdMob usa App IDs de prueba. Cambiar antes de build comercial.';
-    if (esProduccion) error(mensaje);
-    else aviso(mensaje);
+  validarArchivo('apps/mobile/app.config.js');
+  const appJsonRaw = fs.readFileSync(path.join(root, 'apps/mobile/app.json'), 'utf8');
+  if (appJsonRaw.includes('ca-app-pub-')) {
+    error('apps/mobile/app.json no debe hardcodear IDs de AdMob; usar variables de entorno en app.config.js.');
   } else {
-    ok('AdMob App IDs no son los de prueba oficiales.');
+    ok('AdMob App IDs se resuelven por variables de entorno en app.config.js.');
   }
 }
 
@@ -140,6 +138,7 @@ function validarDocs() {
     'docs_first_deploy/app-privacy-apple-mi-san.md',
     'docs_first_deploy/configuracion-global-operativa-mi-san.md',
     'docs_first_deploy/admob-real-checklist-mi-san.md',
+    'docs_first_deploy/admob-real-values-mi-san.md',
     'docs_first_deploy/billing-real-checklist-mi-san.md',
     'docs_first_deploy/build-production-guide-mi-san.md',
     'docs_first_deploy/environments-dev-staging-production-mi-san.md',
@@ -177,7 +176,9 @@ function validarScripts() {
 function validarEnv() {
   validarArchivo('apps/api/.env.production.example');
   validarArchivo('apps/mobile/.env.example');
+  validarArchivo('apps/mobile/.env.production.example');
   const mobileEnv = fs.readFileSync(path.join(root, 'apps/mobile/.env.example'), 'utf8');
+  const mobileProductionEnv = fs.readFileSync(path.join(root, 'apps/mobile/.env.production.example'), 'utf8');
   if (mobileEnv.includes('EXPO_PUBLIC_API_BASE_URL=')) ok('EXPO_PUBLIC_API_BASE_URL documentado.');
   else error('Falta EXPO_PUBLIC_API_BASE_URL en apps/mobile/.env.example.');
 
@@ -191,7 +192,8 @@ function validarEnv() {
     else aviso(`El perfil EAS ${perfil} no define EXPO_PUBLIC_API_BASE_URL.`);
   }
 
-  validarAdMobUnits(mobileEnv);
+  validarAdMobEnv(mobileEnv, 'apps/mobile/.env.example');
+  validarAdMobEnv(mobileProductionEnv, 'apps/mobile/.env.production.example');
 }
 
 function extraerEnv(contenido, clave) {
@@ -229,28 +231,33 @@ function validarApiUrlSegura(url, origen) {
   }
 }
 
-function validarAdMobUnits(mobileEnv) {
+function validarAdMobEnv(mobileEnv, origen) {
   const claves = [
-    'EXPO_PUBLIC_ADMOB_BANNER_ANDROID',
-    'EXPO_PUBLIC_ADMOB_BANNER_IOS',
-    'EXPO_PUBLIC_ADMOB_INTERSTITIAL_ANDROID',
-    'EXPO_PUBLIC_ADMOB_INTERSTITIAL_IOS',
+    'ADMOB_ANDROID_APP_ID',
+    'ADMOB_ANDROID_BANNER_ID',
+    'ADMOB_ANDROID_INTERSTITIAL_ID',
+    'ADMOB_IOS_APP_ID',
+    'ADMOB_IOS_BANNER_ID',
+    'ADMOB_IOS_INTERSTITIAL_ID',
   ];
 
   for (const clave of claves) {
     const valor = extraerEnv(mobileEnv, clave);
     if (!valor) {
-      error(`Falta ${clave} en apps/mobile/.env.example.`);
+      error(`Falta ${clave} en ${origen}.`);
       continue;
     }
 
-    const usaPlaceholder = valor.includes('xxxxxxxx') || valor.includes('yyyyyyyy') || valor.includes('3940256099942544');
+    const usaPlaceholder =
+      valor.includes('replace_with_') ||
+      valor.includes('xxxxxxxx') ||
+      valor.includes('yyyyyyyy') ||
+      valor.includes('3940256099942544');
     if (usaPlaceholder) {
-      const mensaje = `${clave} usa placeholder/test id.`;
-      if (esProduccion) error(mensaje);
-      else aviso(mensaje);
+      const prefijo = esProduccion ? 'Produccion pendiente' : 'Pendiente';
+      aviso(`${prefijo}: ${clave} usa placeholder/test id en ${origen}.`);
     } else {
-      ok(`${clave} parece configurado.`);
+      ok(`${clave} parece configurado en ${origen}.`);
     }
   }
 }

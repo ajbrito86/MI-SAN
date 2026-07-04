@@ -12,12 +12,12 @@ En Expo Go/desarrollo local `EXPO_PUBLIC_ENABLE_NATIVE_ADS=false` evita cargar e
 
 | Elemento | Estado | Donde Configurarlo |
 | --- | --- | --- |
-| App ID Android real | Pendiente | `apps/mobile/app.json` plugin `react-native-google-mobile-ads.androidAppId` |
-| App ID iOS real | Pendiente | `apps/mobile/app.json` plugin `react-native-google-mobile-ads.iosAppId` |
-| Banner Unit ID Android | Pendiente | `EXPO_PUBLIC_ADMOB_BANNER_ANDROID` |
-| Banner Unit ID iOS | Pendiente | `EXPO_PUBLIC_ADMOB_BANNER_IOS` |
-| Interstitial Unit ID Android | Pendiente | `EXPO_PUBLIC_ADMOB_INTERSTITIAL_ANDROID` |
-| Interstitial Unit ID iOS | Pendiente | `EXPO_PUBLIC_ADMOB_INTERSTITIAL_IOS` |
+| App ID Android real | Pendiente | `ADMOB_ANDROID_APP_ID` |
+| App ID iOS real | Pendiente | `ADMOB_IOS_APP_ID` |
+| Banner Unit ID Android | Pendiente | `ADMOB_ANDROID_BANNER_ID` |
+| Banner Unit ID iOS | Pendiente | `ADMOB_IOS_BANNER_ID` |
+| Interstitial Unit ID Android | Pendiente | `ADMOB_ANDROID_INTERSTITIAL_ID` |
+| Interstitial Unit ID iOS | Pendiente | `ADMOB_IOS_INTERSTITIAL_ID` |
 
 ## Reglas De Release
 

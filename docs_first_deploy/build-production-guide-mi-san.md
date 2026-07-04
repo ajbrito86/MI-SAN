@@ -15,10 +15,12 @@
 
 ```bash
 EXPO_PUBLIC_API_BASE_URL=https://api.mi-san.app/api
-EXPO_PUBLIC_ADMOB_BANNER_ANDROID=ca-app-pub-xxxxxxxxxxxxxxxx/yyyyyyyyyy
-EXPO_PUBLIC_ADMOB_BANNER_IOS=ca-app-pub-xxxxxxxxxxxxxxxx/yyyyyyyyyy
-EXPO_PUBLIC_ADMOB_INTERSTITIAL_ANDROID=ca-app-pub-xxxxxxxxxxxxxxxx/yyyyyyyyyy
-EXPO_PUBLIC_ADMOB_INTERSTITIAL_IOS=ca-app-pub-xxxxxxxxxxxxxxxx/yyyyyyyyyy
+ADMOB_ANDROID_APP_ID=ca-app-pub-xxxxxxxxxxxxxxxx~yyyyyyyyyy
+ADMOB_ANDROID_BANNER_ID=ca-app-pub-xxxxxxxxxxxxxxxx/yyyyyyyyyy
+ADMOB_ANDROID_INTERSTITIAL_ID=ca-app-pub-xxxxxxxxxxxxxxxx/yyyyyyyyyy
+ADMOB_IOS_APP_ID=ca-app-pub-xxxxxxxxxxxxxxxx~yyyyyyyyyy
+ADMOB_IOS_BANNER_ID=ca-app-pub-xxxxxxxxxxxxxxxx/yyyyyyyyyy
+ADMOB_IOS_INTERSTITIAL_ID=ca-app-pub-xxxxxxxxxxxxxxxx/yyyyyyyyyy
 ```
 
 ## Variables Necesarias Backend

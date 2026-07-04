@@ -146,6 +146,7 @@ model Usuario {
   apellidos           String
   telefono            String                 @unique
   email               String                 @unique
+  googleId            String?                @unique
   rolGlobal           RolUsuario             @default(PARTICIPANTE)
   passwordHash        String
   refreshTokenHash    String?

@@ -1,3 +1,4 @@
+import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 import { registrarError, registrarEvento } from './analytics-service';
 
@@ -12,6 +13,17 @@ const INTERSTITIAL_IOS_PRUEBA = 'ca-app-pub-3940256099942544/4411468910';
 const INTERVALO_INTERSTITIAL_DEFAULT_MS = 10 * 60 * 1000;
 
 let ultimaImpresionInterstitial = 0;
+
+type AdMobExtra = {
+  androidBannerId?: string;
+  androidInterstitialId?: string;
+  iosBannerId?: string;
+  iosInterstitialId?: string;
+};
+
+function obtenerAdMobExtra(): AdMobExtra {
+  return (Constants.expoConfig?.extra?.admob ?? {}) as AdMobExtra;
+}
 
 export function adsNativosHabilitados() {
   return process.env.EXPO_PUBLIC_ENABLE_NATIVE_ADS === 'true';
@@ -30,24 +42,28 @@ function cargarModuloAds() {
 }
 
 export function obtenerBannerAdUnitId() {
+  const admob = obtenerAdMobExtra();
+
   if (Platform.OS === 'ios') {
-    return process.env.EXPO_PUBLIC_ADMOB_BANNER_IOS || BANNER_IOS_PRUEBA;
+    return admob.iosBannerId || process.env.EXPO_PUBLIC_ADMOB_BANNER_IOS || BANNER_IOS_PRUEBA;
   }
 
   if (Platform.OS === 'android') {
-    return process.env.EXPO_PUBLIC_ADMOB_BANNER_ANDROID || BANNER_ANDROID_PRUEBA;
+    return admob.androidBannerId || process.env.EXPO_PUBLIC_ADMOB_BANNER_ANDROID || BANNER_ANDROID_PRUEBA;
   }
 
   return null;
 }
 
 export function obtenerInterstitialAdUnitId() {
+  const admob = obtenerAdMobExtra();
+
   if (Platform.OS === 'ios') {
-    return process.env.EXPO_PUBLIC_ADMOB_INTERSTITIAL_IOS || INTERSTITIAL_IOS_PRUEBA;
+    return admob.iosInterstitialId || process.env.EXPO_PUBLIC_ADMOB_INTERSTITIAL_IOS || INTERSTITIAL_IOS_PRUEBA;
   }
 
   if (Platform.OS === 'android') {
-    return process.env.EXPO_PUBLIC_ADMOB_INTERSTITIAL_ANDROID || INTERSTITIAL_ANDROID_PRUEBA;
+    return admob.androidInterstitialId || process.env.EXPO_PUBLIC_ADMOB_INTERSTITIAL_ANDROID || INTERSTITIAL_ANDROID_PRUEBA;
   }
 
   return null;

@@ -85,7 +85,7 @@ Cuando existan VPS, dominio HTTPS, cuentas reales y credenciales de AdMob/Billin
 ## Pendiente Tecnico Antes Del Build Comercial
 
 - Reemplazar App IDs AdMob de prueba en `apps/mobile/app.json`.
-- Configurar `EXPO_PUBLIC_ADMOB_*` reales.
+- Configurar `ADMOB_*` reales.
 - Configurar `EXPO_PUBLIC_API_BASE_URL` real en EAS.
 - Ejecutar migraciones en produccion.
 - Ejecutar seed o crear cuenta demo en produccion.
