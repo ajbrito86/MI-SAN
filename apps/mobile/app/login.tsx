@@ -48,24 +48,26 @@ export default function Login() {
     }
   );
 
-  useEffect(() => {
-    async function autenticarConGoogle(idToken: string) {
-      setCargandoGoogle(true);
+  async function autenticarConGoogle(idToken: string) {
+    setCargandoGoogle(true);
 
-      try {
-        const respuesta = await loginConGoogle({ idToken });
-        guardarSesion(respuesta);
-        router.replace('/(tabs)/home');
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'No pudimos iniciar sesion con Google.');
-      } finally {
-        setCargandoGoogle(false);
-      }
+    try {
+      const respuesta = await loginConGoogle({ idToken });
+      guardarSesion(respuesta);
+      router.replace('/(tabs)/home');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No pudimos iniciar sesion con Google.');
+    } finally {
+      setCargandoGoogle(false);
     }
+  }
 
+  useEffect(() => {
     if (!respuestaGoogle) {
       return;
     }
+
+    console.info('[GoogleSignIn] respuesta', respuestaGoogle.type, respuestaGoogle.type === 'success' ? Object.keys(respuestaGoogle.params) : null);
 
     if (respuestaGoogle.type === 'success') {
       const idToken = respuestaGoogle.params.id_token;
@@ -83,7 +85,7 @@ export default function Login() {
       setError('No pudimos iniciar sesion con Google.');
       setCargandoGoogle(false);
     }
-  }, [guardarSesion, respuestaGoogle]);
+  }, [respuestaGoogle]);
 
   async function enviar() {
     setError('');
@@ -119,6 +121,16 @@ export default function Login() {
 
     try {
       const resultado = await abrirGoogle();
+      console.info('[GoogleSignIn] resultado prompt', resultado.type, resultado.type === 'success' ? Object.keys(resultado.params) : null);
+
+      if (resultado.type === 'success') {
+        const idToken = resultado.params.id_token;
+
+        if (idToken) {
+          await autenticarConGoogle(idToken);
+          return;
+        }
+      }
 
       if (resultado.type === 'cancel' || resultado.type === 'dismiss') {
         setCargandoGoogle(false);
