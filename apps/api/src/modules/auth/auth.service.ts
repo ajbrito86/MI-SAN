@@ -238,17 +238,17 @@ export class AuthService {
   }
 
   private async validarGoogleIdToken(idToken: string) {
-    const googleClientId = this.configService.get<string>('GOOGLE_CLIENT_ID');
+    const googleAudiences = this.obtenerGoogleAudiences();
 
-    if (!googleClientId) {
+    if (googleAudiences.length === 0) {
       throw new ServiceUnavailableException('Google Sign-In no esta configurado.');
     }
 
     try {
-      const cliente = new OAuth2Client(googleClientId);
+      const cliente = new OAuth2Client();
       const ticket = await cliente.verifyIdToken({
         idToken,
-        audience: googleClientId,
+        audience: googleAudiences,
       });
       const payload = ticket.getPayload();
 
@@ -274,6 +274,16 @@ export class AuthService {
 
       throw new UnauthorizedException('Token de Google invalido.');
     }
+  }
+
+  private obtenerGoogleAudiences() {
+    return [
+      this.configService.get<string>('GOOGLE_CLIENT_ID'),
+      this.configService.get<string>('GOOGLE_ANDROID_CLIENT_ID'),
+    ]
+      .map((valor) => valor?.trim())
+      .filter((valor): valor is string => Boolean(valor))
+      .filter((valor, indice, lista) => lista.indexOf(valor) === indice);
   }
 
   private mapearUsuario(usuario: {

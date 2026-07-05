@@ -7,7 +7,7 @@ export function validarEnv(config: Record<string, unknown>) {
   }
 
   if (config.NODE_ENV === 'production') {
-    const requeridasProduccion = ['GOOGLE_CLIENT_ID'].filter((clave) => !config[clave]);
+    const requeridasProduccion = ['GOOGLE_CLIENT_ID', 'GOOGLE_ANDROID_CLIENT_ID'].filter((clave) => !config[clave]);
 
     if (requeridasProduccion.length > 0) {
       throw new Error(`Variables de entorno faltantes para produccion: ${requeridasProduccion.join(', ')}`);
