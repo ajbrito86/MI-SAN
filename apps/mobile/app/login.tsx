@@ -52,10 +52,17 @@ export default function Login() {
     setCargandoGoogle(true);
 
     try {
+      console.info('[GoogleSignIn] enviando idToken al backend');
       const respuesta = await loginConGoogle({ idToken });
+      console.info('[GoogleSignIn] backend ok', {
+        tieneUsuario: Boolean(respuesta.usuario),
+        tieneAccessToken: Boolean(respuesta.accessToken),
+        tieneRefreshToken: Boolean(respuesta.refreshToken),
+      });
       guardarSesion(respuesta);
       router.replace('/(tabs)/home');
     } catch (err) {
+      console.info('[GoogleSignIn] backend error', err instanceof Error ? err.message : String(err));
       setError(err instanceof Error ? err.message : 'No pudimos iniciar sesion con Google.');
     } finally {
       setCargandoGoogle(false);
