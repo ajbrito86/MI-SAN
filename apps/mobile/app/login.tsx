@@ -1,4 +1,5 @@
 import * as Google from 'expo-auth-session/providers/google';
+import { makeRedirectUri } from 'expo-auth-session';
 import { Link, router } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { Bell, Check, Eye, EyeOff, FileText, Lock, Mail, ShieldCheck, Users } from 'lucide-react-native';
@@ -15,7 +16,10 @@ const googleWebClientId =
   process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || '107458796974-162ttfmbucdog5s8b47pq6ac25ctn0rh.apps.googleusercontent.com';
 const googleAndroidClientId =
   process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID || '107458796974-sf1vc8erhk0l877234j7hm8brddfsj2v.apps.googleusercontent.com';
-const googleClientIdSufijo = '.apps.googleusercontent.com';
+const googleRedirectUri = makeRedirectUri({
+  scheme: 'misan',
+  path: 'oauthredirect',
+});
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -24,7 +28,7 @@ function obtenerGoogleRedirectUriAndroid() {
     return undefined;
   }
 
-  return `com.googleusercontent.apps.${googleAndroidClientId.replace(googleClientIdSufijo, '')}:/oauthredirect`;
+  return googleRedirectUri;
 }
 
 export default function Login() {
