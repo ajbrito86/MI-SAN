@@ -21,6 +21,8 @@ validate_env() {
   grep -q '^JWT_ACCESS_SECRET=' "$ENV_FILE" || fail "JWT_ACCESS_SECRET no esta configurado en $ENV_FILE"
   grep -q '^JWT_REFRESH_SECRET=' "$ENV_FILE" || fail "JWT_REFRESH_SECRET no esta configurado en $ENV_FILE"
   grep -q '^POSTGRES_PASSWORD=' "$ENV_FILE" || fail "POSTGRES_PASSWORD no esta configurado en $ENV_FILE"
+  grep -q '^GOOGLE_CLIENT_ID=' "$ENV_FILE" || fail "GOOGLE_CLIENT_ID no esta configurado en $ENV_FILE"
+  grep -q '^GOOGLE_ANDROID_CLIENT_ID=' "$ENV_FILE" || fail "GOOGLE_ANDROID_CLIENT_ID no esta configurado en $ENV_FILE"
 
   if grep -E 'replace_with|change_me|password_here|secret_here' "$ENV_FILE" >/dev/null; then
     fail "$ENV_FILE contiene placeholders. Edita variables reales antes de desplegar."
@@ -69,4 +71,3 @@ fi
 wait_for_health
 
 echo "Deploy production MI-SAN completado."
-
