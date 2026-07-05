@@ -6,6 +6,5 @@ coverage
 tmp
 ../../tmp
 eas-build-*
-*.apk
 *.log
 *.tmp
