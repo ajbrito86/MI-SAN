@@ -30,8 +30,9 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3000
-    ports:
-      - "127.0.0.1:${API_PORT:-3000}:3000"
+    # Exposed only through the proxy network in production.
+    # ports:
+    #   - "127.0.0.1:${API_PORT:-3000}:3000"
     expose:
       - "3000"
     volumes:
