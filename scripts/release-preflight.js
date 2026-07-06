@@ -202,6 +202,7 @@ function validarEnv() {
       else aviso(mensaje);
     }
 
+    validarAdsTestModePerfil(perfil, config?.env ?? {});
     validarAdMobEnvDesdeObjeto(config?.env ?? {}, `apps/mobile/eas.json:${perfil}`, ADMOB_ANDROID_KEYS, {
       estricto: esProduccion,
     });
@@ -217,6 +218,7 @@ function validarEnv() {
     } else {
       const mobileProductionRealEnv = fs.readFileSync(path.join(root, envProduccionRel), 'utf8');
       validarNativeAdsProduccion(mobileProductionRealEnv, envProduccionRel);
+      validarAdsTestModeProduccion(mobileProductionRealEnv, envProduccionRel);
       validarAdMobEnv(mobileProductionRealEnv, envProduccionRel, { estricto: true, claves: ADMOB_ANDROID_KEYS });
       validarAdMobEnv(mobileProductionRealEnv, envProduccionRel, { claves: ADMOB_IOS_KEYS, prefijoAviso: 'Fase iOS posterior' });
     }
@@ -265,6 +267,34 @@ function validarNativeAdsProduccion(mobileEnv, origen) {
     ok(`${origen} habilita anuncios nativos.`);
   } else {
     error(`${origen} debe definir EXPO_PUBLIC_ENABLE_NATIVE_ADS=true para probar AdMob Android real.`);
+  }
+}
+
+function validarAdsTestModePerfil(perfil, envObj) {
+  const testMode = extraerEnvObjeto(envObj, 'EXPO_PUBLIC_ADS_TEST_MODE');
+  const buildProfile = extraerEnvObjeto(envObj, 'EXPO_PUBLIC_BUILD_PROFILE');
+
+  if (buildProfile !== perfil) {
+    const mensaje = `apps/mobile/eas.json:${perfil} debe definir EXPO_PUBLIC_BUILD_PROFILE=${perfil}.`;
+    if (esProduccion) error(mensaje);
+    else aviso(mensaje);
+  }
+
+  if (perfil === 'production' && testMode === 'true') {
+    error('EXPO_PUBLIC_ADS_TEST_MODE no puede estar activo en apps/mobile/eas.json:production.');
+  } else if (['internal', 'preview'].includes(perfil) && testMode === 'true') {
+    ok(`El perfil EAS ${perfil} habilita modo de prueba de anuncios.`);
+  } else if (perfil !== 'production') {
+    aviso(`El perfil EAS ${perfil} no tiene EXPO_PUBLIC_ADS_TEST_MODE=true; los usuarios Premium no veran anuncios de prueba.`);
+  }
+}
+
+function validarAdsTestModeProduccion(mobileEnv, origen) {
+  const testMode = extraerEnv(mobileEnv, 'EXPO_PUBLIC_ADS_TEST_MODE');
+  const buildProfile = extraerEnv(mobileEnv, 'EXPO_PUBLIC_BUILD_PROFILE');
+
+  if (testMode === 'true' || buildProfile === 'preview' || buildProfile === 'internal') {
+    error(`${origen} no debe activar modo de prueba de anuncios para produccion.`);
   }
 }
 

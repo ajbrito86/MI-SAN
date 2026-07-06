@@ -12,6 +12,7 @@ const INTERSTITIAL_ANDROID_PRUEBA = 'ca-app-pub-3940256099942544/1033173712';
 const INTERSTITIAL_IOS_PRUEBA = 'ca-app-pub-3940256099942544/4411468910';
 const INTERVALO_INTERSTITIAL_DEFAULT_MS = 10 * 60 * 1000;
 const ACCIONES_ENTRE_INTERSTITIAL_DEFAULT = 3;
+const INTERVALO_INTERSTITIAL_TEST_MS = 60 * 1000;
 
 let ultimaImpresionInterstitial = 0;
 let accionesElegiblesDesdeInterstitial = 0;
@@ -31,6 +32,13 @@ export function adsNativosHabilitados() {
   return process.env.EXPO_PUBLIC_ENABLE_NATIVE_ADS === 'true';
 }
 
+export function adsTestModeHabilitado() {
+  const perfil = process.env.EXPO_PUBLIC_BUILD_PROFILE;
+  const perfilPermiteTest = perfil === 'internal' || perfil === 'preview' || perfil === 'development';
+
+  return process.env.EXPO_PUBLIC_ADS_TEST_MODE === 'true' && perfilPermiteTest;
+}
+
 function cargarModuloAds() {
   if (Platform.OS === 'web' || !adsNativosHabilitados()) {
     return null;
@@ -47,10 +55,18 @@ export function obtenerBannerAdUnitId() {
   const admob = obtenerAdMobExtra();
 
   if (Platform.OS === 'ios') {
+    if (adsTestModeHabilitado()) {
+      return BANNER_IOS_PRUEBA;
+    }
+
     return admob.iosBannerId || process.env.EXPO_PUBLIC_ADMOB_BANNER_IOS || BANNER_IOS_PRUEBA;
   }
 
   if (Platform.OS === 'android') {
+    if (adsTestModeHabilitado()) {
+      return BANNER_ANDROID_PRUEBA;
+    }
+
     return admob.androidBannerId || process.env.EXPO_PUBLIC_ADMOB_BANNER_ANDROID || BANNER_ANDROID_PRUEBA;
   }
 
@@ -61,10 +77,18 @@ export function obtenerInterstitialAdUnitId() {
   const admob = obtenerAdMobExtra();
 
   if (Platform.OS === 'ios') {
+    if (adsTestModeHabilitado()) {
+      return INTERSTITIAL_IOS_PRUEBA;
+    }
+
     return admob.iosInterstitialId || process.env.EXPO_PUBLIC_ADMOB_INTERSTITIAL_IOS || INTERSTITIAL_IOS_PRUEBA;
   }
 
   if (Platform.OS === 'android') {
+    if (adsTestModeHabilitado()) {
+      return INTERSTITIAL_ANDROID_PRUEBA;
+    }
+
     return admob.androidInterstitialId || process.env.EXPO_PUBLIC_ADMOB_INTERSTITIAL_ANDROID || INTERSTITIAL_ANDROID_PRUEBA;
   }
 
@@ -97,7 +121,9 @@ export function puedeMostrarInterstitial(mostrarAds: boolean, frecuenciaMinutos 
     return false;
   }
 
-  const intervalo = Math.max(1, frecuenciaMinutos) * 60 * 1000 || INTERVALO_INTERSTITIAL_DEFAULT_MS;
+  const intervalo = adsTestModeHabilitado()
+    ? INTERVALO_INTERSTITIAL_TEST_MS
+    : Math.max(1, frecuenciaMinutos) * 60 * 1000 || INTERVALO_INTERSTITIAL_DEFAULT_MS;
   return Date.now() - ultimaImpresionInterstitial >= intervalo;
 }
 
@@ -183,14 +209,18 @@ export async function registrarAccionElegibleInterstitial({
   accionesMinimas?: number;
   nombreAccion: 'crear_san' | 'finalizar_ciclo' | 'cerrar_sociedad';
 }) {
-  if (!mostrarAds || !anunciosActivos || Platform.OS === 'web') {
+  const modoPrueba = adsTestModeHabilitado();
+  const puedeMostrarAds = modoPrueba || (mostrarAds && anunciosActivos);
+  const accionesRequeridas = modoPrueba ? 1 : accionesMinimas;
+
+  if (!puedeMostrarAds || Platform.OS === 'web') {
     return false;
   }
 
   accionesElegiblesDesdeInterstitial += 1;
   registrarEvento({ nombre: `interstitial_accion_elegible_${nombreAccion}`, tipo: 'ADS' });
 
-  if (!puedeMostrarInterstitialTrasAccion(true, frecuenciaMinutos, accionesMinimas)) {
+  if (!puedeMostrarInterstitialTrasAccion(true, frecuenciaMinutos, accionesRequeridas)) {
     return false;
   }
 

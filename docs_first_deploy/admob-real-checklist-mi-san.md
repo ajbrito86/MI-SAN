@@ -35,6 +35,8 @@ En Expo Go/desarrollo local `EXPO_PUBLIC_ENABLE_NATIVE_ADS=false` evita cargar e
 - Usuarios gratuitos solo pueden ver banners en Dashboard, Historial y Reportes.
 - No se muestran anuncios durante login, registro, pagos, formularios, invitaciones, confirmaciones de turnos ni acciones criticas.
 - Los interstitials solo se intentan despues de acciones completadas y con frecuencia limitada.
+- `EXPO_PUBLIC_ADS_TEST_MODE=true` solo se permite en builds `internal` y `preview`; usa Test IDs de AdMob y permite validar anuncios aunque el usuario tenga Premium.
+- `production` debe mantener `EXPO_PUBLIC_ADS_TEST_MODE=false` y usar las reglas reales de negocio.
 - Ejecutar preflight normal antes de pruebas internas:
 
 ```bash

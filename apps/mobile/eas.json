@@ -13,7 +13,9 @@
         "EXPO_PUBLIC_API_BASE_URL": "https://api.mi-san.kingdom-devs.net/api",
         "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "107458796974-162ttfmbucdog5s8b47pq6ac25ctn0rh.apps.googleusercontent.com",
         "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "107458796974-sf1vc8erhk0l877234j7hm8brddfsj2v.apps.googleusercontent.com",
+        "EXPO_PUBLIC_BUILD_PROFILE": "internal",
         "EXPO_PUBLIC_ENABLE_NATIVE_ADS": "true",
+        "EXPO_PUBLIC_ADS_TEST_MODE": "true",
         "ADMOB_ANDROID_APP_ID": "ca-app-pub-8890665262846106~6098582018",
         "ADMOB_ANDROID_BANNER_ID": "ca-app-pub-8890665262846106/7925799467",
         "ADMOB_ANDROID_INTERSTITIAL_ID": "ca-app-pub-8890665262846106/2053314239"
@@ -28,7 +30,9 @@
         "EXPO_PUBLIC_API_BASE_URL": "https://api.mi-san.kingdom-devs.net/api",
         "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "107458796974-162ttfmbucdog5s8b47pq6ac25ctn0rh.apps.googleusercontent.com",
         "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "107458796974-sf1vc8erhk0l877234j7hm8brddfsj2v.apps.googleusercontent.com",
+        "EXPO_PUBLIC_BUILD_PROFILE": "preview",
         "EXPO_PUBLIC_ENABLE_NATIVE_ADS": "true",
+        "EXPO_PUBLIC_ADS_TEST_MODE": "true",
         "ADMOB_ANDROID_APP_ID": "ca-app-pub-8890665262846106~6098582018",
         "ADMOB_ANDROID_BANNER_ID": "ca-app-pub-8890665262846106/7925799467",
         "ADMOB_ANDROID_INTERSTITIAL_ID": "ca-app-pub-8890665262846106/2053314239"
@@ -43,7 +47,9 @@
         "EXPO_PUBLIC_API_BASE_URL": "https://api.mi-san.kingdom-devs.net/api",
         "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "107458796974-162ttfmbucdog5s8b47pq6ac25ctn0rh.apps.googleusercontent.com",
         "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "107458796974-sf1vc8erhk0l877234j7hm8brddfsj2v.apps.googleusercontent.com",
+        "EXPO_PUBLIC_BUILD_PROFILE": "production",
         "EXPO_PUBLIC_ENABLE_NATIVE_ADS": "true",
+        "EXPO_PUBLIC_ADS_TEST_MODE": "false",
         "ADMOB_ANDROID_APP_ID": "ca-app-pub-8890665262846106~6098582018",
         "ADMOB_ANDROID_BANNER_ID": "ca-app-pub-8890665262846106/7925799467",
         "ADMOB_ANDROID_INTERSTITIAL_ID": "ca-app-pub-8890665262846106/2053314239"

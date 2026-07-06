@@ -3,7 +3,7 @@ import { Platform, Text, View } from 'react-native';
 import { useConfiguracionMobile } from '@/hooks/use-configuracion-mobile';
 import { useSuscripcion } from '@/hooks/use-suscripcion';
 import { registrarError, registrarEvento } from '@/services/analytics-service';
-import { adsNativosHabilitados, obtenerBannerAdUnitId } from '@/services/ads-service';
+import { adsNativosHabilitados, adsTestModeHabilitado, obtenerBannerAdUnitId } from '@/services/ads-service';
 
 type ModuloAds = typeof import('react-native-google-mobile-ads');
 type UbicacionBanner = 'dashboard' | 'historial' | 'reportes';
@@ -16,6 +16,7 @@ export function BannerPublicidad({ ubicacion }: { ubicacion: UbicacionBanner }) 
   const { data: configuracion } = useConfiguracionMobile();
   const { data: suscripcion } = useSuscripcion();
   const adUnitId = obtenerBannerAdUnitId();
+  const modoPruebaAds = adsTestModeHabilitado();
   const [moduloAds, setModuloAds] = useState<ModuloAds | null>(null);
 
   useEffect(() => {
@@ -42,7 +43,9 @@ export function BannerPublicidad({ ubicacion }: { ubicacion: UbicacionBanner }) 
     };
   }, []);
 
-  if (!UBICACIONES_BANNER_PERMITIDAS.has(ubicacion) || !configuracion.featureFlags.anunciosActivos || !suscripcion?.mostrarAds) {
+  const puedeMostrarBanner = modoPruebaAds || (configuracion.featureFlags.anunciosActivos && suscripcion?.mostrarAds);
+
+  if (!UBICACIONES_BANNER_PERMITIDAS.has(ubicacion) || !puedeMostrarBanner) {
     return null;
   }
 
