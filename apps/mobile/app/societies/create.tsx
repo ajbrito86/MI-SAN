@@ -6,7 +6,10 @@ import { AppButton } from '@/components/app-button';
 import { CalendarDatePicker } from '@/components/calendar-date-picker';
 import { AppHeader } from '@/components/app-header';
 import { ScreenScrollView } from '@/components/screen';
+import { useConfiguracionMobile } from '@/hooks/use-configuracion-mobile';
+import { useSuscripcion } from '@/hooks/use-suscripcion';
 import { prepararSociedadPayload } from '@/lib/sociedad-form';
+import { registrarAccionElegibleInterstitial } from '@/services/ads-service';
 import { crearSociedad, type CrearSociedadPayload } from '@/services/sociedades-service';
 import { useAuthStore } from '@/stores/auth-store';
 
@@ -18,6 +21,8 @@ type Moneda = CrearSociedadPayload['moneda'];
 export default function CrearSociedad() {
   const token = useAuthStore((state) => state.accessToken);
   const queryClient = useQueryClient();
+  const { data: configuracion } = useConfiguracionMobile();
+  const { data: suscripcion } = useSuscripcion();
   const [formulario, setFormulario] = useState({
     nombre: '',
     montoCuota: '',
@@ -34,6 +39,12 @@ export default function CrearSociedad() {
     mutationFn: (payload: CrearSociedadPayload) => crearSociedad(token ?? '', payload),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['sociedades'] });
+      await registrarAccionElegibleInterstitial({
+        mostrarAds: Boolean(suscripcion?.mostrarAds),
+        anunciosActivos: configuracion.featureFlags.anunciosActivos,
+        frecuenciaMinutos: configuracion.monetizacion.frecuenciaInterstitialMinutos,
+        nombreAccion: 'crear_san',
+      });
       router.replace('/(tabs)/societies');
     },
     onError: (err) => {

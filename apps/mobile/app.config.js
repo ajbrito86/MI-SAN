@@ -13,6 +13,33 @@ function env(clave, fallback) {
   return process.env[clave] || fallback;
 }
 
+function valorAdMobPendiente(valor) {
+  return (
+    !valor ||
+    valor.includes('replace_with_') ||
+    valor.includes('xxxxxxxx') ||
+    valor.includes('yyyyyyyy') ||
+    valor.includes('3940256099942544')
+  );
+}
+
+function validarAdMobProduccion(admob) {
+  const esBuildProduccion = process.env.EAS_BUILD_PROFILE === 'production' || process.env.NODE_ENV === 'production';
+
+  if (!esBuildProduccion) {
+    return;
+  }
+
+  const plataformas = process.env.EAS_BUILD_PLATFORM === 'ios' || process.env.ADMOB_REQUIRE_IOS === 'true' ? ['android', 'ios'] : ['android'];
+  const pendientes = Object.entries(admob)
+    .filter(([clave, valor]) => plataformas.some((plataforma) => clave.startsWith(plataforma)) && valorAdMobPendiente(valor))
+    .map(([clave]) => clave);
+
+  if (pendientes.length > 0) {
+    throw new Error(`AdMob production requiere IDs reales: ${pendientes.join(', ')}`);
+  }
+}
+
 function valoresUnicos(valores) {
   return [...new Set(valores.filter(Boolean))];
 }
@@ -63,6 +90,8 @@ module.exports = ({ config }) => {
     iosBannerId: env('ADMOB_IOS_BANNER_ID', TEST_ADMOB.iosBannerId),
     iosInterstitialId: env('ADMOB_IOS_INTERSTITIAL_ID', TEST_ADMOB.iosInterstitialId),
   };
+
+  validarAdMobProduccion(admob);
 
   return aplicarSkipKotlinMetadata({
     ...config,

@@ -33,7 +33,7 @@ export default function Home() {
         </View>
       </View>
       <View className="mt-6 gap-4 pb-8">
-        <BannerPublicidad />
+        <BannerPublicidad ubicacion="dashboard" />
         <AvisoTrial suscripcion={suscripcion} />
         {suscripcion?.mostrarAds ? <TarjetaPremium /> : null}
 

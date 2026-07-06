@@ -11,8 +11,10 @@ const BANNER_IOS_PRUEBA = 'ca-app-pub-3940256099942544/2934735716';
 const INTERSTITIAL_ANDROID_PRUEBA = 'ca-app-pub-3940256099942544/1033173712';
 const INTERSTITIAL_IOS_PRUEBA = 'ca-app-pub-3940256099942544/4411468910';
 const INTERVALO_INTERSTITIAL_DEFAULT_MS = 10 * 60 * 1000;
+const ACCIONES_ENTRE_INTERSTITIAL_DEFAULT = 3;
 
 let ultimaImpresionInterstitial = 0;
+let accionesElegiblesDesdeInterstitial = 0;
 
 type AdMobExtra = {
   androidBannerId?: string;
@@ -99,6 +101,14 @@ export function puedeMostrarInterstitial(mostrarAds: boolean, frecuenciaMinutos 
   return Date.now() - ultimaImpresionInterstitial >= intervalo;
 }
 
+export function puedeMostrarInterstitialTrasAccion(mostrarAds: boolean, frecuenciaMinutos = 10, accionesMinimas = ACCIONES_ENTRE_INTERSTITIAL_DEFAULT) {
+  if (!puedeMostrarInterstitial(mostrarAds, frecuenciaMinutos)) {
+    return false;
+  }
+
+  return accionesElegiblesDesdeInterstitial >= Math.max(1, accionesMinimas);
+}
+
 export async function mostrarInterstitialSiPuede(mostrarAds: boolean, frecuenciaMinutos = 10) {
   if (!puedeMostrarInterstitial(mostrarAds, frecuenciaMinutos)) {
     return false;
@@ -130,6 +140,7 @@ export async function mostrarInterstitialSiPuede(mostrarAds: boolean, frecuencia
 
     const unsubscribeLoaded = interstitial.addAdEventListener(moduloAds.AdEventType.LOADED, () => {
       ultimaImpresionInterstitial = Date.now();
+      accionesElegiblesDesdeInterstitial = 0;
       registrarEvento({ nombre: 'interstitial_mostrado', tipo: 'ADS' });
       interstitial.show().catch(() => resolver(false));
     });
@@ -157,4 +168,31 @@ export async function mostrarInterstitialSiPuede(mostrarAds: boolean, frecuencia
 
     interstitial.load();
   });
+}
+
+export async function registrarAccionElegibleInterstitial({
+  mostrarAds,
+  anunciosActivos,
+  frecuenciaMinutos = 10,
+  accionesMinimas = ACCIONES_ENTRE_INTERSTITIAL_DEFAULT,
+  nombreAccion,
+}: {
+  mostrarAds: boolean;
+  anunciosActivos: boolean;
+  frecuenciaMinutos?: number;
+  accionesMinimas?: number;
+  nombreAccion: 'crear_san' | 'finalizar_ciclo' | 'cerrar_sociedad';
+}) {
+  if (!mostrarAds || !anunciosActivos || Platform.OS === 'web') {
+    return false;
+  }
+
+  accionesElegiblesDesdeInterstitial += 1;
+  registrarEvento({ nombre: `interstitial_accion_elegible_${nombreAccion}`, tipo: 'ADS' });
+
+  if (!puedeMostrarInterstitialTrasAccion(true, frecuenciaMinutos, accionesMinimas)) {
+    return false;
+  }
+
+  return mostrarInterstitialSiPuede(true, frecuenciaMinutos);
 }

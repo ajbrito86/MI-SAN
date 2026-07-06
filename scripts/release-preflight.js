@@ -5,6 +5,8 @@ const root = path.resolve(__dirname, '..');
 const errores = [];
 const avisos = [];
 const esProduccion = process.env.NODE_ENV === 'production';
+const ADMOB_ANDROID_KEYS = ['ADMOB_ANDROID_APP_ID', 'ADMOB_ANDROID_BANNER_ID', 'ADMOB_ANDROID_INTERSTITIAL_ID'];
+const ADMOB_IOS_KEYS = ['ADMOB_IOS_APP_ID', 'ADMOB_IOS_BANNER_ID', 'ADMOB_IOS_INTERSTITIAL_ID'];
 
 function existe(relPath) {
   return fs.existsSync(path.join(root, relPath));
@@ -190,10 +192,35 @@ function validarEnv() {
     const url = config?.env?.EXPO_PUBLIC_API_BASE_URL;
     if (url) validarApiUrlSegura(url, `apps/mobile/eas.json:${perfil}`);
     else aviso(`El perfil EAS ${perfil} no define EXPO_PUBLIC_API_BASE_URL.`);
+
+    const nativeAds = config?.env?.EXPO_PUBLIC_ENABLE_NATIVE_ADS;
+    if (nativeAds === 'true') {
+      ok(`El perfil EAS ${perfil} habilita anuncios nativos.`);
+    } else {
+      const mensaje = `El perfil EAS ${perfil} debe definir EXPO_PUBLIC_ENABLE_NATIVE_ADS=true para probar AdMob en builds nativos.`;
+      if (esProduccion) error(mensaje);
+      else aviso(mensaje);
+    }
+
+    validarAdMobEnvDesdeObjeto(config?.env ?? {}, `apps/mobile/eas.json:${perfil}`, ADMOB_ANDROID_KEYS, {
+      estricto: esProduccion,
+    });
   }
 
   validarAdMobEnv(mobileEnv, 'apps/mobile/.env.example');
   validarAdMobEnv(mobileProductionEnv, 'apps/mobile/.env.production.example');
+
+  if (esProduccion) {
+    const envProduccionRel = 'apps/mobile/.env.production';
+    if (!existe(envProduccionRel)) {
+      error(`Falta ${envProduccionRel} con IDs reales de AdMob Android para preflight estricto.`);
+    } else {
+      const mobileProductionRealEnv = fs.readFileSync(path.join(root, envProduccionRel), 'utf8');
+      validarNativeAdsProduccion(mobileProductionRealEnv, envProduccionRel);
+      validarAdMobEnv(mobileProductionRealEnv, envProduccionRel, { estricto: true, claves: ADMOB_ANDROID_KEYS });
+      validarAdMobEnv(mobileProductionRealEnv, envProduccionRel, { claves: ADMOB_IOS_KEYS, prefijoAviso: 'Fase iOS posterior' });
+    }
+  }
 }
 
 function extraerEnv(contenido, clave) {
@@ -231,34 +258,56 @@ function validarApiUrlSegura(url, origen) {
   }
 }
 
-function validarAdMobEnv(mobileEnv, origen) {
-  const claves = [
-    'ADMOB_ANDROID_APP_ID',
-    'ADMOB_ANDROID_BANNER_ID',
-    'ADMOB_ANDROID_INTERSTITIAL_ID',
-    'ADMOB_IOS_APP_ID',
-    'ADMOB_IOS_BANNER_ID',
-    'ADMOB_IOS_INTERSTITIAL_ID',
-  ];
+function validarNativeAdsProduccion(mobileEnv, origen) {
+  const nativeAds = extraerEnv(mobileEnv, 'EXPO_PUBLIC_ENABLE_NATIVE_ADS');
+
+  if (nativeAds === 'true') {
+    ok(`${origen} habilita anuncios nativos.`);
+  } else {
+    error(`${origen} debe definir EXPO_PUBLIC_ENABLE_NATIVE_ADS=true para probar AdMob Android real.`);
+  }
+}
+
+function extraerEnvObjeto(envObj, clave) {
+  const valor = envObj[clave];
+  return typeof valor === 'string' ? valor.trim() : null;
+}
+
+function validarAdMobEnvDesdeObjeto(envObj, origen, claves, opciones = {}) {
+  for (const clave of claves) {
+    const valor = extraerEnvObjeto(envObj, clave);
+    validarAdMobValor(clave, valor, origen, opciones);
+  }
+}
+
+function validarAdMobEnv(mobileEnv, origen, opciones = {}) {
+  const claves = opciones.claves ?? [...ADMOB_ANDROID_KEYS, ...ADMOB_IOS_KEYS];
 
   for (const clave of claves) {
     const valor = extraerEnv(mobileEnv, clave);
-    if (!valor) {
-      error(`Falta ${clave} en ${origen}.`);
-      continue;
-    }
+    validarAdMobValor(clave, valor, origen, opciones);
+  }
+}
 
-    const usaPlaceholder =
-      valor.includes('replace_with_') ||
-      valor.includes('xxxxxxxx') ||
-      valor.includes('yyyyyyyy') ||
-      valor.includes('3940256099942544');
-    if (usaPlaceholder) {
-      const prefijo = esProduccion ? 'Produccion pendiente' : 'Pendiente';
-      aviso(`${prefijo}: ${clave} usa placeholder/test id en ${origen}.`);
-    } else {
-      ok(`${clave} parece configurado en ${origen}.`);
-    }
+function validarAdMobValor(clave, valor, origen, opciones = {}) {
+  if (!valor) {
+    const mensaje = `Falta ${clave} en ${origen}.`;
+    if (opciones.estricto) error(mensaje);
+    else aviso(mensaje);
+    return;
+  }
+
+  const usaPlaceholder =
+    valor.includes('replace_with_') ||
+    valor.includes('xxxxxxxx') ||
+    valor.includes('yyyyyyyy') ||
+    valor.includes('3940256099942544');
+  if (usaPlaceholder) {
+    const mensaje = `${clave} usa placeholder/test id en ${origen}.`;
+    if (opciones.estricto) error(`Produccion pendiente: ${mensaje}`);
+    else aviso(`${opciones.prefijoAviso ?? 'Pendiente'}: ${mensaje}`);
+  } else {
+    ok(`${clave} parece configurado en ${origen}.`);
   }
 }
 

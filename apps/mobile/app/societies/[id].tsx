@@ -6,8 +6,11 @@ import { AppButton } from '@/components/app-button';
 import { AppCard } from '@/components/app-card';
 import { AppHeader } from '@/components/app-header';
 import { ScreenScrollView } from '@/components/screen';
+import { useConfiguracionMobile } from '@/hooks/use-configuracion-mobile';
+import { useSuscripcion } from '@/hooks/use-suscripcion';
 import { etiquetaEstadoOperativo, etiquetaEstadoSociedad } from '@/lib/estados';
 import { formatearMonto } from '@/lib/moneda';
+import { registrarAccionElegibleInterstitial } from '@/services/ads-service';
 import { getPublicFileUrl } from '@/services/api';
 import { confirmarPago, listarMisPagos, listarPagosSociedad, rechazarPago } from '@/services/pagos-service';
 import {
@@ -33,6 +36,8 @@ export default function DetalleSociedad() {
   const token = useAuthStore((state) => state.accessToken);
   const usuarioActual = useAuthStore((state) => state.usuario);
   const queryClient = useQueryClient();
+  const { data: configuracion } = useConfiguracionMobile();
+  const { data: suscripcion } = useSuscripcion();
   const [contactoInvitado, setContactoInvitado] = useState('');
   const [mensajeAccion, setMensajeAccion] = useState('');
   const [pagoEnRechazo, setPagoEnRechazo] = useState<string | null>(null);
@@ -247,6 +252,14 @@ export default function DetalleSociedad() {
       queryClient.invalidateQueries({ queryKey: ['sociedades'] }),
     ]);
   };
+  const registrarInterstitialPostAccion = (nombreAccion: 'finalizar_ciclo' | 'cerrar_sociedad') =>
+    registrarAccionElegibleInterstitial({
+      mostrarAds: Boolean(suscripcion?.mostrarAds),
+      anunciosActivos: configuracion.featureFlags.anunciosActivos,
+      frecuenciaMinutos: configuracion.monetizacion.frecuenciaInterstitialMinutos,
+      nombreAccion,
+    });
+
   const invitarMutation = useMutation({
     mutationFn: () => {
       const contacto = contactoInvitado.trim();
@@ -352,6 +365,7 @@ export default function DetalleSociedad() {
     onSuccess: async () => {
       setMensajeAccion('Ciclo finalizado.');
       await invalidarSociedad();
+      await registrarInterstitialPostAccion('finalizar_ciclo');
     },
     onError: (err) => setMensajeAccion(err instanceof Error ? err.message : 'No pudimos finalizar el ciclo.'),
   });
@@ -360,6 +374,7 @@ export default function DetalleSociedad() {
     onSuccess: async () => {
       setMensajeAccion('Sociedad cerrada.');
       await invalidarSociedad();
+      await registrarInterstitialPostAccion('cerrar_sociedad');
     },
     onError: (err) => setMensajeAccion(err instanceof Error ? err.message : 'No pudimos cerrar la sociedad.'),
   });

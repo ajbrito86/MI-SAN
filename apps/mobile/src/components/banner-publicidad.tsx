@@ -6,10 +6,13 @@ import { registrarError, registrarEvento } from '@/services/analytics-service';
 import { adsNativosHabilitados, obtenerBannerAdUnitId } from '@/services/ads-service';
 
 type ModuloAds = typeof import('react-native-google-mobile-ads');
+type UbicacionBanner = 'dashboard' | 'historial' | 'reportes';
 
 declare const require: (nombre: string) => ModuloAds;
 
-export function BannerPublicidad() {
+const UBICACIONES_BANNER_PERMITIDAS = new Set<UbicacionBanner>(['dashboard', 'historial', 'reportes']);
+
+export function BannerPublicidad({ ubicacion }: { ubicacion: UbicacionBanner }) {
   const { data: configuracion } = useConfiguracionMobile();
   const { data: suscripcion } = useSuscripcion();
   const adUnitId = obtenerBannerAdUnitId();
@@ -39,7 +42,7 @@ export function BannerPublicidad() {
     };
   }, []);
 
-  if (!configuracion.featureFlags.anunciosActivos || !suscripcion?.mostrarAds) {
+  if (!UBICACIONES_BANNER_PERMITIDAS.has(ubicacion) || !configuracion.featureFlags.anunciosActivos || !suscripcion?.mostrarAds) {
     return null;
   }
 
@@ -51,7 +54,7 @@ export function BannerPublicidad() {
         <BannerAd
           unitId={adUnitId}
           size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
-          onAdLoaded={() => registrarEvento({ nombre: 'banner_mostrado', tipo: 'ADS' })}
+          onAdLoaded={() => registrarEvento({ nombre: `banner_mostrado_${ubicacion}`, tipo: 'ADS' })}
           onAdFailedToLoad={(error) => registrarError('banner_error', error, { adUnitId })}
         />
       </View>
