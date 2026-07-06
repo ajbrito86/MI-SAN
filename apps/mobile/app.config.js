@@ -13,6 +13,10 @@ function env(clave, fallback) {
   return process.env[clave] || fallback;
 }
 
+function envAdMob(clave, fallback) {
+  return [process.env[clave], process.env[`EXPO_PUBLIC_${clave}`], fallback].find((valor) => !valorAdMobPendiente(valor)) || fallback;
+}
+
 function valorAdMobPendiente(valor) {
   return (
     !valor ||
@@ -83,12 +87,12 @@ tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
 
 module.exports = ({ config }) => {
   const admob = {
-    androidAppId: env('ADMOB_ANDROID_APP_ID', TEST_ADMOB.androidAppId),
-    androidBannerId: env('ADMOB_ANDROID_BANNER_ID', TEST_ADMOB.androidBannerId),
-    androidInterstitialId: env('ADMOB_ANDROID_INTERSTITIAL_ID', TEST_ADMOB.androidInterstitialId),
-    iosAppId: env('ADMOB_IOS_APP_ID', TEST_ADMOB.iosAppId),
-    iosBannerId: env('ADMOB_IOS_BANNER_ID', TEST_ADMOB.iosBannerId),
-    iosInterstitialId: env('ADMOB_IOS_INTERSTITIAL_ID', TEST_ADMOB.iosInterstitialId),
+    androidAppId: envAdMob('ADMOB_ANDROID_APP_ID', TEST_ADMOB.androidAppId),
+    androidBannerId: envAdMob('ADMOB_ANDROID_BANNER_ID', TEST_ADMOB.androidBannerId),
+    androidInterstitialId: envAdMob('ADMOB_ANDROID_INTERSTITIAL_ID', TEST_ADMOB.androidInterstitialId),
+    iosAppId: envAdMob('ADMOB_IOS_APP_ID', TEST_ADMOB.iosAppId),
+    iosBannerId: envAdMob('ADMOB_IOS_BANNER_ID', TEST_ADMOB.iosBannerId),
+    iosInterstitialId: envAdMob('ADMOB_IOS_INTERSTITIAL_ID', TEST_ADMOB.iosInterstitialId),
   };
 
   validarAdMobProduccion(admob);

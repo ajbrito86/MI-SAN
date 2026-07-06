@@ -19,7 +19,7 @@
     },
     "android": {
       "package": "app.mi_san.mobile",
-      "versionCode": 1,
+      "versionCode": 5,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#F4FAF5"
@@ -36,6 +36,15 @@
     "plugins": [
       "expo-router",
       "react-native-iap",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "compileSdkVersion": 35,
+            "targetSdkVersion": 35
+          }
+        }
+      ],
       "react-native-google-mobile-ads"
     ],
     "experiments": {
