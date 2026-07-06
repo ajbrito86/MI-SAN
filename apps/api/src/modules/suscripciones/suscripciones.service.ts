@@ -1,6 +1,7 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { EstadoUsuarioPlan, PlataformaCompra, Prisma, RolUsuario, TipoAuditoriaMonetizacion } from '@prisma/client';
+import { google } from 'googleapis';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ConfiguracionService } from '../configuracion/configuracion.service';
 import { ComprarPremiumDto } from './dto/comprar-premium.dto';
@@ -8,6 +9,8 @@ import { ComprarPremiumDto } from './dto/comprar-premium.dto';
 const CODIGO_TRIAL = 'GRATIS_TRIAL';
 const CODIGO_GRATIS_ADS = 'GRATIS_ADS';
 const CODIGO_PREMIUM = 'PREMIUM_SIN_ADS';
+const GOOGLE_PLAY_PRODUCT_ID_DEFAULT = 'premium_sin_ads';
+const GOOGLE_PLAY_PACKAGE_NAME_DEFAULT = 'app.mi_san.mobile';
 const PLANES_BASE = {
   [CODIGO_TRIAL]: {
     nombre: 'Gratis Trial',
@@ -129,10 +132,11 @@ export class SuscripcionesService {
   }
 
   private async activarPremium(usuarioId: string, dto: ComprarPremiumDto, evento: string) {
-    this.validarActivacionPremiumPermitida();
+    const validacionCompra = await this.validarActivacionPremiumPermitida(dto);
 
     const plan = await this.buscarPlanActivo(CODIGO_PREMIUM);
     const fechaInicio = new Date();
+    const transaccionExternaId = dto.transaccionExternaId ?? validacionCompra?.orderId ?? dto.purchaseToken;
 
     const suscripcion = await this.prisma.$transaction(async (tx) => {
       await tx.usuarioPlan.updateMany({
@@ -153,7 +157,7 @@ export class SuscripcionesService {
           fechaFin: null,
           estado: EstadoUsuarioPlan.ACTIVO,
           plataformaCompra: dto.plataformaCompra ?? PlataformaCompra.MANUAL,
-          transaccionExternaId: dto.transaccionExternaId,
+          transaccionExternaId,
           esTrial: false,
           isActive: true,
         },
@@ -170,19 +174,112 @@ export class SuscripcionesService {
       tipo: evento === 'premium_restaurado' ? TipoAuditoriaMonetizacion.PREMIUM_RESTAURADO : TipoAuditoriaMonetizacion.PREMIUM_COMPRADO,
       planNuevo: CODIGO_PREMIUM,
       plataforma: dto.plataformaCompra ?? PlataformaCompra.MANUAL,
-      transaccionExternaId: dto.transaccionExternaId,
+      transaccionExternaId,
+      metadataJson: {
+        productId: dto.productId,
+        packageNameAndroid: dto.packageNameAndroid,
+        googlePlay: validacionCompra,
+      },
     });
 
     return this.mapearSuscripcion(suscripcion);
   }
 
-  private validarActivacionPremiumPermitida() {
+  private async validarActivacionPremiumPermitida(dto: ComprarPremiumDto) {
     const esProduccion = this.configService.get<string>('NODE_ENV') === 'production';
     const billingRealHabilitado = this.configService.get<string>('BILLING_REAL_ENABLED') === 'true';
     const activacionManualPermitida = this.configService.get<string>('ALLOW_MANUAL_PREMIUM_ACTIVATION') === 'true';
 
     if (esProduccion && !billingRealHabilitado && !activacionManualPermitida) {
       throw new ForbiddenException('Las compras Premium estan desactivadas hasta integrar Billing real.');
+    }
+
+    if (billingRealHabilitado) {
+      return this.validarCompraGooglePlay(dto);
+    }
+
+    return null;
+  }
+
+  private async validarCompraGooglePlay(dto: ComprarPremiumDto) {
+    if (dto.plataformaCompra !== PlataformaCompra.GOOGLE_PLAY) {
+      throw new ForbiddenException('Billing real Android requiere una compra de Google Play.');
+    }
+
+    const productIdEsperado = this.configService.get<string>('GOOGLE_PLAY_PREMIUM_PRODUCT_ID') || GOOGLE_PLAY_PRODUCT_ID_DEFAULT;
+    const packageNameEsperado = this.configService.get<string>('GOOGLE_PLAY_PACKAGE_NAME') || GOOGLE_PLAY_PACKAGE_NAME_DEFAULT;
+
+    if (!dto.productId || dto.productId !== productIdEsperado) {
+      throw new ForbiddenException('Product ID de Google Play invalido.');
+    }
+
+    if (!dto.purchaseToken) {
+      throw new ForbiddenException('Falta purchaseToken de Google Play.');
+    }
+
+    if (dto.packageNameAndroid && dto.packageNameAndroid !== packageNameEsperado) {
+      throw new ForbiddenException('Package name de Google Play invalido.');
+    }
+
+    const androidPublisher = google.androidpublisher({
+      version: 'v3',
+      auth: await this.crearGooglePlayAuth(),
+    });
+
+    const respuesta = await androidPublisher.purchases.products.get({
+      packageName: packageNameEsperado,
+      productId: productIdEsperado,
+      token: dto.purchaseToken,
+    });
+    const compra = respuesta.data;
+
+    if (compra.purchaseState !== 0) {
+      throw new ForbiddenException('La compra de Google Play no esta completada.');
+    }
+
+    if (compra.acknowledgementState !== 1) {
+      await androidPublisher.purchases.products.acknowledge({
+        packageName: packageNameEsperado,
+        productId: productIdEsperado,
+        token: dto.purchaseToken,
+      });
+    }
+
+    return {
+      productId: productIdEsperado,
+      packageName: packageNameEsperado,
+      orderId: compra.orderId,
+      purchaseTimeMillis: compra.purchaseTimeMillis,
+      purchaseState: compra.purchaseState,
+      acknowledgementState: compra.acknowledgementState,
+      consumptionState: compra.consumptionState,
+      purchaseType: compra.purchaseType,
+    };
+  }
+
+  private async crearGooglePlayAuth() {
+    const credentials = this.obtenerGooglePlayCredentials();
+
+    return new google.auth.GoogleAuth({
+      credentials,
+      scopes: ['https://www.googleapis.com/auth/androidpublisher'],
+    });
+  }
+
+  private obtenerGooglePlayCredentials() {
+    const base64 = this.configService.get<string>('GOOGLE_PLAY_SERVICE_ACCOUNT_JSON_BASE64');
+    const raw = base64
+      ? Buffer.from(base64, 'base64').toString('utf8')
+      : this.configService.get<string>('GOOGLE_PLAY_SERVICE_ACCOUNT_JSON');
+
+    if (!raw) {
+      throw new ForbiddenException('Faltan credenciales de Google Play para validar compras.');
+    }
+
+    try {
+      return JSON.parse(raw) as Record<string, unknown>;
+    } catch {
+      throw new ForbiddenException('Credenciales de Google Play invalidas.');
     }
   }
 

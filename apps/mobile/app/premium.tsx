@@ -9,6 +9,15 @@ import { ScreenScrollView } from '@/components/screen';
 import { useConfiguracionMobile } from '@/hooks/use-configuracion-mobile';
 import { useSuscripcion } from '@/hooks/use-suscripcion';
 import { registrarError, registrarEvento } from '@/services/analytics-service';
+import {
+  billingNativoHabilitado,
+  crearPayloadPremiumGooglePlay,
+  finalizarCompraPremiumGooglePlay,
+  formatearPrecioProducto,
+  iniciarCompraPremiumGooglePlay,
+  obtenerProductoPremiumGooglePlay,
+  restaurarCompraPremiumGooglePlay,
+} from '@/services/billing-service';
 import { comprarPremium, restaurarCompra } from '@/services/suscripciones-service';
 import { useAuthStore } from '@/stores/auth-store';
 
@@ -19,13 +28,36 @@ export default function PantallaPremium() {
   const usuario = useAuthStore((state) => state.usuario);
   const actualizarUsuario = useAuthStore((state) => state.actualizarUsuario);
   const plataformaCompra = Platform.OS === 'ios' ? 'APP_STORE' : Platform.OS === 'android' ? 'GOOGLE_PLAY' : 'MANUAL';
+  const usarBillingNativo = billingNativoHabilitado();
+
+  const productoPremium = useMutation({
+    mutationFn: obtenerProductoPremiumGooglePlay,
+  });
 
   useEffect(() => {
     registrarEvento({ nombre: 'pantalla_upgrade_abierta' });
+    if (usarBillingNativo) {
+      productoPremium.mutate();
+    }
   }, []);
 
   const compra = useMutation({
-    mutationFn: () => comprarPremium({ plataformaCompra }),
+    mutationFn: async () => {
+      if (!usarBillingNativo) {
+        return comprarPremium({ plataformaCompra });
+      }
+
+      const compraGooglePlay = await iniciarCompraPremiumGooglePlay(usuario?.id);
+
+      if (!compraGooglePlay) {
+        throw new Error('No se recibio confirmacion de compra desde Google Play.');
+      }
+
+      const suscripcionActualizada = await comprarPremium(crearPayloadPremiumGooglePlay(compraGooglePlay));
+      await finalizarCompraPremiumGooglePlay(compraGooglePlay);
+
+      return suscripcionActualizada;
+    },
     onSuccess: () => {
       registrarEvento({ nombre: 'premium_comprado', metadataJson: { plataformaCompra } });
       if (usuario) {
@@ -38,7 +70,22 @@ export default function PantallaPremium() {
   });
 
   const restauracion = useMutation({
-    mutationFn: () => restaurarCompra({ plataformaCompra }),
+    mutationFn: async () => {
+      if (!usarBillingNativo) {
+        return restaurarCompra({ plataformaCompra });
+      }
+
+      const compraGooglePlay = await restaurarCompraPremiumGooglePlay();
+
+      if (!compraGooglePlay) {
+        throw new Error('No encontramos una compra Premium para restaurar en Google Play.');
+      }
+
+      const suscripcionActualizada = await restaurarCompra(crearPayloadPremiumGooglePlay(compraGooglePlay));
+      await finalizarCompraPremiumGooglePlay(compraGooglePlay);
+
+      return suscripcionActualizada;
+    },
     onSuccess: () => {
       registrarEvento({ nombre: 'premium_restaurado', metadataJson: { plataformaCompra } });
       if (usuario) {
@@ -51,6 +98,7 @@ export default function PantallaPremium() {
   });
 
   const cargando = compra.isPending || restauracion.isPending;
+  const precioPremium = formatearPrecioProducto(productoPremium.data, `US$${configuracion.monetizacion.precioPremiumUsd.toFixed(2)}`);
 
   return (
     <ScreenScrollView>
@@ -61,7 +109,7 @@ export default function PantallaPremium() {
           <View className="h-12 w-12 items-center justify-center rounded-lg bg-emerald-50">
             <Sparkles color="#168A5B" size={26} />
           </View>
-          <Text className="mt-4 text-2xl font-bold text-marca-texto">US${configuracion.monetizacion.precioPremiumUsd.toFixed(2)} pago unico</Text>
+          <Text className="mt-4 text-2xl font-bold text-marca-texto">{precioPremium} pago unico</Text>
           <Text className="mt-2 text-slate-600">Mantente como organizador, crea nuevos SANes y usa MI-SAN sin anuncios.</Text>
         </View>
 

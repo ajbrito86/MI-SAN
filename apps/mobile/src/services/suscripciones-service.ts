@@ -20,6 +20,10 @@ export type Suscripcion = {
 export type CompraPremiumPayload = {
   plataformaCompra?: 'GOOGLE_PLAY' | 'APP_STORE' | 'MANUAL';
   transaccionExternaId?: string;
+  productId?: string;
+  purchaseToken?: string;
+  transactionReceipt?: string;
+  packageNameAndroid?: string;
 };
 
 export function obtenerSuscripcionActual() {

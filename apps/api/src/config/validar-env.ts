@@ -21,6 +21,18 @@ export function validarEnv(config: Record<string, unknown>) {
     if (secretosDebiles.length > 0) {
       throw new Error(`Secretos inseguros para produccion: ${secretosDebiles.join(', ')}`);
     }
+
+    if (config.BILLING_REAL_ENABLED === 'true') {
+      const requeridasBilling = [
+        'GOOGLE_PLAY_PACKAGE_NAME',
+        'GOOGLE_PLAY_PREMIUM_PRODUCT_ID',
+        'GOOGLE_PLAY_SERVICE_ACCOUNT_JSON_BASE64',
+      ].filter((clave) => !config[clave]);
+
+      if (requeridasBilling.length > 0) {
+        throw new Error(`Variables de entorno faltantes para Billing real: ${requeridasBilling.join(', ')}`);
+      }
+    }
   }
 
   return config;

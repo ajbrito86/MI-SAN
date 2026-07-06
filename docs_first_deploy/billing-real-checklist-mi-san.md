@@ -25,16 +25,20 @@
 - Pantalla Premium existe.
 - Boton Comprar Premium existe.
 - Boton Restaurar compras existe.
+- App Android integra Google Play Billing nativo con `react-native-iap`.
 - Backend tiene endpoints:
   - `POST /api/suscripciones/comprar`
   - `POST /api/suscripciones/restaurar`
+- Backend valida `purchaseToken` contra Google Play Developer API cuando `BILLING_REAL_ENABLED=true`.
+- Backend reconoce compras no consumibles despues de validarlas.
 - Backend registra auditoria de compra/restauracion.
 - Feature flag `comprasActivas` permite apagar compras remotamente.
 
 ## Pendiente Antes De Produccion
 
-- Integrar SDK de compras real.
-- Validar compra contra Google Play desde backend.
+- Crear producto real `premium_sin_ads` en Google Play Console.
+- Cargar credenciales de service account en `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON_BASE64`.
+- Activar `BILLING_REAL_ENABLED=true` solo cuando Google Play Console este lista.
 - Validar compra contra Apple desde backend.
 - Guardar `transaccionExternaId` real.
 - Manejar reembolsos.

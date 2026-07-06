@@ -205,11 +205,14 @@ function validarEnv() {
     }
 
     validarAdsTestModePerfil(perfil, config?.env ?? {});
+    validarBillingMobileEnvDesdeObjeto(config?.env ?? {}, `apps/mobile/eas.json:${perfil}`, { estricto: esProduccion });
     validarAdMobEnvDesdeObjeto(config?.env ?? {}, `apps/mobile/eas.json:${perfil}`, ADMOB_ANDROID_KEYS, {
       estricto: esProduccion,
     });
   }
 
+  validarBillingMobileEnv(mobileEnv, 'apps/mobile/.env.example');
+  validarBillingMobileEnv(mobileProductionEnv, 'apps/mobile/.env.production.example');
   validarAdMobEnv(mobileEnv, 'apps/mobile/.env.example');
   validarAdMobEnv(mobileProductionEnv, 'apps/mobile/.env.production.example');
 
@@ -229,6 +232,7 @@ function validarEnv() {
       const mobileProductionRealEnv = fs.readFileSync(path.join(root, envProduccionRel), 'utf8');
       validarNativeAdsProduccion(mobileProductionRealEnv, envProduccionRel);
       validarAdsTestModeProduccion(mobileProductionRealEnv, envProduccionRel);
+      validarBillingMobileEnv(mobileProductionRealEnv, envProduccionRel, { estricto: true });
       validarAdMobEnv(mobileProductionRealEnv, envProduccionRel, { estricto: true, claves: ADMOB_ANDROID_KEYS });
       validarAdMobEnv(mobileProductionRealEnv, envProduccionRel, { claves: ADMOB_IOS_KEYS, prefijoAviso: 'Fase iOS posterior' });
     }
@@ -238,6 +242,9 @@ function validarEnv() {
 function validarBillingEnv(apiEnv, origen, opciones = {}) {
   const billingReal = extraerEnv(apiEnv, 'BILLING_REAL_ENABLED');
   const manualPremium = extraerEnv(apiEnv, 'ALLOW_MANUAL_PREMIUM_ACTIVATION');
+  const packageName = extraerEnv(apiEnv, 'GOOGLE_PLAY_PACKAGE_NAME');
+  const productId = extraerEnv(apiEnv, 'GOOGLE_PLAY_PREMIUM_PRODUCT_ID');
+  const serviceAccount = extraerEnv(apiEnv, 'GOOGLE_PLAY_SERVICE_ACCOUNT_JSON_BASE64');
 
   if (billingReal === null) {
     const mensaje = `Falta BILLING_REAL_ENABLED en ${origen}.`;
@@ -245,6 +252,7 @@ function validarBillingEnv(apiEnv, origen, opciones = {}) {
     else aviso(mensaje);
   } else if (billingReal === 'true') {
     aviso(`${origen} declara Billing real activo; confirmar que Google Play Billing ya valida compras en backend.`);
+    validarBillingRealGooglePlay(packageName, productId, serviceAccount, origen, opciones);
   } else {
     ok(`${origen} mantiene Billing real desactivado.`);
   }
@@ -259,6 +267,72 @@ function validarBillingEnv(apiEnv, origen, opciones = {}) {
     else aviso(mensaje);
   } else {
     ok(`${origen} bloquea activacion manual de Premium.`);
+  }
+}
+
+function validarBillingRealGooglePlay(packageName, productId, serviceAccount, origen, opciones = {}) {
+  const faltantes = [];
+  if (!packageName) faltantes.push('GOOGLE_PLAY_PACKAGE_NAME');
+  if (!productId) faltantes.push('GOOGLE_PLAY_PREMIUM_PRODUCT_ID');
+  if (!serviceAccount) faltantes.push('GOOGLE_PLAY_SERVICE_ACCOUNT_JSON_BASE64');
+
+  if (faltantes.length > 0) {
+    const mensaje = `${origen} habilita Billing real pero faltan: ${faltantes.join(', ')}.`;
+    if (opciones.estricto) error(mensaje);
+    else aviso(mensaje);
+    return;
+  }
+
+  if (packageName !== 'app.mi_san.mobile') {
+    error(`${origen} debe usar GOOGLE_PLAY_PACKAGE_NAME=app.mi_san.mobile.`);
+  } else {
+    ok(`${origen} usa package Android esperado para Billing.`);
+  }
+
+  if (productId !== 'premium_sin_ads') {
+    error(`${origen} debe usar GOOGLE_PLAY_PREMIUM_PRODUCT_ID=premium_sin_ads.`);
+  } else {
+    ok(`${origen} usa producto Premium esperado para Billing.`);
+  }
+}
+
+function validarBillingMobileEnv(mobileEnv, origen, opciones = {}) {
+  validarBillingMobileValores(
+    extraerEnv(mobileEnv, 'EXPO_PUBLIC_ENABLE_NATIVE_BILLING'),
+    extraerEnv(mobileEnv, 'EXPO_PUBLIC_GOOGLE_PLAY_PREMIUM_PRODUCT_ID'),
+    origen,
+    opciones,
+  );
+}
+
+function validarBillingMobileEnvDesdeObjeto(envObj, origen, opciones = {}) {
+  validarBillingMobileValores(
+    extraerEnvObjeto(envObj, 'EXPO_PUBLIC_ENABLE_NATIVE_BILLING'),
+    extraerEnvObjeto(envObj, 'EXPO_PUBLIC_GOOGLE_PLAY_PREMIUM_PRODUCT_ID'),
+    origen,
+    opciones,
+  );
+}
+
+function validarBillingMobileValores(nativeBilling, productId, origen, opciones = {}) {
+  if (nativeBilling === null) {
+    aviso(`Falta EXPO_PUBLIC_ENABLE_NATIVE_BILLING en ${origen}.`);
+  } else if (nativeBilling === 'true') {
+    ok(`${origen} habilita Billing nativo.`);
+  } else if (opciones.estricto) {
+    error(`${origen} debe definir EXPO_PUBLIC_ENABLE_NATIVE_BILLING=true para builds comerciales Android.`);
+  } else {
+    aviso(`${origen} mantiene Billing nativo desactivado.`);
+  }
+
+  if (!productId) {
+    const mensaje = `Falta EXPO_PUBLIC_GOOGLE_PLAY_PREMIUM_PRODUCT_ID en ${origen}.`;
+    if (opciones.estricto) error(mensaje);
+    else aviso(mensaje);
+  } else if (productId !== 'premium_sin_ads') {
+    aviso(`${origen} usa Product ID Premium inesperado: ${productId}.`);
+  } else {
+    ok(`${origen} declara Product ID premium_sin_ads.`);
   }
 }
 
