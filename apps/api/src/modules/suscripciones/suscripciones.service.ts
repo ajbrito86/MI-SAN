@@ -1,4 +1,5 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { EstadoUsuarioPlan, PlataformaCompra, Prisma, RolUsuario, TipoAuditoriaMonetizacion } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ConfiguracionService } from '../configuracion/configuracion.service';
@@ -39,6 +40,7 @@ export class SuscripcionesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly configuracionService: ConfiguracionService,
+    private readonly configService: ConfigService,
   ) {}
 
   async asignarTrialInicial(usuarioId: string) {
@@ -127,6 +129,8 @@ export class SuscripcionesService {
   }
 
   private async activarPremium(usuarioId: string, dto: ComprarPremiumDto, evento: string) {
+    this.validarActivacionPremiumPermitida();
+
     const plan = await this.buscarPlanActivo(CODIGO_PREMIUM);
     const fechaInicio = new Date();
 
@@ -170,6 +174,16 @@ export class SuscripcionesService {
     });
 
     return this.mapearSuscripcion(suscripcion);
+  }
+
+  private validarActivacionPremiumPermitida() {
+    const esProduccion = this.configService.get<string>('NODE_ENV') === 'production';
+    const billingRealHabilitado = this.configService.get<string>('BILLING_REAL_ENABLED') === 'true';
+    const activacionManualPermitida = this.configService.get<string>('ALLOW_MANUAL_PREMIUM_ACTIVATION') === 'true';
+
+    if (esProduccion && !billingRealHabilitado && !activacionManualPermitida) {
+      throw new ForbiddenException('Las compras Premium estan desactivadas hasta integrar Billing real.');
+    }
   }
 
   async expirarTrials() {

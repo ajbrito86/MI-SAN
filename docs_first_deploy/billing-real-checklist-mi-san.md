@@ -43,7 +43,7 @@
 
 ## Regla De Release
 
-Si Billing real no esta validado, Premium puede mantenerse desactivado con:
+Si Billing real no esta validado, Premium debe mantenerse desactivado con:
 
 ```json
 {
@@ -54,4 +54,8 @@ Si Billing real no esta validado, Premium puede mantenerse desactivado con:
 }
 ```
 
-Esto permite avanzar con closed testing sin romper la experiencia.
+En produccion el backend fuerza `comprasActivas=false` mientras `BILLING_REAL_ENABLED` no sea `true`.
+
+Los endpoints `POST /api/suscripciones/comprar` y `POST /api/suscripciones/restaurar` no pueden activar Premium en produccion sin Billing real, salvo que se active explicitamente `ALLOW_MANUAL_PREMIUM_ACTIVATION=true` para una operacion controlada.
+
+Esto permite avanzar con closed testing sin simular compras reales ni romper la experiencia.

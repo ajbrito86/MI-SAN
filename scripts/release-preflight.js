@@ -179,8 +179,10 @@ function validarEnv() {
   validarArchivo('apps/api/.env.production.example');
   validarArchivo('apps/mobile/.env.example');
   validarArchivo('apps/mobile/.env.production.example');
+  const apiProductionEnvExample = fs.readFileSync(path.join(root, 'apps/api/.env.production.example'), 'utf8');
   const mobileEnv = fs.readFileSync(path.join(root, 'apps/mobile/.env.example'), 'utf8');
   const mobileProductionEnv = fs.readFileSync(path.join(root, 'apps/mobile/.env.production.example'), 'utf8');
+  validarBillingEnv(apiProductionEnvExample, 'apps/api/.env.production.example');
   if (mobileEnv.includes('EXPO_PUBLIC_API_BASE_URL=')) ok('EXPO_PUBLIC_API_BASE_URL documentado.');
   else error('Falta EXPO_PUBLIC_API_BASE_URL en apps/mobile/.env.example.');
 
@@ -212,6 +214,14 @@ function validarEnv() {
   validarAdMobEnv(mobileProductionEnv, 'apps/mobile/.env.production.example');
 
   if (esProduccion) {
+    const apiEnvProduccionRel = 'apps/api/.env.production';
+    if (!existe(apiEnvProduccionRel)) {
+      aviso(`No se encontro ${apiEnvProduccionRel}; no se pudo validar Billing productivo local.`);
+    } else {
+      const apiProductionRealEnv = fs.readFileSync(path.join(root, apiEnvProduccionRel), 'utf8');
+      validarBillingEnv(apiProductionRealEnv, apiEnvProduccionRel, { estricto: true });
+    }
+
     const envProduccionRel = 'apps/mobile/.env.production';
     if (!existe(envProduccionRel)) {
       error(`Falta ${envProduccionRel} con IDs reales de AdMob Android para preflight estricto.`);
@@ -222,6 +232,33 @@ function validarEnv() {
       validarAdMobEnv(mobileProductionRealEnv, envProduccionRel, { estricto: true, claves: ADMOB_ANDROID_KEYS });
       validarAdMobEnv(mobileProductionRealEnv, envProduccionRel, { claves: ADMOB_IOS_KEYS, prefijoAviso: 'Fase iOS posterior' });
     }
+  }
+}
+
+function validarBillingEnv(apiEnv, origen, opciones = {}) {
+  const billingReal = extraerEnv(apiEnv, 'BILLING_REAL_ENABLED');
+  const manualPremium = extraerEnv(apiEnv, 'ALLOW_MANUAL_PREMIUM_ACTIVATION');
+
+  if (billingReal === null) {
+    const mensaje = `Falta BILLING_REAL_ENABLED en ${origen}.`;
+    if (opciones.estricto) error(mensaje);
+    else aviso(mensaje);
+  } else if (billingReal === 'true') {
+    aviso(`${origen} declara Billing real activo; confirmar que Google Play Billing ya valida compras en backend.`);
+  } else {
+    ok(`${origen} mantiene Billing real desactivado.`);
+  }
+
+  if (manualPremium === null) {
+    const mensaje = `Falta ALLOW_MANUAL_PREMIUM_ACTIVATION en ${origen}.`;
+    if (opciones.estricto) error(mensaje);
+    else aviso(mensaje);
+  } else if (manualPremium === 'true') {
+    const mensaje = `${origen} permite activacion manual de Premium.`;
+    if (opciones.estricto) error(`${mensaje} Desactivar antes de release comercial.`);
+    else aviso(mensaje);
+  } else {
+    ok(`${origen} bloquea activacion manual de Premium.`);
   }
 }
 

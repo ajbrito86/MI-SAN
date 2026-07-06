@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 
@@ -58,7 +59,10 @@ const CONFIGURACION_DEFAULT: ConfiguracionMobile = {
 
 @Injectable()
 export class ConfiguracionService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly configService: ConfigService,
+  ) {}
 
   async obtenerConfiguracionMobile() {
     const configuracion = await this.prisma.configuracionGlobal.upsert({
@@ -73,9 +77,23 @@ export class ConfiguracionService {
       },
     });
 
-    return {
+    const resultado = {
       ...CONFIGURACION_DEFAULT,
       ...(configuracion.valorJson as Partial<ConfiguracionMobile>),
     };
+
+    if (this.configService.get<string>('NODE_ENV') === 'production') {
+      const billingRealHabilitado = this.configService.get<string>('BILLING_REAL_ENABLED') === 'true';
+      const activacionManualPermitida = this.configService.get<string>('ALLOW_MANUAL_PREMIUM_ACTIVATION') === 'true';
+
+      if (!billingRealHabilitado && !activacionManualPermitida) {
+        resultado.featureFlags = {
+          ...resultado.featureFlags,
+          comprasActivas: false,
+        };
+      }
+    }
+
+    return resultado;
   }
 }
