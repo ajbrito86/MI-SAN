@@ -71,3 +71,4 @@ fi
 wait_for_health
 
 echo "Deploy production MI-SAN completado."
+echo "Sitio publico MI-SAN desplegado. Configurar dominio en Nginx Proxy Manager apuntando al contenedor mi-san-public-site puerto 80."

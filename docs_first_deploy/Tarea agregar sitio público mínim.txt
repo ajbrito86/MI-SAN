@@ -1,0 +1,265 @@
+# Tarea: agregar sitio público mínimo de MI-SAN para requisitos de Google Play
+
+## Objetivo
+
+Agregar al proyecto un sitio web público estático de MI-SAN para cumplir requisitos de Google Play, especialmente:
+
+- Página pública de eliminación de cuenta.
+- Política de privacidad pública.
+- Términos y condiciones públicos.
+- Página de soporte básica.
+
+Este sitio debe poder desplegarse con Docker en el VPS usando el mismo flujo de producción existente.
+
+---
+
+## Alcance
+
+No tocar backend funcional de la API.
+No tocar lógica mobile.
+No cambiar base de datos.
+No agregar CMS.
+No agregar autenticación.
+No complicar la arquitectura.
+
+Debe ser un sitio estático simple, mantenible y listo para producción.
+
+---
+
+## Ubicación sugerida
+
+Crear una nueva app dentro del monorepo:
+
+```txt
+apps/public-site
+
+Estructura sugerida:
+
+apps/public-site/
+  Dockerfile
+  nginx.conf
+  index.html
+  eliminar-cuenta.html
+  privacidad.html
+  terminos.html
+  soporte.html
+
+Puede ser HTML/CSS estático puro. No usar React si no hace falta.
+
+Contenido requerido
+1. index.html
+
+Página simple de presentación:
+
+Título:
+
+MI-SAN
+
+Texto:
+
+Organiza tus SANes de forma fácil, segura y desde cualquier lugar.
+
+Enlaces visibles a:
+
+Política de privacidad
+Términos y condiciones
+Eliminación de cuenta
+Soporte
+2. eliminar-cuenta.html
+
+Esta es la página más importante para Google Play.
+
+Debe incluir:
+
+Título:
+
+Eliminación de cuenta y datos - MI-SAN
+
+Contenido requerido:
+
+Los usuarios de MI-SAN pueden solicitar la eliminación de su cuenta y los datos asociados desde la aplicación o contactando al equipo de soporte.
+
+Desde la aplicación:
+1. Inicia sesión en MI-SAN.
+2. Ve a Perfil.
+3. Selecciona Cuenta o Soporte.
+4. Solicita la eliminación de tu cuenta.
+
+También puedes solicitar la eliminación escribiendo a:
+soporte@kingdom-devs.net
+
+Al eliminar una cuenta, MI-SAN eliminará o anonimizará los datos asociados al usuario, incluyendo información de perfil, sociedades, participantes, pagos, configuraciones y datos de uso asociados, salvo aquellos datos que deban conservarse temporalmente por motivos legales, seguridad, prevención de fraude, auditoría o cumplimiento de obligaciones aplicables.
+
+Los datos retenidos temporalmente se conservarán solo durante el tiempo necesario para cumplir esos fines.
+
+Importante:
+
+No prometer eliminación instantánea si el backend no lo garantiza.
+No decir que se eliminan datos que legalmente podrían requerir retención.
+Debe mencionar claramente la app MI-SAN.
+Debe mencionar el correo de soporte.
+Debe poder usarse como URL pública en Google Play Console.
+3. privacidad.html
+
+Usar este contenido base:
+
+Política de privacidad - MI-SAN
+
+Última actualización: 2 de julio de 2026
+
+MI-SAN recopila datos necesarios para crear y administrar cuentas, SANes, participantes, pagos, configuraciones y soporte.
+
+Los datos pueden incluir nombre, correo electrónico, teléfono, foto de perfil opcional, información de uso, versión de la aplicación, identificadores técnicos y diagnósticos.
+
+Usamos esta información para operar la aplicación, proteger cuentas, mejorar el servicio, enviar avisos funcionales y cumplir requisitos legales.
+
+MI-SAN no vende datos personales. Podemos compartir datos con proveedores de infraestructura, servicios de analítica, Google AdMob cuando aplique publicidad, servicios de autenticación, servicios de notificaciones y autoridades competentes cuando la ley lo requiera.
+
+Los datos se transmiten usando conexiones cifradas cuando la aplicación se comunica con nuestros servicios.
+
+Puedes solicitar la eliminación de tu cuenta y datos asociados desde la aplicación o escribiendo a soporte@kingdom-devs.net.
+4. terminos.html
+
+Usar este contenido base:
+
+Términos y condiciones - MI-SAN
+
+Última actualización: 2 de julio de 2026
+
+MI-SAN es una herramienta tecnológica para facilitar la organización y administración de SANes.
+
+La aplicación no actúa como entidad financiera, banco, institución de inversión, intermediario de pagos ni custodio de fondos. Los usuarios son responsables de los acuerdos económicos realizados dentro de sus grupos.
+
+El usuario debe registrar información veraz, proteger sus credenciales y usar la aplicación conforme a la ley aplicable.
+
+Podemos suspender cuentas que realicen abuso, fraude, uso no autorizado o acciones que afecten la seguridad del servicio.
+
+Las funciones Premium, cuando estén disponibles, eliminan anuncios según el plan vigente y las reglas de las tiendas correspondientes.
+
+El uso de MI-SAN implica la aceptación de estos términos.
+5. soporte.html
+
+Contenido:
+
+Soporte - MI-SAN
+
+Para ayuda con tu cuenta, eliminación de datos, compras Premium, anuncios o problemas técnicos, puedes escribirnos a:
+
+soporte@kingdom-devs.net
+
+Incluye en tu mensaje:
+- Correo de tu cuenta MI-SAN.
+- Descripción del problema.
+- Capturas si aplica.
+Diseño
+
+Debe ser limpio, responsive y consistente con MI-SAN.
+
+Colores sugeridos:
+
+Verde principal: #0B6B3A o similar
+Fondo claro: #F4FAF5
+Texto oscuro: #102018
+
+Debe verse bien en móvil y escritorio.
+
+No usar librerías pesadas.
+
+Docker
+
+Crear Dockerfile para servir el sitio con Nginx.
+
+Ejemplo esperado:
+
+FROM nginx:1.27-alpine
+COPY . /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+EXPOSE 80
+
+nginx.conf debe servir archivos estáticos y permitir rutas limpias si aplica.
+
+compose.production.yml
+
+Agregar nuevo servicio:
+
+public-site:
+  build:
+    context: ./apps/public-site
+    dockerfile: Dockerfile
+  container_name: mi-san-public-site
+  restart: unless-stopped
+  expose:
+    - "80"
+  networks:
+    - npm_proxy
+
+No exponer puertos públicos directamente.
+Debe estar en la red npm_proxy para publicarlo con Nginx Proxy Manager.
+
+deploy-prod.sh
+
+Actualizar el script para que también construya y levante el sitio público.
+
+Debe seguir usando:
+
+docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" build
+docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d
+
+Si ya construye todos los servicios, no hace falta agregar comandos especiales.
+
+Pero sí verificar que el servicio public-site quede incluido en el compose.
+
+Al final del deploy, mostrar un mensaje como:
+
+Sitio público MI-SAN desplegado. Configurar dominio en Nginx Proxy Manager apuntando al contenedor mi-san-public-site puerto 80.
+Dominios previstos
+
+No configurar SSL ni dominios dentro del código.
+
+Más adelante se configurará en Nginx Proxy Manager, por ejemplo:
+
+mi-san.kingdom-devs.net
+
+o:
+
+legal.mi-san.kingdom-devs.net
+
+La URL que usaremos en Google Play para eliminación de cuenta será algo como:
+
+https://mi-san.kingdom-devs.net/eliminar-cuenta.html
+Validaciones
+
+Antes de terminar, ejecutar:
+
+docker compose -f compose.production.yml --env-file apps/api/.env.production build
+
+y confirmar que construyen:
+
+api
+public-site
+
+También verificar que el sitio responde dentro del contenedor:
+
+docker compose -f compose.production.yml --env-file apps/api/.env.production up -d public-site
+docker compose -f compose.production.yml --env-file apps/api/.env.production exec public-site wget -qO- http://localhost/eliminar-cuenta.html
+Git
+
+Agregar al commit todos los archivos nuevos:
+
+apps/public-site/**
+compose.production.yml
+deploy-prod.sh
+
+No agregar archivos .env reales.
+No agregar secretos.
+No agregar certificados.
+
+Commit sugerido:
+
+add public legal site for Google Play requirements
+Resultado esperado
+
+Al finalizar, el proyecto debe tener un sitio público estático desplegable por Docker, listo para configurar en Nginx Proxy Manager y usar sus URLs en Google Play Console.
+
+
+Mi mejora sería esa: **sitio estático separado**, no meterlo en el backend. Más limpio, más barato, menos riesgo y perfecto para Nginx Proxy Manager.
