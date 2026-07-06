@@ -32,8 +32,10 @@ export default function Home() {
           <Bell color="#17231F" size={22} />
         </View>
       </View>
-      <View className="mt-6 gap-4 pb-8">
-        <BannerPublicidad ubicacion="dashboard" />
+      <View className="mt-8 gap-4 pb-8">
+        <View className="pt-1">
+          <BannerPublicidad ubicacion="dashboard" />
+        </View>
         <AvisoTrial suscripcion={suscripcion} />
         {suscripcion?.mostrarAds ? <TarjetaPremium /> : null}
 

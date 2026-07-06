@@ -69,6 +69,7 @@ function SociedadCard({ sociedad }: { sociedad: Sociedad }) {
   const participantes = sociedad.participantesRegistrados ?? 0;
   const textoParticipantes =
     participantes > 0 ? `${participantes}/${sociedad.cantidadParticipantes} participantes` : `${sociedad.cantidadParticipantes} planificados`;
+  const etiquetaRol = sociedad.rol === 'ORGANIZADOR' ? 'Organizador' : 'Participante';
 
   return (
     <View className="rounded-2xl border border-slate-100 bg-white p-4">
@@ -87,14 +88,14 @@ function SociedadCard({ sociedad }: { sociedad: Sociedad }) {
           {etiquetaEstadoSociedad(sociedad.estado)}
         </Text>
       </View>
-      <View className="mt-3 flex-row gap-2">
-        <View className="flex-1 rounded-lg bg-slate-50 p-3">
+      <View className="mt-3 flex-row flex-wrap gap-2">
+        <View className="rounded-lg bg-slate-50 px-3 py-2">
           <Text className="text-xs font-bold uppercase text-slate-500">Rol</Text>
-          <Text className="mt-1 font-semibold text-marca-texto">{sociedad.rol}</Text>
+          <Text className="mt-1 text-sm font-semibold text-marca-texto">{etiquetaRol}</Text>
         </View>
-        <View className="flex-1 rounded-lg bg-slate-50 p-3">
+        <View className="rounded-lg bg-slate-50 px-3 py-2">
           <Text className="text-xs font-bold uppercase text-slate-500">Inicio</Text>
-          <Text className="mt-1 font-semibold text-marca-texto">{new Date(sociedad.fechaInicio).toLocaleDateString()}</Text>
+          <Text className="mt-1 text-sm font-semibold text-marca-texto">{new Date(sociedad.fechaInicio).toLocaleDateString()}</Text>
         </View>
       </View>
       <Text className="mt-3 text-sm font-semibold text-slate-600">{textoParticipantes}</Text>
