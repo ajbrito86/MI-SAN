@@ -43,7 +43,7 @@ mobile_config
   },
   "monetizacion": {
     "duracionTrialDias": 45,
-    "precioPremiumUsd": 0.99,
+    "precioPremiumUsd": 4.99,
     "frecuenciaInterstitialMinutos": 10
   },
   "mensajes": {

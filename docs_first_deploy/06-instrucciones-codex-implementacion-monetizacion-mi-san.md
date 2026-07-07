@@ -260,7 +260,7 @@ No renderizar ningún anuncio.
 Mostrar:
 
 - Beneficios Premium.
-- Precio US$0.99.
+- Precio US$4.99.
 - Botón comprar.
 - Botón restaurar compras.
 

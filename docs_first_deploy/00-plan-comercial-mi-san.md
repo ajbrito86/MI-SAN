@@ -61,7 +61,7 @@ Características:
 
 Costo inicial sugerido:
 
-US$0.99 pago único.
+US$4.99 pago único.
 
 Beneficio:
 

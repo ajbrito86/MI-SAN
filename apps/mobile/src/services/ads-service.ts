@@ -196,6 +196,68 @@ export async function mostrarInterstitialSiPuede(mostrarAds: boolean, frecuencia
   });
 }
 
+export async function mostrarInterstitialPagoCuota({
+  mostrarAds,
+  anunciosActivos,
+}: {
+  mostrarAds: boolean;
+  anunciosActivos: boolean;
+}) {
+  const modoPrueba = adsTestModeHabilitado();
+
+  if (!(modoPrueba || (mostrarAds && anunciosActivos)) || Platform.OS === 'web') {
+    return false;
+  }
+
+  const adUnitId = obtenerInterstitialAdUnitId();
+
+  if (!adUnitId) {
+    return false;
+  }
+
+  const moduloAds = cargarModuloAds();
+
+  if (!moduloAds) {
+    return false;
+  }
+
+  const interstitial = moduloAds.InterstitialAd.createForAdRequest(adUnitId);
+
+  return new Promise<boolean>((resolve) => {
+    let resuelto = false;
+
+    const resolver = (valor: boolean) => {
+      if (!resuelto) {
+        resuelto = true;
+        resolve(valor);
+      }
+    };
+
+    const unsubscribeLoaded = interstitial.addAdEventListener(moduloAds.AdEventType.LOADED, () => {
+      ultimaImpresionInterstitial = Date.now();
+      registrarEvento({ nombre: 'interstitial_pago_cuota_mostrado', tipo: 'ADS' });
+      interstitial.show().catch(() => resolver(false));
+    });
+
+    const unsubscribeClosed = interstitial.addAdEventListener(moduloAds.AdEventType.CLOSED, () => {
+      unsubscribeLoaded();
+      unsubscribeClosed();
+      unsubscribeError();
+      resolver(true);
+    });
+
+    const unsubscribeError = interstitial.addAdEventListener(moduloAds.AdEventType.ERROR, (error) => {
+      unsubscribeLoaded();
+      unsubscribeClosed();
+      unsubscribeError();
+      registrarError('interstitial_pago_cuota_error', error);
+      resolver(false);
+    });
+
+    interstitial.load();
+  });
+}
+
 export async function registrarAccionElegibleInterstitial({
   mostrarAds,
   anunciosActivos,

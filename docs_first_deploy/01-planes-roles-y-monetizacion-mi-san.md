@@ -102,7 +102,7 @@ Planes iniciales:
 
 ## PREMIUM_SIN_ADS
 
-- Precio: 0.99 USD
+- Precio: 4.99 USD
 - Pago único
 - Sin anuncios
 
@@ -300,7 +300,7 @@ Nunca confiar únicamente en la respuesta del dispositivo.
 
 ✅ Plan gratuito con anuncios.
 
-✅ Premium de pago único US$0.99.
+✅ Premium de pago único US$4.99.
 
 ✅ Backend como fuente de verdad.
 

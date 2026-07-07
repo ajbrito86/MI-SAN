@@ -164,7 +164,7 @@ function AvisoTrial({
     <View className="rounded-lg bg-amber-50 p-4">
       <Text className="text-base font-bold text-amber-800">{titulo}</Text>
       <Text className="mt-1 text-sm leading-5 text-amber-700">
-        Activa Premium por US$0.99 para seguir creando SANes como organizador y mantener la app sin anuncios.
+        Activa Premium por US$4.99 para seguir creando SANes como organizador y mantener la app sin anuncios.
       </Text>
       <View className="mt-3">
         <AppButton titulo="Mantener Premium" onPress={() => router.push('/premium' as never)} />

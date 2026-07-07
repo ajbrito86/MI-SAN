@@ -7,8 +7,11 @@ import { Linking, Pressable, Text, View } from 'react-native';
 import { AppButton } from '@/components/app-button';
 import { AppHeader } from '@/components/app-header';
 import { ScreenScrollView } from '@/components/screen';
+import { useConfiguracionMobile } from '@/hooks/use-configuracion-mobile';
+import { useSuscripcion } from '@/hooks/use-suscripcion';
 import { etiquetaEstadoOperativo } from '@/lib/estados';
 import { formatearMonto } from '@/lib/moneda';
+import { mostrarInterstitialPagoCuota } from '@/services/ads-service';
 import { getPublicFileUrl } from '@/services/api';
 import { subirEvidenciaPago, type ArchivoEvidencia } from '@/services/evidencias-service';
 import { listarMisPagos, type MetodoPago, type Pago, reportarPago } from '@/services/pagos-service';
@@ -23,6 +26,8 @@ const METODOS: { valor: MetodoPago; etiqueta: string; requiereComprobante: boole
 export default function Pagos() {
   const token = useAuthStore((state) => state.accessToken);
   const queryClient = useQueryClient();
+  const { data: configuracion } = useConfiguracionMobile();
+  const { data: suscripcion } = useSuscripcion();
   const [mensaje, setMensaje] = useState<string | null>(null);
   const [pagoActivo, setPagoActivo] = useState<string | null>(null);
   const [comprobanteActivo, setComprobanteActivo] = useState<string | null>(null);
@@ -87,6 +92,10 @@ export default function Pagos() {
       setMetodoPago('EFECTIVO');
       setArchivo(null);
       await queryClient.invalidateQueries({ queryKey: ['mis-pagos'] });
+      await mostrarInterstitialPagoCuota({
+        mostrarAds: Boolean(suscripcion?.mostrarAds),
+        anunciosActivos: configuracion.featureFlags.anunciosActivos,
+      });
     },
     onError: (error) => setMensaje(error instanceof Error ? error.message : 'No pudimos reportar el pago.'),
   });

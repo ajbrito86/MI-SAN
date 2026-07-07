@@ -127,5 +127,5 @@ Producto sugerido:
 
 - Tipo: Non-Consumable.
 - Product ID: `com.misan.premium.noads`.
-- Precio inicial: US$0.99.
+- Precio inicial: US$4.99.
 - Beneficio: Premium sin anuncios.

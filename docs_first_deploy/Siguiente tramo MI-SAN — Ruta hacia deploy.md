@@ -58,7 +58,7 @@ Debe cubrir:
 - Tipo:
   - Non-consumable
 - Precio:
-  - US$0.99
+  - US$4.99
 - Restaurar compras obligatorio.
 - Validación backend pendiente.
 

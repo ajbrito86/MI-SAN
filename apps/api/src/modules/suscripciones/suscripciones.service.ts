@@ -31,7 +31,7 @@ const PLANES_BASE = {
   [CODIGO_PREMIUM]: {
     nombre: 'Premium sin anuncios',
     descripcion: 'Pago unico para eliminar anuncios.',
-    precio: '0.99',
+    precio: '4.99',
     duracionDias: null,
     permiteAds: false,
     isPagoUnico: true,

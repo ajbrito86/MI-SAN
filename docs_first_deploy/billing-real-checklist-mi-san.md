@@ -6,7 +6,7 @@
 | --- | --- |
 | Product ID | `premium_sin_ads` |
 | Tipo | Non-consumable |
-| Precio inicial | US$0.99 |
+| Precio inicial | US$4.99 |
 | Beneficio | Premium sin anuncios |
 | Estado | Pendiente crear en Google Play Console |
 
@@ -16,7 +16,7 @@
 | --- | --- |
 | Product ID | `com.misan.premium.noads` |
 | Tipo | Non-consumable |
-| Precio inicial | US$0.99 |
+| Precio inicial | US$4.99 |
 | Beneficio | Premium sin anuncios |
 | Estado | Pendiente crear en App Store Connect |
 

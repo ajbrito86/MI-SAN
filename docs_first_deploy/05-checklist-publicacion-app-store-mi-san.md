@@ -175,7 +175,7 @@ com.misan.premium.noads
 
 Precio inicial:
 
-US$0.99
+US$4.99
 
 ---
 

@@ -185,7 +185,7 @@ Eliminar anuncios.
 
 Contenido:
 
-"Disfruta MI-SAN sin anuncios por solo US$0.99."
+"Disfruta MI-SAN sin anuncios por solo US$4.99."
 
 Beneficios:
 

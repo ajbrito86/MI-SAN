@@ -19,7 +19,7 @@ export function TarjetaPremium() {
         </View>
         <View className="flex-1">
           <Text className="text-base font-semibold text-marca-texto">MI-SAN Premium</Text>
-          <Text className="mt-1 text-sm text-slate-600">Mantente como organizador y usa MI-SAN sin anuncios por US$0.99.</Text>
+          <Text className="mt-1 text-sm text-slate-600">Mantente como organizador y usa MI-SAN sin anuncios por US$4.99.</Text>
         </View>
       </View>
       <View className="mt-4">
