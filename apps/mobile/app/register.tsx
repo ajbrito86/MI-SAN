@@ -1,15 +1,16 @@
 import { router } from 'expo-router';
 import { ChevronLeft, Lock, Mail, Phone, User } from 'lucide-react-native';
 import { useState, type ComponentProps, type ReactNode } from 'react';
-import { ActivityIndicator, Image, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Image, KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppButton } from '@/components/app-button';
-import { ScreenTopView } from '@/components/screen';
 import { registrar } from '@/services/auth-service';
 import { useAuthStore } from '@/stores/auth-store';
 
 const logoMiSan = require('../assets/Logo-mi-san.png');
 
 export default function Registro() {
+  const insets = useSafeAreaInsets();
   const guardarSesion = useAuthStore((state) => state.guardarSesion);
   const [formulario, setFormulario] = useState({
     nombres: '',
@@ -64,17 +65,30 @@ export default function Registro() {
   }
 
   return (
-    <ScreenTopView className="flex-1 bg-[#F6FCF8]">
+    <KeyboardAvoidingView className="flex-1 bg-[#F6FCF8]" behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <View className="absolute -left-20 top-20 h-64 w-64 rounded-full bg-emerald-100 opacity-50" />
       <View className="absolute -right-24 top-4 h-72 w-72 rounded-full bg-white opacity-90" />
       <TouchableOpacity
         activeOpacity={0.82}
-        className="absolute left-5 top-14 z-10 h-11 w-11 items-center justify-center rounded-full bg-white shadow-sm"
+        className="absolute left-5 z-10 h-11 w-11 items-center justify-center rounded-full bg-white shadow-sm"
+        style={{ top: insets.top + 16 }}
         onPress={() => router.back()}
       >
         <ChevronLeft color="#17231F" size={23} />
       </TouchableOpacity>
-      <View className="flex-1 justify-center gap-5">
+      <ScrollView
+        className="flex-1"
+        contentContainerStyle={{
+          flexGrow: 1,
+          justifyContent: 'center',
+          gap: 20,
+          paddingTop: insets.top + 72,
+          paddingRight: 20,
+          paddingBottom: Math.max(insets.bottom + 32, 48),
+          paddingLeft: 20,
+        }}
+        keyboardShouldPersistTaps="handled"
+      >
         <View className="items-center">
           <Image source={logoMiSan} className="h-28 w-28" resizeMode="contain" />
         </View>
@@ -98,8 +112,8 @@ export default function Registro() {
             </Text>
           </View>
         </View>
-      </View>
-    </ScreenTopView>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 

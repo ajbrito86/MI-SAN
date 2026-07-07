@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppButton } from '@/components/app-button';
 import { AppCard } from '@/components/app-card';
 import { AppHeader } from '@/components/app-header';
@@ -11,6 +12,7 @@ import { obtenerSociedad } from '@/services/sociedades-service';
 import { useAuthStore } from '@/stores/auth-store';
 
 export default function ChatSan() {
+  const insets = useSafeAreaInsets();
   const { id, participanteId, nombre } = useLocalSearchParams<{ id: string; participanteId: string; nombre?: string }>();
   const token = useAuthStore((state) => state.accessToken);
   const usuarioActual = useAuthStore((state) => state.usuario);
@@ -43,12 +45,12 @@ export default function ChatSan() {
   });
 
   return (
-    <KeyboardAvoidingView className="flex-1 bg-marca-fondo" behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <KeyboardAvoidingView className="flex-1 bg-marca-fondo" behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <Stack.Screen options={{ headerShown: false }} />
       <ScreenTopView>
         <AppHeader titulo="Chat privado" subtitulo={nombre ? `SAN - ${nombre}` : 'Conversacion del SAN'} mostrarAtras />
       </ScreenTopView>
-      <ScrollView className="flex-1 px-5" contentContainerClassName="gap-3 pb-4">
+      <ScrollView className="flex-1 px-5" contentContainerClassName="gap-3 pb-4" keyboardShouldPersistTaps="handled">
         {isLoading ? (
           <AppCard titulo="Cargando chat" detalle="Buscando los mensajes de esta conversacion." estado="PENDIENTE" />
         ) : isError ? (
@@ -76,7 +78,7 @@ export default function ChatSan() {
           })
         )}
       </ScrollView>
-      <View className="gap-3 border-t border-slate-200 bg-white px-5 py-4">
+      <View className="gap-3 border-t border-slate-200 bg-white px-5 pt-4" style={{ paddingBottom: Math.max(insets.bottom + 16, 24) }}>
         {chatSoloLectura ? (
           <Text className="rounded-lg bg-slate-50 p-3 text-sm font-semibold text-slate-600">
             Este SAN esta cerrado. Puedes consultar el historial, pero no enviar mensajes nuevos.

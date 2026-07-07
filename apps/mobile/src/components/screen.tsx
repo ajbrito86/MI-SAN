@@ -12,7 +12,13 @@ export function ScreenScrollView({ children, contentContainerStyle, ...props }: 
   return (
     <ScrollView
       className="flex-1 bg-[#F5FBF7] px-5"
-      contentContainerStyle={[{ paddingTop: insets.top + 16 }, contentContainerStyle]}
+      contentContainerStyle={[
+        {
+          paddingTop: insets.top + 16,
+          paddingBottom: Math.max(insets.bottom + 96, 120),
+        },
+        contentContainerStyle,
+      ]}
       {...props}
     >
       {children}

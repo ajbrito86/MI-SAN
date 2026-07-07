@@ -48,6 +48,18 @@ export class AuthRepository {
     });
   }
 
+  reactivarGoogle(usuarioId: string, data: { fotoPerfilUrl?: string | null; isVerified?: boolean }) {
+    return this.prisma.usuario.update({
+      where: { id: usuarioId },
+      data: {
+        isActive: true,
+        fotoPerfilUrl: data.fotoPerfilUrl,
+        refreshTokenHash: null,
+        isVerified: data.isVerified,
+      },
+    });
+  }
+
   crearRecuperacionContrasena(usuarioId: string, codigoHash: string, expiraEn: Date) {
     return this.prisma.recuperacionContrasena.create({
       data: {

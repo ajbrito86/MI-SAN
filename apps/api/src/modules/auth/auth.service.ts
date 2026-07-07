@@ -83,12 +83,16 @@ export class AuthService {
   async loginConGoogle(dto: GoogleLoginDto) {
     const perfilGoogle = await this.validarGoogleIdToken(dto.idToken);
     const email = perfilGoogle.email.toLowerCase();
-    let usuario =
-      (await this.authRepository.buscarPorGoogleId(perfilGoogle.googleId)) ??
-      (await this.authRepository.buscarPorEmail(email));
-    let suscripcion = usuario ? await this.suscripcionesService.obtenerActual(usuario.id) : null;
+    const usuarioPorGoogle = await this.authRepository.buscarPorGoogleId(perfilGoogle.googleId);
 
-    if (usuario && !usuario.isActive) {
+    let usuario = usuarioPorGoogle ?? (await this.authRepository.buscarPorEmail(email));
+
+    if (usuario && !usuario.isActive && usuario.googleId === perfilGoogle.googleId) {
+      usuario = await this.authRepository.reactivarGoogle(usuario.id, {
+        fotoPerfilUrl: usuario.fotoPerfilUrl ?? perfilGoogle.fotoPerfilUrl,
+        isVerified: usuario.isVerified || perfilGoogle.emailVerificado,
+      });
+    } else if (usuario && !usuario.isActive) {
       throw new UnauthorizedException('Tu cuenta no esta activa.');
     }
 
@@ -113,9 +117,9 @@ export class AuthService {
         fotoPerfilUrl: perfilGoogle.fotoPerfilUrl,
         isVerified: perfilGoogle.emailVerificado,
       });
-      suscripcion = await this.suscripcionesService.asignarTrialInicial(usuario.id);
     }
 
+    const suscripcion = await this.suscripcionesService.obtenerActual(usuario.id);
     const tokens = await this.generarTokens(usuario.id, usuario.email, usuario.telefono);
     await this.guardarRefreshToken(usuario.id, tokens.refreshToken);
 

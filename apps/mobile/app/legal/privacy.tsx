@@ -10,7 +10,7 @@ export default function PoliticaPrivacidad() {
         'Los datos pueden incluir nombre, correo electronico, telefono, foto de perfil opcional, informacion de uso, version de la aplicacion, identificadores tecnicos y diagnosticos.',
         'Usamos esta informacion para operar la aplicacion, proteger cuentas, mejorar el servicio, enviar avisos funcionales y cumplir requisitos legales.',
         'MI-SAN no vende datos personales. Podemos compartir datos con proveedores de infraestructura, servicios de analitica, Google AdMob cuando aplique publicidad, y autoridades competentes cuando la ley lo requiera.',
-        'Puedes eliminar tu cuenta desde la aplicacion o solicitar ayuda en soporte@mi-san.kingdom-devs.net.',
+        'Puedes eliminar tu cuenta desde la aplicacion o solicitar ayuda en support@kingdom-devs.net.',
       ]}
     />
   );
