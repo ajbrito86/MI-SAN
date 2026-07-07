@@ -1,4 +1,5 @@
 import { apiRequest, apiRequestAutenticado } from './api';
+import { eliminarDispositivoPush } from './push-notifications-service';
 import { type Suscripcion } from './suscripciones-service';
 
 export type Usuario = {
@@ -89,7 +90,8 @@ export function actualizarPerfil(payload: ActualizarPerfilPayload) {
   });
 }
 
-export function logout(token: string) {
+export async function logout(token: string) {
+  await eliminarDispositivoPush().catch(() => null);
   return apiRequest<{ mensaje: string }>('/auth/logout', {
     method: 'POST',
     token,

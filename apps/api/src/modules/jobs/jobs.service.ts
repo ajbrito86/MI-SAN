@@ -1,13 +1,17 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { EstadoPago, TipoNotificacion } from '@prisma/client';
+import { NotificacionesService } from '../notificaciones/notificaciones.service';
 import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
 export class JobsService {
   private readonly logger = new Logger(JobsService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notificacionesService: NotificacionesService,
+  ) {}
 
   @Cron(CronExpression.EVERY_HOUR)
   async marcarPagosAtrasados() {
@@ -36,20 +40,26 @@ export class JobsService {
       ),
     );
 
-    await this.prisma.notificacion.createMany({
-      data: cuotas.map((cuota) => ({
-        usuarioId: cuota.participante.usuarioId,
-        titulo: 'Pago atrasado',
-        mensaje: `La cuota #${cuota.numeroCuota} del ciclo #${cuota.ciclo.numeroCiclo} de ${cuota.ciclo.sociedad.nombre} esta atrasada.`,
-        tipo: TipoNotificacion.PROXIMO_VENCIMIENTO,
-        metadataJson: {
-          sociedadId: cuota.ciclo.sociedadId,
-          cicloId: cuota.cicloId,
-          cuotaPagoId: cuota.id,
-          destino: 'PAGOS',
-        },
-      })),
-    });
+    const notificaciones = await this.prisma.$transaction(
+      cuotas.map((cuota) =>
+        this.prisma.notificacion.create({
+          data: {
+            usuarioId: cuota.participante.usuarioId,
+            titulo: 'Pago atrasado',
+            mensaje: `La cuota #${cuota.numeroCuota} del ciclo #${cuota.ciclo.numeroCiclo} de ${cuota.ciclo.sociedad.nombre} esta atrasada.`,
+            tipo: TipoNotificacion.PROXIMO_VENCIMIENTO,
+            metadataJson: {
+              sociedadId: cuota.ciclo.sociedadId,
+              cicloId: cuota.cicloId,
+              cuotaPagoId: cuota.id,
+              destino: 'PAGOS',
+            },
+          },
+        }),
+      ),
+    );
+
+    await this.notificacionesService.enviarPush(notificaciones);
 
     this.logger.warn(`Cuotas marcadas como atrasadas: ${cuotas.length}`);
   }

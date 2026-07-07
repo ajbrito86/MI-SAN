@@ -1,12 +1,16 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { EstadoCiclo, EstadoSociedad, EstadoTurno, FrecuenciaSociedad, Prisma } from '@prisma/client';
+import { NotificacionesService } from '../notificaciones/notificaciones.service';
 import { RegistrarEntregaDto } from './dto/registrar-entrega.dto';
 import { TurnosManualesDto } from './dto/turnos-manuales.dto';
 import { TurnosRepository } from './turnos.repository';
 
 @Injectable()
 export class TurnosService {
-  constructor(private readonly turnosRepository: TurnosRepository) {}
+  constructor(
+    private readonly turnosRepository: TurnosRepository,
+    private readonly notificacionesService: NotificacionesService,
+  ) {}
 
   async listar(usuarioId: string, cicloId: string) {
     const ciclo = await this.validarAcceso(usuarioId, cicloId);
@@ -80,7 +84,9 @@ export class TurnosService {
       });
     }
 
+    const fechaInicio = new Date();
     const entregado = await this.turnosRepository.registrarEntrega(turnoId, usuarioId, montoEntregado, entregaIncompleta);
+    await this.notificacionesService.enviarUltimaParaUsuario(entregado.participante.usuarioId, fechaInicio);
     return this.mapearTurno(entregado);
   }
 

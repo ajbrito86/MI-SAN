@@ -1,7 +1,8 @@
-import { Controller, Get, Param, Patch, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { UsuarioActual } from '../../common/decorators/usuario-actual.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { UsuarioAutenticado } from '../../common/types/usuario-autenticado.type';
+import { RegistrarPushTokenDto } from './dto/registrar-push-token.dto';
 import { NotificacionesService } from './notificaciones.service';
 
 @UseGuards(JwtAuthGuard)
@@ -27,5 +28,15 @@ export class NotificacionesController {
   @Patch(':id/read')
   marcarLeida(@UsuarioActual() usuario: UsuarioAutenticado, @Param('id') notificacionId: string) {
     return this.notificacionesService.marcarLeida(usuario.id, notificacionId);
+  }
+
+  @Post('push-token')
+  registrarPushToken(@UsuarioActual() usuario: UsuarioAutenticado, @Body() dto: RegistrarPushTokenDto) {
+    return this.notificacionesService.registrarPushToken(usuario.id, dto.pushToken);
+  }
+
+  @Delete('push-token')
+  eliminarPushToken(@UsuarioActual() usuario: UsuarioAutenticado) {
+    return this.notificacionesService.eliminarPushToken(usuario.id);
   }
 }

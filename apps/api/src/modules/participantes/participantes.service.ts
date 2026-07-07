@@ -1,11 +1,15 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { EstadoInvitacion, EstadoSociedad } from '@prisma/client';
+import { NotificacionesService } from '../notificaciones/notificaciones.service';
 import { CrearInvitacionDto } from './dto/crear-invitacion.dto';
 import { ParticipantesRepository } from './participantes.repository';
 
 @Injectable()
 export class ParticipantesService {
-  constructor(private readonly participantesRepository: ParticipantesRepository) {}
+  constructor(
+    private readonly participantesRepository: ParticipantesRepository,
+    private readonly notificacionesService: NotificacionesService,
+  ) {}
 
   async crearInvitacion(usuarioId: string, sociedadId: string, dto: CrearInvitacionDto) {
     const sociedad = await this.validarOrganizador(usuarioId, sociedadId);
@@ -30,7 +34,10 @@ export class ParticipantesService {
       throw new BadRequestException('Ese usuario ya pertenece a la sociedad.');
     }
 
-    return this.participantesRepository.crearInvitacion(sociedadId, usuarioId, dto);
+    const fechaInicio = new Date();
+    const invitacion = await this.participantesRepository.crearInvitacion(sociedadId, usuarioId, dto);
+    await this.notificacionesService.enviarUltimaParaUsuario(usuarioInvitado.id, fechaInicio);
+    return invitacion;
   }
 
   async listarMisInvitaciones(usuarioId: string) {

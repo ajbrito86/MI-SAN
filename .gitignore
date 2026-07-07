@@ -19,6 +19,7 @@ coverage
 !apps/api/.env.production.example
 !apps/mobile/.env.example
 *.local
+apps/mobile/google-services.json
 eas-build-*
 
 # Archivos generados o subidos en desarrollo

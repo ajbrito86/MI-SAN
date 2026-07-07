@@ -37,6 +37,13 @@ export class AuthRepository {
     });
   }
 
+  limpiarSesion(usuarioId: string) {
+    return this.prisma.usuario.update({
+      where: { id: usuarioId },
+      data: { refreshTokenHash: null, pushToken: null },
+    });
+  }
+
   vincularGoogle(usuarioId: string, data: { googleId: string; fotoPerfilUrl?: string | null; isVerified?: boolean }) {
     return this.prisma.usuario.update({
       where: { id: usuarioId },

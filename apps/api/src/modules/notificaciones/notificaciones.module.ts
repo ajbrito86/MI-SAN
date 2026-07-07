@@ -8,5 +8,6 @@ import { NotificacionesService } from './notificaciones.service';
   imports: [JwtModule.register({})],
   controllers: [NotificacionesController],
   providers: [NotificacionesService, NotificacionesRepository],
+  exports: [NotificacionesService],
 })
 export class NotificacionesModule {}

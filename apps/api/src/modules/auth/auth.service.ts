@@ -173,7 +173,7 @@ export class AuthService {
   }
 
   async cerrarSesion(usuarioId: string) {
-    await this.authRepository.actualizarRefreshTokenHash(usuarioId, null);
+    await this.authRepository.limpiarSesion(usuarioId);
     return { mensaje: 'Sesion cerrada correctamente.' };
   }
 

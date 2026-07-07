@@ -8,15 +8,32 @@ import { AppButton } from '@/components/app-button';
 import { useConfiguracionMobile } from '@/hooks/use-configuracion-mobile';
 import { inicializarAds } from '@/services/ads-service';
 import { configurarReporteErroresGlobales } from '@/services/analytics-service';
+import { configurarNavegacionPush, registrarDispositivoPush } from '@/services/push-notifications-service';
+import { useAuthStore } from '@/stores/auth-store';
 import '../global.css';
 
 const queryClient = new QueryClient();
 
 export default function RootLayout() {
+  const accessToken = useAuthStore((state) => state.accessToken);
+
   useEffect(() => {
     configurarReporteErroresGlobales();
     inicializarAds().catch(() => null);
   }, []);
+
+  useEffect(() => {
+    const limpiarNavegacionPush = configurarNavegacionPush();
+    return limpiarNavegacionPush;
+  }, []);
+
+  useEffect(() => {
+    if (!accessToken) {
+      return;
+    }
+
+    registrarDispositivoPush().catch(() => null);
+  }, [accessToken]);
 
   return (
     <SafeAreaProvider>

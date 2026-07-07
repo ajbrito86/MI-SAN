@@ -1,11 +1,15 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { EstadoSociedad } from '@prisma/client';
+import { NotificacionesService } from '../notificaciones/notificaciones.service';
 import { EnviarMensajeDto } from './dto/enviar-mensaje.dto';
 import { ChatsRepository } from './chats.repository';
 
 @Injectable()
 export class ChatsService {
-  constructor(private readonly chatsRepository: ChatsRepository) {}
+  constructor(
+    private readonly chatsRepository: ChatsRepository,
+    private readonly notificacionesService: NotificacionesService,
+  ) {}
 
   async listarConversaciones(usuarioId: string, sociedadId: string) {
     const { sociedad, participacionUsuario, esOrganizador } = await this.validarAccesoSociedad(usuarioId, sociedadId);
@@ -53,7 +57,7 @@ export class ChatsService {
   }
 
   async enviarMensaje(usuarioId: string, sociedadId: string, participanteId: string, dto: EnviarMensajeDto) {
-    const { sociedad } = await this.validarAccesoChat(usuarioId, sociedadId, participanteId);
+    const { sociedad, participante } = await this.validarAccesoChat(usuarioId, sociedadId, participanteId);
     const texto = dto.mensaje.trim();
 
     if (this.estaCerrada(sociedad.estado)) {
@@ -65,7 +69,10 @@ export class ChatsService {
     }
 
     const conversacion = await this.chatsRepository.buscarOCrearConversacion(sociedad.id, participanteId, sociedad.organizadorId);
+    const destinatarioId = usuarioId === sociedad.organizadorId ? participante.usuarioId : sociedad.organizadorId;
+    const fechaInicio = new Date();
     const mensaje = await this.chatsRepository.enviarMensaje(conversacion.id, usuarioId, texto);
+    await this.notificacionesService.enviarUltimaParaUsuario(destinatarioId, fechaInicio);
     return this.mapearMensaje(mensaje);
   }
 

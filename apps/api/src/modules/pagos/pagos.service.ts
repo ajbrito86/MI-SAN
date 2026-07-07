@@ -1,6 +1,7 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { EstadoCiclo, EstadoPago, EstadoSociedad, TipoPago } from '@prisma/client';
 import { JobsService } from '../jobs/jobs.service';
+import { NotificacionesService } from '../notificaciones/notificaciones.service';
 import { ReportarPagoDto } from './dto/reportar-pago.dto';
 import { PagosRepository } from './pagos.repository';
 
@@ -11,6 +12,7 @@ export class PagosService {
   constructor(
     private readonly pagosRepository: PagosRepository,
     private readonly jobsService: JobsService,
+    private readonly notificacionesService: NotificacionesService,
   ) {}
 
   async listarMisPagos(usuarioId: string) {
@@ -101,7 +103,10 @@ export class PagosService {
 
     this.validarMetodoPago(dto.metodoPago, cuota.ciclo.sociedad.tipoPago);
 
-    return this.pagosRepository.reportar(dto.cuotaPagoId, usuarioId, dto.metodoPago, dto.observacion?.trim());
+    const fechaInicio = new Date();
+    const cuotaReportada = await this.pagosRepository.reportar(dto.cuotaPagoId, usuarioId, dto.metodoPago, dto.observacion?.trim());
+    await this.notificacionesService.enviarUltimaParaUsuario(cuotaReportada.ciclo.sociedad.organizadorId, fechaInicio);
+    return cuotaReportada;
   }
 
   async confirmar(usuarioId: string, cuotaPagoId: string) {
@@ -120,7 +125,10 @@ export class PagosService {
       throw new BadRequestException('Debes revisar al menos un comprobante antes de confirmar este pago.');
     }
 
-    return this.pagosRepository.confirmar(cuotaPagoId, usuarioId);
+    const fechaInicio = new Date();
+    const cuotaConfirmada = await this.pagosRepository.confirmar(cuotaPagoId, usuarioId);
+    await this.notificacionesService.enviarUltimaParaUsuario(cuotaConfirmada.participante.usuarioId, fechaInicio);
+    return cuotaConfirmada;
   }
 
   async rechazar(usuarioId: string, cuotaPagoId: string, observacion: string) {
@@ -133,7 +141,10 @@ export class PagosService {
 
     this.validarSociedadOperativa(cuota.ciclo.sociedad.estado);
 
-    return this.pagosRepository.rechazar(cuotaPagoId, usuarioId, observacion.trim());
+    const fechaInicio = new Date();
+    const cuotaRechazada = await this.pagosRepository.rechazar(cuotaPagoId, usuarioId, observacion.trim());
+    await this.notificacionesService.enviarUltimaParaUsuario(cuotaRechazada.participante.usuarioId, fechaInicio);
+    return cuotaRechazada;
   }
 
   private async validarCuota(cuotaPagoId: string) {

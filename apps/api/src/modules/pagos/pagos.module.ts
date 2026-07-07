@@ -1,12 +1,13 @@
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { JobsModule } from '../jobs/jobs.module';
+import { NotificacionesModule } from '../notificaciones/notificaciones.module';
 import { PagosController } from './pagos.controller';
 import { PagosRepository } from './pagos.repository';
 import { PagosService } from './pagos.service';
 
 @Module({
-  imports: [JwtModule.register({}), JobsModule],
+  imports: [JwtModule.register({}), JobsModule, NotificacionesModule],
   controllers: [PagosController],
   providers: [PagosService, PagosRepository],
 })
