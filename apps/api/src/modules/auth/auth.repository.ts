@@ -48,10 +48,24 @@ export class AuthRepository {
     });
   }
 
-  reactivarGoogle(usuarioId: string, data: { fotoPerfilUrl?: string | null; isVerified?: boolean }) {
+  reactivarGoogle(
+    usuarioId: string,
+    data: {
+      nombres?: string;
+      apellidos?: string;
+      telefono?: string;
+      email?: string;
+      fotoPerfilUrl?: string | null;
+      isVerified?: boolean;
+    },
+  ) {
     return this.prisma.usuario.update({
       where: { id: usuarioId },
       data: {
+        nombres: data.nombres,
+        apellidos: data.apellidos,
+        telefono: data.telefono,
+        email: data.email,
         isActive: true,
         fotoPerfilUrl: data.fotoPerfilUrl,
         refreshTokenHash: null,

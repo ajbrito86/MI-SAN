@@ -123,6 +123,32 @@ export class SuscripcionesService {
     return historial.map((suscripcion) => this.mapearSuscripcion(suscripcion));
   }
 
+  async reactivarUltimaSuscripcionSiNoTieneActiva(usuarioId: string) {
+    const activa = await this.prisma.usuarioPlan.findFirst({
+      where: { usuarioId, estado: EstadoUsuarioPlan.ACTIVO, isActive: true },
+      select: { id: true },
+    });
+
+    if (activa) {
+      return;
+    }
+
+    const ultimaCancelada = await this.prisma.usuarioPlan.findFirst({
+      where: { usuarioId, estado: EstadoUsuarioPlan.CANCELADO, isActive: false },
+      orderBy: { fechaInicio: 'desc' },
+      select: { id: true },
+    });
+
+    if (!ultimaCancelada) {
+      return;
+    }
+
+    await this.prisma.usuarioPlan.update({
+      where: { id: ultimaCancelada.id },
+      data: { estado: EstadoUsuarioPlan.ACTIVO, isActive: true },
+    });
+  }
+
   async comprarPremium(usuarioId: string, dto: ComprarPremiumDto = {}) {
     return this.activarPremium(usuarioId, dto, 'premium_comprado');
   }

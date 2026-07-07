@@ -88,12 +88,30 @@ export class AuthService {
     let usuario = usuarioPorGoogle ?? (await this.authRepository.buscarPorEmail(email));
 
     if (usuario && !usuario.isActive && usuario.googleId === perfilGoogle.googleId) {
+      const fueAnonimizado = this.usuarioFueAnonimizado(usuario);
       usuario = await this.authRepository.reactivarGoogle(usuario.id, {
+        nombres: fueAnonimizado ? perfilGoogle.nombres : usuario.nombres,
+        apellidos: fueAnonimizado ? perfilGoogle.apellidos : usuario.apellidos,
+        telefono: fueAnonimizado ? `google:${perfilGoogle.googleId}` : usuario.telefono,
+        email,
         fotoPerfilUrl: usuario.fotoPerfilUrl ?? perfilGoogle.fotoPerfilUrl,
         isVerified: usuario.isVerified || perfilGoogle.emailVerificado,
       });
+      await this.suscripcionesService.reactivarUltimaSuscripcionSiNoTieneActiva(usuario.id);
     } else if (usuario && !usuario.isActive) {
       throw new UnauthorizedException('Tu cuenta no esta activa.');
+    }
+
+    if (usuario && usuario.isActive && usuario.googleId === perfilGoogle.googleId && this.usuarioFueAnonimizado(usuario)) {
+      usuario = await this.authRepository.reactivarGoogle(usuario.id, {
+        nombres: perfilGoogle.nombres,
+        apellidos: perfilGoogle.apellidos,
+        telefono: `google:${perfilGoogle.googleId}`,
+        email,
+        fotoPerfilUrl: usuario.fotoPerfilUrl ?? perfilGoogle.fotoPerfilUrl,
+        isVerified: usuario.isVerified || perfilGoogle.emailVerificado,
+      });
+      await this.suscripcionesService.reactivarUltimaSuscripcionSiNoTieneActiva(usuario.id);
     }
 
     if (usuario && usuario.googleId !== perfilGoogle.googleId) {
@@ -288,6 +306,15 @@ export class AuthService {
       .map((valor) => valor?.trim())
       .filter((valor): valor is string => Boolean(valor))
       .filter((valor, indice, lista) => lista.indexOf(valor) === indice);
+  }
+
+  private usuarioFueAnonimizado(usuario: { nombres: string; apellidos: string; telefono: string; email: string }) {
+    return (
+      usuario.nombres === 'Cuenta' ||
+      usuario.apellidos === 'eliminada' ||
+      usuario.telefono.startsWith('eliminado-') ||
+      usuario.email.startsWith('eliminado-')
+    );
   }
 
   private mapearUsuario(usuario: {
