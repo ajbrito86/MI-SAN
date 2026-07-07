@@ -22,6 +22,10 @@ type ApiOptions = RequestInit & {
   token?: string;
 };
 
+type ApiAutenticadoOptions = Omit<ApiOptions, 'token'> & {
+  noCerrarSesionEnUnauthorized?: boolean;
+};
+
 export class ApiError extends Error {
   constructor(
     message: string,
@@ -53,12 +57,17 @@ export async function apiRequest<T>(path: string, options: ApiOptions = {}): Pro
   return data as T;
 }
 
-export async function apiRequestAutenticado<T>(path: string, options: Omit<ApiOptions, 'token'> = {}): Promise<T> {
+export async function apiRequestAutenticado<T>(path: string, options: ApiAutenticadoOptions = {}): Promise<T> {
   const { accessToken, refreshToken, actualizarTokens, cerrarSesion } = useAuthStore.getState();
+  const { noCerrarSesionEnUnauthorized, ...requestOptions } = options;
 
   try {
-    return await apiRequest<T>(path, { ...options, token: accessToken ?? undefined });
+    return await apiRequest<T>(path, { ...requestOptions, token: accessToken ?? undefined });
   } catch (error) {
+    if (noCerrarSesionEnUnauthorized && error instanceof ApiError && error.status === 401) {
+      throw error;
+    }
+
     const debeRefrescar =
       error instanceof ApiError
         ? error.status === 401 || error.message.toLowerCase().includes('sesion')
@@ -74,7 +83,7 @@ export async function apiRequestAutenticado<T>(path: string, options: Omit<ApiOp
         body: JSON.stringify({ refreshToken }),
       });
       actualizarTokens(tokens);
-      return await apiRequest<T>(path, { ...options, token: tokens.accessToken });
+      return await apiRequest<T>(path, { ...requestOptions, token: tokens.accessToken });
     } catch (refreshError) {
       cerrarSesion();
       throw refreshError;

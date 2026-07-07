@@ -99,6 +99,7 @@ export function logout(token: string) {
 export function eliminarCuenta(contrasena: string) {
   return apiRequestAutenticado<{ mensaje: string }>('/users/me', {
     method: 'DELETE',
-    body: JSON.stringify({ contrasena }),
+    body: JSON.stringify(contrasena ? { contrasena } : {}),
+    noCerrarSesionEnUnauthorized: true,
   });
 }

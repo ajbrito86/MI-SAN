@@ -21,11 +21,15 @@ export class ParticipantesRepository {
   }
 
   buscarUsuarioPorInvitacion(dto: CrearInvitacionDto) {
+    const email = dto.emailInvitado?.toLowerCase().trim();
+    const telefono = dto.telefonoInvitado?.trim();
+
     return this.prisma.usuario.findFirst({
       where: {
+        isActive: true,
         OR: [
-          dto.emailInvitado ? { email: dto.emailInvitado.toLowerCase() } : undefined,
-          dto.telefonoInvitado ? { telefono: dto.telefonoInvitado } : undefined,
+          email ? { email } : undefined,
+          telefono ? { telefono } : undefined,
         ].filter(Boolean) as Array<{ email: string } | { telefono: string }>,
       },
     });
@@ -86,13 +90,16 @@ export class ParticipantesRepository {
   }
 
   crearInvitacion(sociedadId: string, enviadaPor: string, dto: CrearInvitacionDto) {
+    const emailInvitado = dto.emailInvitado?.toLowerCase().trim();
+    const telefonoInvitado = dto.telefonoInvitado?.trim();
+
     return this.prisma.$transaction(async (tx) => {
       const invitacion = await tx.invitacionSociedad.create({
         data: {
           sociedadId,
           enviadaPor,
-          telefonoInvitado: dto.telefonoInvitado?.trim(),
-          emailInvitado: dto.emailInvitado?.toLowerCase().trim(),
+          telefonoInvitado,
+          emailInvitado,
         },
       });
 
@@ -104,17 +111,18 @@ export class ParticipantesRepository {
           accion: TipoMovimientoHistorial.INVITACION_ENVIADA,
           descripcion: 'Invitacion enviada.',
           metadataJson: {
-            telefonoInvitado: dto.telefonoInvitado,
-            emailInvitado: dto.emailInvitado,
+            telefonoInvitado,
+            emailInvitado,
           },
         },
       });
 
       const usuarioInvitado = await tx.usuario.findFirst({
         where: {
+          isActive: true,
           OR: [
-            dto.emailInvitado ? { email: dto.emailInvitado.toLowerCase() } : undefined,
-            dto.telefonoInvitado ? { telefono: dto.telefonoInvitado } : undefined,
+            emailInvitado ? { email: emailInvitado } : undefined,
+            telefonoInvitado ? { telefono: telefonoInvitado } : undefined,
           ].filter(Boolean) as Array<{ email: string } | { telefono: string }>,
         },
       });

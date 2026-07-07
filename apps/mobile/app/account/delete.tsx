@@ -10,26 +10,28 @@ import { useAuthStore } from '@/stores/auth-store';
 
 export default function EliminarCuenta() {
   const cerrarSesion = useAuthStore((state) => state.cerrarSesion);
+  const usuario = useAuthStore((state) => state.usuario);
   const [contrasena, setContrasena] = useState('');
   const [confirmacion, setConfirmacion] = useState('');
   const [mostrarContrasena, setMostrarContrasena] = useState(false);
   const [error, setError] = useState('');
   const [cargando, setCargando] = useState(false);
 
-  const puedeEliminar = contrasena.length >= 8 && confirmacion.trim().toUpperCase() === 'ELIMINAR';
+  const esCuentaGoogle = usuario?.telefono?.startsWith('google:') ?? false;
+  const puedeEliminar = (esCuentaGoogle || contrasena.length >= 8) && confirmacion.trim().toUpperCase() === 'ELIMINAR';
 
   async function confirmarEliminacion() {
     setError('');
 
     if (!puedeEliminar) {
-      setError('Escribe tu contrasena y la palabra ELIMINAR para continuar.');
+      setError(esCuentaGoogle ? 'Escribe la palabra ELIMINAR para continuar.' : 'Escribe tu contrasena y la palabra ELIMINAR para continuar.');
       return;
     }
 
     setCargando(true);
 
     try {
-      await eliminarCuenta(contrasena);
+      await eliminarCuenta(esCuentaGoogle ? '' : contrasena);
       cerrarSesion();
       router.replace('/login');
     } catch (err) {
@@ -58,20 +60,26 @@ export default function EliminarCuenta() {
         </View>
 
         <View className="rounded-lg bg-white p-4">
-          <Text className="text-sm font-semibold text-marca-texto">Contrasena actual</Text>
-          <View className="mt-2 flex-row items-center gap-3 rounded-lg border border-slate-200 bg-white px-4 py-3">
-            <TextInput
-              className="min-h-8 flex-1 text-base text-marca-texto"
-              placeholder="Escribe tu contrasena"
-              placeholderTextColor="#8A97A8"
-              secureTextEntry={!mostrarContrasena}
-              value={contrasena}
-              onChangeText={setContrasena}
-            />
-            <Pressable onPress={() => setMostrarContrasena((valor) => !valor)} hitSlop={8}>
-              {mostrarContrasena ? <EyeOff size={21} color="#17231F" /> : <Eye size={21} color="#17231F" />}
-            </Pressable>
-          </View>
+          {esCuentaGoogle ? (
+            <Text className="text-sm leading-5 text-slate-600">Tu cuenta usa inicio de sesion con Google. Para eliminarla, confirma escribiendo ELIMINAR.</Text>
+          ) : (
+            <>
+              <Text className="text-sm font-semibold text-marca-texto">Contrasena actual</Text>
+              <View className="mt-2 flex-row items-center gap-3 rounded-lg border border-slate-200 bg-white px-4 py-3">
+                <TextInput
+                  className="min-h-8 flex-1 text-base text-marca-texto"
+                  placeholder="Escribe tu contrasena"
+                  placeholderTextColor="#8A97A8"
+                  secureTextEntry={!mostrarContrasena}
+                  value={contrasena}
+                  onChangeText={setContrasena}
+                />
+                <Pressable onPress={() => setMostrarContrasena((valor) => !valor)} hitSlop={8}>
+                  {mostrarContrasena ? <EyeOff size={21} color="#17231F" /> : <Eye size={21} color="#17231F" />}
+                </Pressable>
+              </View>
+            </>
+          )}
 
           <Text className="mt-4 text-sm font-semibold text-marca-texto">Confirmacion</Text>
           <TextInput

@@ -52,7 +52,11 @@ export class UsuariosService {
       throw new NotFoundException('No encontramos tu perfil.');
     }
 
-    const contrasenaValida = await bcrypt.compare(dto.contrasena, usuario.passwordHash);
+    if (!usuario.googleId && !dto.contrasena) {
+      throw new UnauthorizedException('La contrasena actual es obligatoria.');
+    }
+
+    const contrasenaValida = usuario.googleId || (dto.contrasena ? await bcrypt.compare(dto.contrasena, usuario.passwordHash) : false);
 
     if (!contrasenaValida) {
       throw new UnauthorizedException('La contrasena actual no es correcta.');

@@ -20,12 +20,14 @@ export class ParticipantesService {
 
     const usuarioInvitado = await this.participantesRepository.buscarUsuarioPorInvitacion(dto);
 
-    if (usuarioInvitado) {
-      const yaParticipa = await this.participantesRepository.buscarAcceso(usuarioInvitado.id, sociedad.id);
+    if (!usuarioInvitado) {
+      throw new NotFoundException('No encontramos un usuario registrado con ese telefono o correo.');
+    }
 
-      if (yaParticipa) {
-        throw new BadRequestException('Ese usuario ya pertenece a la sociedad.');
-      }
+    const yaParticipa = await this.participantesRepository.buscarAcceso(usuarioInvitado.id, sociedad.id);
+
+    if (yaParticipa) {
+      throw new BadRequestException('Ese usuario ya pertenece a la sociedad.');
     }
 
     return this.participantesRepository.crearInvitacion(sociedadId, usuarioId, dto);

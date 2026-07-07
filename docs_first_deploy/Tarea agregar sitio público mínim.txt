@@ -86,7 +86,7 @@ Desde la aplicación:
 4. Solicita la eliminación de tu cuenta.
 
 También puedes solicitar la eliminación escribiendo a:
-soporte@kingdom-devs.net
+support@kingdom-devs.net
 
 Al eliminar una cuenta, MI-SAN eliminará o anonimizará los datos asociados al usuario, incluyendo información de perfil, sociedades, participantes, pagos, configuraciones y datos de uso asociados, salvo aquellos datos que deban conservarse temporalmente por motivos legales, seguridad, prevención de fraude, auditoría o cumplimiento de obligaciones aplicables.
 
@@ -117,7 +117,7 @@ MI-SAN no vende datos personales. Podemos compartir datos con proveedores de inf
 
 Los datos se transmiten usando conexiones cifradas cuando la aplicación se comunica con nuestros servicios.
 
-Puedes solicitar la eliminación de tu cuenta y datos asociados desde la aplicación o escribiendo a soporte@kingdom-devs.net.
+Puedes solicitar la eliminación de tu cuenta y datos asociados desde la aplicación o escribiendo a support@kingdom-devs.net.
 4. terminos.html
 
 Usar este contenido base:
@@ -145,7 +145,7 @@ Soporte - MI-SAN
 
 Para ayuda con tu cuenta, eliminación de datos, compras Premium, anuncios o problemas técnicos, puedes escribirnos a:
 
-soporte@kingdom-devs.net
+support@kingdom-devs.net
 
 Incluye en tu mensaje:
 - Correo de tu cuenta MI-SAN.

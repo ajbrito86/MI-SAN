@@ -99,6 +99,8 @@ export default function PantallaPremium() {
 
   const cargando = compra.isPending || restauracion.isPending;
   const precioPremium = formatearPrecioProducto(productoPremium.data, `US$${configuracion.monetizacion.precioPremiumUsd.toFixed(2)}`);
+  const tienePremiumPermanente = suscripcion?.plan === 'PREMIUM_SIN_ADS' && !suscripcion.esTrial;
+  const tieneBeneficiosPorTrial = Boolean(suscripcion?.premium && suscripcion.esTrial);
 
   return (
     <ScreenScrollView>
@@ -122,9 +124,17 @@ export default function PantallaPremium() {
           ))}
         </View>
 
-        {suscripcion?.premium ? (
+        {tienePremiumPermanente ? (
           <View className="rounded-lg bg-emerald-50 p-4">
             <Text className="font-semibold text-marca-verde">Tu cuenta ya tiene beneficios Premium activos.</Text>
+          </View>
+        ) : null}
+
+        {tieneBeneficiosPorTrial ? (
+          <View className="rounded-lg bg-emerald-50 p-4">
+            <Text className="font-semibold text-marca-verde">
+              Tu prueba Premium esta activa. Puedes comprar Premium permanente cuando quieras.
+            </Text>
           </View>
         ) : null}
 
@@ -142,7 +152,7 @@ export default function PantallaPremium() {
 
         <AppButton
           titulo="Comprar Premium"
-          disabled={cargando || suscripcion?.premium || !configuracion.featureFlags.premiumActivo || !configuracion.featureFlags.comprasActivas}
+          disabled={cargando || tienePremiumPermanente || !configuracion.featureFlags.premiumActivo || !configuracion.featureFlags.comprasActivas}
           onPress={() => {
             registrarEvento({ nombre: 'premium_compra_iniciada', metadataJson: { plataformaCompra } });
             compra.mutate();

@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 import { Bell, ChevronRight, Crown, FileText, HelpCircle, Info, LogOut, Shield, Trash2 } from 'lucide-react-native';
 import { type ReactNode } from 'react';
+import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { AppButton } from '@/components/app-button';
 import { ScreenScrollView } from '@/components/screen';
@@ -14,6 +15,7 @@ export default function Perfil() {
   const token = useAuthStore((state) => state.accessToken);
   const cerrarSesion = useAuthStore((state) => state.cerrarSesion);
   const { data: suscripcion } = useSuscripcion();
+  const [mensajeCuenta, setMensajeCuenta] = useState('');
 
   async function salir() {
     if (token) {
@@ -24,6 +26,20 @@ export default function Perfil() {
   }
 
   const iniciales = usuario ? `${usuario.nombres[0] ?? ''}${usuario.apellidos[0] ?? ''}`.toUpperCase() : 'MS';
+  const telefonoVisible = usuario?.telefono?.startsWith('google:') ? '' : usuario?.telefono;
+
+  async function abrirPrivacidadAds() {
+    setMensajeCuenta('');
+
+    try {
+      const resultado = await mostrarOpcionesPrivacidadAds();
+      if (resultado === null) {
+        setMensajeCuenta('Las opciones de privacidad de anuncios no estan disponibles en este dispositivo.');
+      }
+    } catch {
+      setMensajeCuenta('No pudimos abrir las opciones de privacidad de anuncios.');
+    }
+  }
 
   return (
     <ScreenScrollView contentContainerStyle={{ paddingTop: 0 }}>
@@ -37,7 +53,7 @@ export default function Perfil() {
             {usuario ? `${usuario.nombres} ${usuario.apellidos}` : 'Sin sesion activa'}
           </Text>
           <Text className="mt-1 text-center text-slate-600">{usuario?.email ?? 'Inicia sesion para ver tu perfil.'}</Text>
-          <Text className="mt-1 text-center text-slate-600">{usuario?.telefono ?? ''}</Text>
+          {telefonoVisible ? <Text className="mt-1 text-center text-slate-600">{telefonoVisible}</Text> : null}
           <Text className="mt-2 text-center text-sm font-extrabold uppercase text-marca-verde">{usuario?.rolGlobal ?? ''}</Text>
         </View>
 
@@ -69,8 +85,9 @@ export default function Perfil() {
             <FilaCuenta icono={<FileText color="#64748B" size={19} />} titulo="Terminos y condiciones" onPress={() => router.push('/legal/terms' as never)} />
             <FilaCuenta icono={<HelpCircle color="#64748B" size={19} />} titulo="Soporte" onPress={() => router.push('/legal/support' as never)} />
             <FilaCuenta icono={<Info color="#64748B" size={19} />} titulo="Acerca de" onPress={() => router.push('/about' as never)} />
-            <FilaCuenta icono={<Bell color="#64748B" size={19} />} titulo="Privacidad de anuncios" onPress={() => mostrarOpcionesPrivacidadAds().catch(() => null)} />
+            <FilaCuenta icono={<Bell color="#64748B" size={19} />} titulo="Privacidad de anuncios" onPress={abrirPrivacidadAds} />
           </View>
+          {mensajeCuenta ? <Text className="mt-3 rounded-lg bg-amber-50 p-3 text-sm font-semibold text-amber-700">{mensajeCuenta}</Text> : null}
         </View>
 
         <View className="mt-8 gap-3">
@@ -91,7 +108,7 @@ export default function Perfil() {
   );
 }
 
-function FilaCuenta({ icono, titulo, onPress }: { icono: ReactNode; titulo: string; onPress: () => void }) {
+function FilaCuenta({ icono, titulo, onPress }: { icono: ReactNode; titulo: string; onPress: () => void | Promise<void> }) {
   return (
     <Pressable className="min-h-14 flex-row items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 shadow-sm" onPress={onPress}>
       {icono}

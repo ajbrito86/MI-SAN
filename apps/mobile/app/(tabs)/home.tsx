@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { Bell, CreditCard, FileText, ShieldCheck, Wallet } from 'lucide-react-native';
 import { type ReactNode } from 'react';
-import { Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { AppButton } from '@/components/app-button';
 import { AppCard } from '@/components/app-card';
 import { BannerPublicidad } from '@/components/banner-publicidad';
@@ -124,12 +124,17 @@ export default function Home() {
 
 function AccesoRapido({ icono, titulo, onPress }: { icono: ReactNode; titulo: string; onPress: () => void }) {
   return (
-    <View className="flex-1">
-      <AppButton titulo={titulo} variante="secundario" onPress={onPress} className="min-h-20" />
-      <View pointerEvents="none" className="absolute left-5 top-7">
+    <Pressable
+      className="min-h-20 flex-1 flex-row items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-white px-3 shadow-sm"
+      onPress={onPress}
+    >
+      <View className="shrink-0">
         {icono}
       </View>
-    </View>
+      <Text className="shrink text-center text-base font-semibold text-marca-verde" numberOfLines={2}>
+        {titulo}
+      </Text>
+    </Pressable>
   );
 }
 
