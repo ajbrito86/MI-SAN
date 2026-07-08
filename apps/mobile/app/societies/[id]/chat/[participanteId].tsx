@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Stack, useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppButton } from '@/components/app-button';
@@ -17,6 +17,7 @@ export default function ChatSan() {
   const token = useAuthStore((state) => state.accessToken);
   const usuarioActual = useAuthStore((state) => state.usuario);
   const queryClient = useQueryClient();
+  const scrollRef = useRef<ScrollView>(null);
   const [mensaje, setMensaje] = useState('');
   const [mensajeAccion, setMensajeAccion] = useState('');
   const { data: sociedad } = useQuery({
@@ -44,13 +45,27 @@ export default function ChatSan() {
     onError: (err) => setMensajeAccion(err instanceof Error ? err.message : 'No pudimos enviar el mensaje.'),
   });
 
+  useEffect(() => {
+    scrollRef.current?.scrollToEnd({ animated: true });
+  }, [mensajes.length]);
+
   return (
-    <KeyboardAvoidingView className="flex-1 bg-marca-fondo" behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+    <KeyboardAvoidingView
+      className="flex-1 bg-marca-fondo"
+      behavior="padding"
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 12}
+    >
       <Stack.Screen options={{ headerShown: false }} />
       <ScreenTopView>
         <AppHeader titulo="Chat privado" subtitulo={nombre ? `SAN - ${nombre}` : 'Conversacion del SAN'} mostrarAtras />
       </ScreenTopView>
-      <ScrollView className="flex-1 px-5" contentContainerClassName="gap-3 pb-4" keyboardShouldPersistTaps="handled">
+      <ScrollView
+        ref={scrollRef}
+        className="flex-1 px-5"
+        contentContainerClassName="gap-3 pb-4"
+        keyboardShouldPersistTaps="handled"
+        onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: true })}
+      >
         {isLoading ? (
           <AppCard titulo="Cargando chat" detalle="Buscando los mensajes de esta conversacion." estado="PENDIENTE" />
         ) : isError ? (
@@ -86,7 +101,7 @@ export default function ChatSan() {
         ) : null}
         {mensajeAccion ? <Text className="text-sm font-semibold text-red-600">{mensajeAccion}</Text> : null}
         <TextInput
-          className={`min-h-20 rounded-lg border px-4 py-3 text-base ${
+          className={`max-h-32 min-h-16 rounded-lg border px-4 py-3 text-base ${
             chatSoloLectura ? 'border-slate-200 bg-slate-100 text-slate-400' : 'border-slate-200 bg-white'
           }`}
           placeholder={chatSoloLectura ? 'Chat en modo lectura' : 'Escribe un mensaje privado'}

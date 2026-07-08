@@ -101,6 +101,7 @@ export default function PantallaPremium() {
   const precioPremium = formatearPrecioProducto(productoPremium.data, `US$${configuracion.monetizacion.precioPremiumUsd.toFixed(2)}`);
   const tienePremiumPermanente = suscripcion?.plan === 'PREMIUM_SIN_ADS' && !suscripcion.esTrial;
   const tieneBeneficiosPorTrial = Boolean(suscripcion?.premium && suscripcion.esTrial);
+  const errorOperacion = compra.error || restauracion.error;
 
   return (
     <ScreenScrollView>
@@ -144,9 +145,9 @@ export default function PantallaPremium() {
           </View>
         ) : null}
 
-        {compra.error || restauracion.error ? (
+        {errorOperacion ? (
           <Text className="rounded-lg bg-red-50 p-3 text-sm font-semibold text-red-700">
-            No pudimos completar la operacion. Intentalo nuevamente.
+            {errorOperacion instanceof Error ? errorOperacion.message : 'No pudimos completar la operacion. Intentalo nuevamente.'}
           </Text>
         ) : null}
 

@@ -2,12 +2,17 @@ import { router } from 'expo-router';
 import { Bell, ChevronRight, Crown, FileText, HelpCircle, Info, LogOut, Shield, Trash2 } from 'lucide-react-native';
 import { type ReactNode } from 'react';
 import { useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Alert, Pressable, Text, View } from 'react-native';
 import { AppButton } from '@/components/app-button';
 import { ScreenScrollView } from '@/components/screen';
 import { useSuscripcion } from '@/hooks/use-suscripcion';
 import { mostrarOpcionesPrivacidadAds } from '@/services/ads-service';
 import { logout } from '@/services/auth-service';
+import {
+  abrirConfiguracionNotificaciones,
+  obtenerEstadoPermisosPush,
+  registrarDispositivoPush,
+} from '@/services/push-notifications-service';
 import { useAuthStore } from '@/stores/auth-store';
 
 export default function Perfil() {
@@ -25,6 +30,13 @@ export default function Perfil() {
     router.replace('/');
   }
 
+  function confirmarSalir() {
+    Alert.alert('Cerrar sesion', 'Quieres cerrar tu sesion en este dispositivo?', [
+      { text: 'Cancelar', style: 'cancel' },
+      { text: 'Cerrar sesion', style: 'destructive', onPress: salir },
+    ]);
+  }
+
   const iniciales = usuario ? `${usuario.nombres[0] ?? ''}${usuario.apellidos[0] ?? ''}`.toUpperCase() : 'MS';
   const telefonoVisible = usuario?.telefono?.startsWith('google:') ? '' : usuario?.telefono;
 
@@ -38,6 +50,36 @@ export default function Perfil() {
       }
     } catch {
       setMensajeCuenta('No pudimos abrir las opciones de privacidad de anuncios.');
+    }
+  }
+
+  async function activarNotificaciones() {
+    setMensajeCuenta('');
+
+    try {
+      const estado = await obtenerEstadoPermisosPush();
+
+      if (estado === 'unavailable') {
+        setMensajeCuenta('Las notificaciones push no estan disponibles en este entorno.');
+        return;
+      }
+
+      if (estado === 'denied') {
+        Alert.alert(
+          'Notificaciones bloqueadas',
+          'Android tiene bloqueadas las notificaciones de MI-SAN. Abre la configuracion del celular y activa Permitir notificaciones.',
+          [
+            { text: 'Cancelar', style: 'cancel' },
+            { text: 'Abrir configuracion', onPress: abrirConfiguracionNotificaciones },
+          ],
+        );
+        return;
+      }
+
+      const tokenPush = await registrarDispositivoPush();
+      setMensajeCuenta(tokenPush ? 'Notificaciones activadas correctamente.' : 'No pudimos activar las notificaciones en este dispositivo.');
+    } catch {
+      setMensajeCuenta('No pudimos abrir o activar las notificaciones.');
     }
   }
 
@@ -73,7 +115,7 @@ export default function Perfil() {
             </View>
           </View>
           <View className="mt-4">
-            <AppButton titulo="Administrar Premium" variante="secundario" onPress={() => router.push('/premium' as never)} />
+            <AppButton titulo="Administrar Premium" variante="secundario" onPress={() => router.navigate('/premium' as never)} />
           </View>
         </View>
 
@@ -85,6 +127,7 @@ export default function Perfil() {
             <FilaCuenta icono={<FileText color="#64748B" size={19} />} titulo="Terminos y condiciones" onPress={() => router.push('/legal/terms' as never)} />
             <FilaCuenta icono={<HelpCircle color="#64748B" size={19} />} titulo="Soporte" onPress={() => router.push('/legal/support' as never)} />
             <FilaCuenta icono={<Info color="#64748B" size={19} />} titulo="Acerca de" onPress={() => router.push('/about' as never)} />
+            <FilaCuenta icono={<Bell color="#64748B" size={19} />} titulo="Notificaciones" onPress={activarNotificaciones} />
             <FilaCuenta icono={<Bell color="#64748B" size={19} />} titulo="Privacidad de anuncios" onPress={abrirPrivacidadAds} />
           </View>
           {mensajeCuenta ? <Text className="mt-3 rounded-lg bg-amber-50 p-3 text-sm font-semibold text-amber-700">{mensajeCuenta}</Text> : null}
@@ -98,7 +141,7 @@ export default function Perfil() {
             <Trash2 color="#B42318" size={18} />
             <Text className="font-semibold text-[#B42318]">Eliminar cuenta</Text>
           </Pressable>
-          <Pressable className="min-h-14 flex-row items-center justify-center gap-3 rounded-xl border border-emerald-200 bg-white" onPress={salir}>
+          <Pressable className="min-h-14 flex-row items-center justify-center gap-3 rounded-xl border border-emerald-200 bg-white" onPress={confirmarSalir}>
             <LogOut color="#0F6B4B" size={18} />
             <Text className="font-semibold text-[#0F6B4B]">Cerrar sesion</Text>
           </Pressable>

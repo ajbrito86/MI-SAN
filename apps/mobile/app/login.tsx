@@ -3,7 +3,7 @@ import { Link, router } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { Bell, Check, Eye, EyeOff, FileText, Lock, Mail, ShieldCheck, Users } from 'lucide-react-native';
 import { useEffect, useState, type ReactNode } from 'react';
-import { ActivityIndicator, Image, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { AppButton } from '@/components/app-button';
 import { ScreenTopView } from '@/components/screen';
 import { login, loginConGoogle } from '@/services/auth-service';
@@ -29,6 +29,8 @@ function obtenerGoogleRedirectUriAndroid() {
 
 export default function Login() {
   const guardarSesion = useAuthStore((state) => state.guardarSesion);
+  const accessToken = useAuthStore((state) => state.accessToken);
+  const hydrated = useAuthStore((state) => state.hydrated);
   const [identificador, setIdentificador] = useState('');
   const [contrasena, setContrasena] = useState('');
   const [error, setError] = useState('');
@@ -68,6 +70,12 @@ export default function Login() {
       setCargandoGoogle(false);
     }
   }
+
+  useEffect(() => {
+    if (hydrated && accessToken) {
+      router.replace('/(tabs)/home');
+    }
+  }, [accessToken, hydrated]);
 
   useEffect(() => {
     if (!respuestaGoogle) {
@@ -130,15 +138,6 @@ export default function Login() {
       const resultado = await abrirGoogle();
       console.info('[GoogleSignIn] resultado prompt', resultado.type, resultado.type === 'success' ? Object.keys(resultado.params) : null);
 
-      if (resultado.type === 'success') {
-        const idToken = resultado.params.id_token;
-
-        if (idToken) {
-          await autenticarConGoogle(idToken);
-          return;
-        }
-      }
-
       if (resultado.type === 'cancel' || resultado.type === 'dismiss') {
         setCargandoGoogle(false);
       }
@@ -149,6 +148,7 @@ export default function Login() {
   }
 
   return (
+    <KeyboardAvoidingView className="flex-1 bg-[#F4FAF5]" behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
     <ScreenTopView className="flex-1 bg-[#F4FAF5]">
       <View className="absolute -left-16 top-16 h-56 w-56 rounded-full bg-emerald-100 opacity-60" />
       <View className="absolute -right-20 top-0 h-72 w-72 rounded-full bg-white opacity-80" />
@@ -270,6 +270,7 @@ export default function Login() {
         </View>
       </ScrollView>
     </ScreenTopView>
+    </KeyboardAvoidingView>
   );
 }
 

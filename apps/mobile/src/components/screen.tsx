@@ -1,28 +1,39 @@
 import { type ReactNode } from 'react';
-import { ScrollView, type ScrollViewProps, View, type ViewProps } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, type ScrollViewProps, View, type ViewProps } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type ScreenScrollViewProps = ScrollViewProps & {
   children: ReactNode;
 };
 
-export function ScreenScrollView({ children, contentContainerStyle, ...props }: ScreenScrollViewProps) {
+export function ScreenScrollView({
+  children,
+  contentContainerStyle,
+  keyboardShouldPersistTaps = 'handled',
+  showsVerticalScrollIndicator = false,
+  ...props
+}: ScreenScrollViewProps) {
   const insets = useSafeAreaInsets();
 
   return (
-    <ScrollView
-      className="flex-1 bg-[#F5FBF7] px-5"
-      contentContainerStyle={[
-        {
-          paddingTop: insets.top + 16,
-          paddingBottom: Math.max(insets.bottom + 96, 120),
-        },
-        contentContainerStyle,
-      ]}
-      {...props}
-    >
-      {children}
-    </ScrollView>
+    <KeyboardAvoidingView className="flex-1 bg-[#F5FBF7]" behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      <ScrollView
+        className="flex-1 px-5"
+        contentContainerStyle={[
+          {
+            flexGrow: 1,
+            paddingTop: insets.top + 16,
+            paddingBottom: Math.max(insets.bottom + 96, 120),
+          },
+          contentContainerStyle,
+        ]}
+        keyboardShouldPersistTaps={keyboardShouldPersistTaps}
+        showsVerticalScrollIndicator={showsVerticalScrollIndicator}
+        {...props}
+      >
+        {children}
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 

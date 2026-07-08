@@ -7,6 +7,8 @@ type AuthState = {
   usuario: Usuario | null;
   accessToken: string | null;
   refreshToken: string | null;
+  hydrated: boolean;
+  marcarHidratado: () => void;
   guardarSesion: (data: { usuario: Usuario; accessToken: string; refreshToken: string }) => void;
   actualizarUsuario: (usuario: Usuario) => void;
   actualizarTokens: (tokens: { accessToken: string; refreshToken: string }) => void;
@@ -19,6 +21,8 @@ export const useAuthStore = create<AuthState>()(
       usuario: null,
       accessToken: null,
       refreshToken: null,
+      hydrated: false,
+      marcarHidratado: () => set({ hydrated: true }),
       guardarSesion: (data) => set(data),
       actualizarUsuario: (usuario) => set({ usuario }),
       actualizarTokens: (tokens) => set(tokens),
@@ -27,6 +31,9 @@ export const useAuthStore = create<AuthState>()(
     {
       name: 'mi-san-auth',
       storage: createJSONStorage(() => AsyncStorage),
+      onRehydrateStorage: () => (state) => {
+        state?.marcarHidratado();
+      },
     },
   ),
 );

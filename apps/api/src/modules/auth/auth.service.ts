@@ -194,7 +194,7 @@ export class AuthService {
 
     await this.authRepository.crearRecuperacionContrasena(usuario.id, codigoHash, expiraEn);
 
-    if (this.configService.get<string>('NODE_ENV') !== 'production') {
+    if (this.debeExponerCodigoRecuperacion()) {
       respuesta.codigoRecuperacion = codigo;
     }
 
@@ -245,6 +245,13 @@ export class AuthService {
 
   private generarCodigoRecuperacion() {
     return Math.floor(100000 + Math.random() * 900000).toString();
+  }
+
+  private debeExponerCodigoRecuperacion() {
+    return (
+      this.configService.get<string>('NODE_ENV') !== 'production' ||
+      this.configService.get<string>('ALLOW_PASSWORD_RESET_CODE_RESPONSE') === 'true'
+    );
   }
 
   private async buscarRecuperacionValida(recuperaciones: { id: string; codigoHash: string }[], codigo: string) {

@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { ActivityIndicator, Text, TextInput, View } from 'react-native';
 import { AppButton } from '@/components/app-button';
 import { AppHeader } from '@/components/app-header';
-import { ScreenTopView } from '@/components/screen';
+import { ScreenScrollView } from '@/components/screen';
 import { confirmarRecuperacionContrasena, solicitarRecuperacionContrasena } from '@/services/auth-service';
 
 export default function RecuperarContrasena() {
@@ -67,7 +67,7 @@ export default function RecuperarContrasena() {
   }
 
   return (
-    <ScreenTopView className="flex-1 bg-marca-fondo">
+    <ScreenScrollView>
       <View className="flex-1 justify-center gap-5">
         <AppHeader titulo="Recuperar contrasena" subtitulo="Solicita un codigo y crea una nueva contrasena." mostrarAtras />
 
@@ -127,6 +127,6 @@ export default function RecuperarContrasena() {
           ) : null}
         </View>
       </View>
-    </ScreenTopView>
+    </ScreenScrollView>
   );
 }

@@ -3,7 +3,7 @@ import Constants from 'expo-constants';
 import * as Device from 'expo-device';
 import type * as ExpoNotifications from 'expo-notifications';
 import { router } from 'expo-router';
-import { Platform } from 'react-native';
+import { Linking, Platform } from 'react-native';
 import { apiRequestAutenticado } from './api';
 
 type PushMetadata = {
@@ -66,6 +66,21 @@ export async function registrarDispositivoPush() {
   await AsyncStorage.setItem(registroPushKey, JSON.stringify({ pushToken: token, plataforma: Platform.OS }));
 
   return token;
+}
+
+export async function obtenerEstadoPermisosPush() {
+  if (!pushNotificationsEnabled || isExpoGo || Platform.OS === 'web' || !Device.isDevice) {
+    return 'unavailable' as const;
+  }
+
+  const Notifications = cargarNotifications();
+  const permisos = await Notifications.getPermissionsAsync();
+
+  return permisos.status;
+}
+
+export async function abrirConfiguracionNotificaciones() {
+  await Linking.openSettings();
 }
 
 export async function eliminarDispositivoPush() {
