@@ -48,8 +48,7 @@ function valoresUnicos(valores) {
   return [...new Set(valores.filter(Boolean))];
 }
 
-function esquemaGoogleAndroid() {
-  const clientId = process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID;
+function esquemaGoogle(clientId) {
   const sufijo = '.apps.googleusercontent.com';
 
   if (!clientId || !clientId.endsWith(sufijo)) {
@@ -57,6 +56,17 @@ function esquemaGoogleAndroid() {
   }
 
   return `com.googleusercontent.apps.${clientId.slice(0, -sufijo.length)}`;
+}
+
+function esquemaGoogleAndroid() {
+  return esquemaGoogle(
+    process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID ||
+      '107458796974-sf1vc8erhk0l877234j7hm8brddfsj2v.apps.googleusercontent.com',
+  );
+}
+
+function esquemaGoogleIos() {
+  return esquemaGoogle(process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID);
 }
 
 function sinPluginAds(plugins = []) {
@@ -112,6 +122,7 @@ module.exports = ({ config }) => {
     scheme: valoresUnicos([
       ...(Array.isArray(config.scheme) ? config.scheme : [config.scheme]),
       esquemaGoogleAndroid(),
+      esquemaGoogleIos(),
     ]),
     extra: {
       ...config.extra,

@@ -15,16 +15,19 @@ const googleWebClientId =
   process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || '107458796974-162ttfmbucdog5s8b47pq6ac25ctn0rh.apps.googleusercontent.com';
 const googleAndroidClientId =
   process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID || '107458796974-sf1vc8erhk0l877234j7hm8brddfsj2v.apps.googleusercontent.com';
+const googleIosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
 const googleClientIdSufijo = '.apps.googleusercontent.com';
 
 WebBrowser.maybeCompleteAuthSession();
 
-function obtenerGoogleRedirectUriAndroid() {
-  if (Platform.OS !== 'android') {
+function obtenerGoogleRedirectUri() {
+  const clientId = Platform.OS === 'ios' ? googleIosClientId : googleAndroidClientId;
+
+  if (!clientId?.endsWith(googleClientIdSufijo)) {
     return undefined;
   }
 
-  return `com.googleusercontent.apps.${googleAndroidClientId.replace(googleClientIdSufijo, '')}:/oauthredirect`;
+  return `com.googleusercontent.apps.${clientId.replace(googleClientIdSufijo, '')}:/oauthredirect`;
 }
 
 export default function Login() {
@@ -42,11 +45,12 @@ export default function Login() {
     {
       webClientId: googleWebClientId,
       androidClientId: googleAndroidClientId,
-      redirectUri: obtenerGoogleRedirectUriAndroid(),
+      iosClientId: googleIosClientId,
+      redirectUri: obtenerGoogleRedirectUri(),
       selectAccount: true,
     },
     {
-      native: obtenerGoogleRedirectUriAndroid(),
+      native: obtenerGoogleRedirectUri(),
     }
   );
 
