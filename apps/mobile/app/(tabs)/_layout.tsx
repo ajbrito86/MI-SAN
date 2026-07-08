@@ -1,10 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
 import { Redirect, Tabs } from 'expo-router';
 import { Bell, CreditCard, Home, User, Users } from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { contarNotificacionesNoLeidas } from '@/services/notificaciones-service';
 import { useAuthStore } from '@/stores/auth-store';
 
 export default function TabsLayout() {
+  const insets = useSafeAreaInsets();
   const token = useAuthStore((state) => state.accessToken);
   const { data: noLeidas } = useQuery({
     queryKey: ['notificaciones-no-leidas'],
@@ -24,8 +26,8 @@ export default function TabsLayout() {
         tabBarActiveTintColor: '#168A5B',
         tabBarInactiveTintColor: '#64748B',
         tabBarStyle: {
-          height: 78,
-          paddingBottom: 10,
+          height: 68 + Math.max(insets.bottom, 16),
+          paddingBottom: Math.max(insets.bottom, 16),
           paddingTop: 8,
           borderTopWidth: 0,
           elevation: 10,
@@ -36,6 +38,9 @@ export default function TabsLayout() {
         tabBarLabelStyle: {
           fontSize: 11,
           fontWeight: '600',
+        },
+        tabBarItemStyle: {
+          paddingVertical: 2,
         },
       }}
     >
