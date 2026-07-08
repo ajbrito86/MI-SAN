@@ -4,6 +4,7 @@ import { useState, type ComponentProps, type ReactNode } from 'react';
 import { ActivityIndicator, Image, KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppButton } from '@/components/app-button';
+import { useKeyboardBottomPadding } from '@/components/screen';
 import { registrar } from '@/services/auth-service';
 import { useAuthStore } from '@/stores/auth-store';
 
@@ -11,6 +12,7 @@ const logoMiSan = require('../assets/Logo-mi-san.png');
 
 export default function Registro() {
   const insets = useSafeAreaInsets();
+  const keyboardBottomPadding = useKeyboardBottomPadding(48);
   const guardarSesion = useAuthStore((state) => state.guardarSesion);
   const [formulario, setFormulario] = useState({
     nombres: '',
@@ -84,9 +86,10 @@ export default function Registro() {
           gap: 20,
           paddingTop: insets.top + 72,
           paddingRight: 20,
-          paddingBottom: Math.max(insets.bottom + 32, 48),
+          paddingBottom: Math.max(insets.bottom + 32, 48) + keyboardBottomPadding,
           paddingLeft: 20,
         }}
+        keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
         keyboardShouldPersistTaps="handled"
       >
         <View className="items-center">
@@ -126,7 +129,7 @@ function CampoRegistro({
   return (
     <View className="min-h-14 flex-row items-center gap-3 rounded-xl border border-slate-200 bg-white px-4">
       {icono}
-      <TextInput className="min-h-12 flex-1 text-base text-marca-texto" placeholderTextColor="#667085" {...props} />
+      <TextInput className="min-h-12 min-w-0 flex-1 text-base text-marca-texto" placeholderTextColor="#667085" {...props} />
     </View>
   );
 }

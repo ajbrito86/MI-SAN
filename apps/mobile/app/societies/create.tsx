@@ -69,7 +69,7 @@ export default function CrearSociedad() {
   }
 
   return (
-    <ScreenScrollView contentContainerStyle={{ paddingBottom: 32 }}>
+    <ScreenScrollView>
       <View className="gap-4">
         <AppHeader titulo="Nueva sociedad" subtitulo="Crear una sociedad te convierte en organizador." mostrarAtras />
         <TextInput className="rounded-lg border border-slate-200 bg-white px-4 py-4 text-base" placeholder="Nombre" value={formulario.nombre} onChangeText={(valor) => actualizar('nombre', valor)} />

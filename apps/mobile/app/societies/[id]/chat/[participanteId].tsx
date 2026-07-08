@@ -6,13 +6,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppButton } from '@/components/app-button';
 import { AppCard } from '@/components/app-card';
 import { AppHeader } from '@/components/app-header';
-import { ScreenTopView } from '@/components/screen';
+import { ScreenTopView, useKeyboardBottomPadding } from '@/components/screen';
 import { enviarMensajeSan, listarMensajesSan } from '@/services/chats-service';
 import { obtenerSociedad } from '@/services/sociedades-service';
 import { useAuthStore } from '@/stores/auth-store';
 
 export default function ChatSan() {
   const insets = useSafeAreaInsets();
+  const keyboardBottomPadding = useKeyboardBottomPadding(0);
   const { id, participanteId, nombre } = useLocalSearchParams<{ id: string; participanteId: string; nombre?: string }>();
   const token = useAuthStore((state) => state.accessToken);
   const usuarioActual = useAuthStore((state) => state.usuario);
@@ -63,6 +64,7 @@ export default function ChatSan() {
         ref={scrollRef}
         className="flex-1 px-5"
         contentContainerClassName="gap-3 pb-4"
+        keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
         keyboardShouldPersistTaps="handled"
         onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: true })}
       >
@@ -93,7 +95,10 @@ export default function ChatSan() {
           })
         )}
       </ScrollView>
-      <View className="gap-3 border-t border-slate-200 bg-white px-5 pt-4" style={{ paddingBottom: Math.max(insets.bottom + 16, 24) }}>
+      <View
+        className="gap-3 border-t border-slate-200 bg-white px-5 pt-4"
+        style={{ paddingBottom: Math.max(insets.bottom + 20, 48) + keyboardBottomPadding }}
+      >
         {chatSoloLectura ? (
           <Text className="rounded-lg bg-slate-50 p-3 text-sm font-semibold text-slate-600">
             Este SAN esta cerrado. Puedes consultar el historial, pero no enviar mensajes nuevos.
@@ -109,6 +114,7 @@ export default function ChatSan() {
           multiline
           value={mensaje}
           onChangeText={setMensaje}
+          onFocus={() => setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100)}
           editable={!chatSoloLectura}
         />
         <AppButton

@@ -67,7 +67,7 @@ export default function EliminarCuenta() {
               <Text className="text-sm font-semibold text-marca-texto">Contrasena actual</Text>
               <View className="mt-2 flex-row items-center gap-3 rounded-lg border border-slate-200 bg-white px-4 py-3">
                 <TextInput
-                  className="min-h-8 flex-1 text-base text-marca-texto"
+                  className="min-h-8 min-w-0 flex-1 text-base text-marca-texto"
                   placeholder="Escribe tu contrasena"
                   placeholderTextColor="#8A97A8"
                   secureTextEntry={!mostrarContrasena}

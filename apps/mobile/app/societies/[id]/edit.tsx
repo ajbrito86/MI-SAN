@@ -90,7 +90,7 @@ export default function EditarSociedad() {
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-      <ScreenScrollView contentContainerStyle={{ paddingBottom: 32 }}>
+      <ScreenScrollView>
         <View className="gap-4">
           <AppHeader titulo="Editar sociedad" subtitulo="Solo puedes cambiar datos antes de iniciar el SAN." mostrarAtras />
           {!puedeEditar && sociedad ? (

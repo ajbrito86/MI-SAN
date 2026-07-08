@@ -5,7 +5,7 @@ import { Bell, Check, Eye, EyeOff, FileText, Lock, Mail, ShieldCheck, Users } fr
 import { useEffect, useState, type ReactNode } from 'react';
 import { ActivityIndicator, Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { AppButton } from '@/components/app-button';
-import { ScreenTopView } from '@/components/screen';
+import { ScreenTopView, useKeyboardBottomPadding } from '@/components/screen';
 import { login, loginConGoogle } from '@/services/auth-service';
 import { useAuthStore } from '@/stores/auth-store';
 
@@ -31,6 +31,7 @@ function obtenerGoogleRedirectUri() {
 }
 
 export default function Login() {
+  const keyboardBottomPadding = useKeyboardBottomPadding(48);
   const guardarSesion = useAuthStore((state) => state.guardarSesion);
   const accessToken = useAuthStore((state) => state.accessToken);
   const hydrated = useAuthStore((state) => state.hydrated);
@@ -160,8 +161,9 @@ export default function Login() {
 
       <ScrollView
         className="-mx-5 flex-1"
-        contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 24 }}
+        contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 24 + keyboardBottomPadding }}
         showsVerticalScrollIndicator={false}
+        keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
         keyboardShouldPersistTaps="handled"
       >
         <View className="items-center pt-5">
@@ -181,7 +183,7 @@ export default function Login() {
             <View className="flex-row items-center gap-3 rounded-lg border border-slate-200 bg-white px-4 py-3">
               <Mail size={21} color="#475569" />
               <TextInput
-                className="min-h-8 flex-1 text-base text-marca-texto"
+                className="min-h-8 min-w-0 flex-1 text-base text-marca-texto"
                 placeholder="Correo electronico"
                 placeholderTextColor="#8A97A8"
                 autoCapitalize="none"
@@ -194,7 +196,7 @@ export default function Login() {
             <View className="flex-row items-center gap-3 rounded-lg border border-slate-200 bg-white px-4 py-3">
               <Lock size={21} color="#475569" />
               <TextInput
-                className="min-h-8 flex-1 text-base text-marca-texto"
+                className="min-h-8 min-w-0 flex-1 text-base text-marca-texto"
                 placeholder="Contrasena"
                 placeholderTextColor="#8A97A8"
                 secureTextEntry={!mostrarContrasena}
