@@ -1,0 +1,14 @@
+Starting project at /Users/ajbrito/Documents/repos/MI-SAN/apps/mobile
+Starting Metro Bundler
+warning: Bundler cache is empty, rebuilding (this may take a minute)
+Waiting on http://localhost:8081
+Logs for your project will appear below.
+Could not parse Expo config: android.googleServicesFile: "./google-services.json"
+iOS Bundled 12264ms node_modules/expo-router/entry.js (3316 modules)
+ (NOBRIDGE) LOG  Bridgeless mode is enabled
+ INFO  
+[7m [1m💡 JavaScript logs will be removed from Metro in React Native 0.77![22m Please use React Native DevTools as your default tool. Tip: Type [1mj[22m in the terminal to open (requires Google Chrome or Microsoft Edge).[27m
+iOS Bundled 69ms node_modules/expo-router/entry.js (1 module)
+ (NOBRIDGE) LOG  Bridgeless mode is enabled
+ INFO  
+[7m [1m💡 JavaScript logs will be removed from Metro in React Native 0.77![22m Please use React Native DevTools as your default tool. Tip: Type [1mj[22m in the terminal to open (requires Google Chrome or Microsoft Edge).[27m

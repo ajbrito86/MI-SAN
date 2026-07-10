@@ -20,6 +20,7 @@ coverage
 !apps/mobile/.env.example
 *.local
 apps/mobile/google-services.json
+apps/mobile/GoogleService-Info.plist
 eas-build-*
 
 # Archivos generados o subidos en desarrollo

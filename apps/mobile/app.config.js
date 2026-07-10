@@ -1,4 +1,6 @@
 const { withAppBuildGradle } = require('expo/config-plugins');
+const { existsSync } = require('fs');
+const { resolve } = require('path');
 
 const TEST_ADMOB = {
   androidAppId: 'ca-app-pub-3940256099942544~3347511713',
@@ -81,6 +83,17 @@ function esquemaGoogleIos() {
   return esquemaGoogle(process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID);
 }
 
+function archivoGoogleServicesAndroid() {
+  const archivoConfigurado = process.env.GOOGLE_SERVICES_JSON;
+
+  if (archivoConfigurado) {
+    return archivoConfigurado;
+  }
+
+  const archivoLocal = './google-services.json';
+  return existsSync(resolve(__dirname, archivoLocal)) ? archivoLocal : null;
+}
+
 function sinPluginAds(plugins = []) {
   return plugins.filter((plugin) => {
     const nombre = Array.isArray(plugin) ? plugin[0] : plugin;
@@ -125,6 +138,7 @@ module.exports = ({ config }) => {
   const adsNativosActivos = envBoolean('EXPO_PUBLIC_ENABLE_NATIVE_ADS', true);
   const pushNativoActivo = envBoolean('EXPO_PUBLIC_ENABLE_PUSH_NOTIFICATIONS', true);
   const billingNativoActivo = envBoolean('EXPO_PUBLIC_ENABLE_NATIVE_BILLING', true);
+  const googleServicesFile = archivoGoogleServicesAndroid();
   const pluginsBase = [
     pushNativoActivo ? config.plugins : sinPluginNotifications(config.plugins),
     billingNativoActivo,
@@ -142,6 +156,10 @@ module.exports = ({ config }) => {
 
   return aplicarSkipKotlinMetadata({
     ...config,
+    android: {
+      ...config.android,
+      ...(googleServicesFile ? { googleServicesFile } : {}),
+    },
     plugins: adsNativosActivos
       ? [
           ...sinPluginAds(pluginsBase),

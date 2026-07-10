@@ -21,7 +21,6 @@
     "android": {
       "package": "app.mi_san.mobile",
       "versionCode": 13,
-      "googleServicesFile": "./google-services.json",
       "softwareKeyboardLayoutMode": "resize",
       "permissions": [
         "POST_NOTIFICATIONS"
