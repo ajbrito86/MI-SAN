@@ -1,4 +1,6 @@
 const { withAppBuildGradle } = require('expo/config-plugins');
+const { existsSync } = require('fs');
+const { resolve } = require('path');
 
 const TEST_ADMOB = {
   androidAppId: 'ca-app-pub-3940256099942544~3347511713',
@@ -27,10 +29,22 @@ function valorAdMobPendiente(valor) {
   );
 }
 
-function validarAdMobProduccion(admob) {
-  const esBuildProduccion = process.env.EAS_BUILD_PROFILE === 'production' || process.env.NODE_ENV === 'production';
+function envBoolean(clave, fallback = false) {
+  const valor = process.env[clave];
 
-  if (!esBuildProduccion) {
+  if (valor === undefined) {
+    return fallback;
+  }
+
+  return valor === 'true';
+}
+
+function validarAdMobProduccion(admob) {
+  const esBuildProduccion = process.env.EAS_BUILD_PROFILE === 'production';
+  const usaAdsDePrueba = envBoolean('EXPO_PUBLIC_ADS_TEST_MODE');
+  const adsNativosActivos = envBoolean('EXPO_PUBLIC_ENABLE_NATIVE_ADS', true);
+
+  if (!esBuildProduccion || usaAdsDePrueba || !adsNativosActivos) {
     return;
   }
 
@@ -69,10 +83,35 @@ function esquemaGoogleIos() {
   return esquemaGoogle(process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID);
 }
 
+function archivoGoogleServicesAndroid() {
+  const archivoConfigurado = process.env.GOOGLE_SERVICES_JSON;
+
+  if (archivoConfigurado) {
+    return archivoConfigurado;
+  }
+
+  const archivoLocal = './google-services.json';
+  return existsSync(resolve(__dirname, archivoLocal)) ? archivoLocal : null;
+}
+
 function sinPluginAds(plugins = []) {
   return plugins.filter((plugin) => {
     const nombre = Array.isArray(plugin) ? plugin[0] : plugin;
     return nombre !== 'react-native-google-mobile-ads';
+  });
+}
+
+function sinPluginNotifications(plugins = []) {
+  return plugins.filter((plugin) => {
+    const nombre = Array.isArray(plugin) ? plugin[0] : plugin;
+    return nombre !== 'expo-notifications';
+  });
+}
+
+function sinPluginBilling(plugins = []) {
+  return plugins.filter((plugin) => {
+    const nombre = Array.isArray(plugin) ? plugin[0] : plugin;
+    return nombre !== 'react-native-iap';
   });
 }
 
@@ -96,6 +135,14 @@ tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
 }
 
 module.exports = ({ config }) => {
+  const adsNativosActivos = envBoolean('EXPO_PUBLIC_ENABLE_NATIVE_ADS', true);
+  const pushNativoActivo = envBoolean('EXPO_PUBLIC_ENABLE_PUSH_NOTIFICATIONS', true);
+  const billingNativoActivo = envBoolean('EXPO_PUBLIC_ENABLE_NATIVE_BILLING', true);
+  const googleServicesFile = archivoGoogleServicesAndroid();
+  const pluginsBase = [
+    pushNativoActivo ? config.plugins : sinPluginNotifications(config.plugins),
+    billingNativoActivo,
+  ].reduce((plugins, activo) => (activo === true ? plugins : sinPluginBilling(plugins)));
   const admob = {
     androidAppId: envAdMob('ADMOB_ANDROID_APP_ID', TEST_ADMOB.androidAppId),
     androidBannerId: envAdMob('ADMOB_ANDROID_BANNER_ID', TEST_ADMOB.androidBannerId),
@@ -109,16 +156,22 @@ module.exports = ({ config }) => {
 
   return aplicarSkipKotlinMetadata({
     ...config,
-    plugins: [
-      ...sinPluginAds(config.plugins),
-      [
-        'react-native-google-mobile-ads',
-        {
-          androidAppId: admob.androidAppId,
-          iosAppId: admob.iosAppId,
-        },
-      ],
-    ],
+    android: {
+      ...config.android,
+      ...(googleServicesFile ? { googleServicesFile } : {}),
+    },
+    plugins: adsNativosActivos
+      ? [
+          ...sinPluginAds(pluginsBase),
+          [
+            'react-native-google-mobile-ads',
+            {
+              androidAppId: admob.androidAppId,
+              iosAppId: admob.iosAppId,
+            },
+          ],
+        ]
+      : sinPluginAds(pluginsBase),
     scheme: valoresUnicos([
       ...(Array.isArray(config.scheme) ? config.scheme : [config.scheme]),
       esquemaGoogleAndroid(),
