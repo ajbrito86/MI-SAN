@@ -1,0 +1,6 @@
+module Pods_MiSan {
+  umbrella header "Pods-MiSan-umbrella.h"
+
+  export *
+  module * { export * }
+}
