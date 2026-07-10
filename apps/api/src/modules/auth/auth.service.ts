@@ -309,6 +309,7 @@ export class AuthService {
     return [
       this.configService.get<string>('GOOGLE_CLIENT_ID'),
       this.configService.get<string>('GOOGLE_ANDROID_CLIENT_ID'),
+      this.configService.get<string>('GOOGLE_IOS_CLIENT_ID'),
     ]
       .map((valor) => valor?.trim())
       .filter((valor): valor is string => Boolean(valor))
