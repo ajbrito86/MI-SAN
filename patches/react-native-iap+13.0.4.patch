@@ -1,0 +1,10 @@
+diff --git a/node_modules/react-native-iap/ios/RNIapIosSk2.swift b/node_modules/react-native-iap/ios/RNIapIosSk2.swift
+index c389f6d..c97664a 100644
+--- a/node_modules/react-native-iap/ios/RNIapIosSk2.swift
++++ b/node_modules/react-native-iap/ios/RNIapIosSk2.swift
+@@ -1200,5 +1200,0 @@ class RNIapIosSk2iOS15: Sk2Delegate {
+-                        // Add iOS 18.4+ properties
+-                        if #available(iOS 18.4, tvOS 18.4, *) {
+-                            result["appTransactionID"] = appTransaction.appTransactionID
+-                            result["originalPlatform"] = appTransaction.originalPlatform
+-                        }

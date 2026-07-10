@@ -20,6 +20,7 @@ coverage
 !apps/mobile/.env.example
 *.local
 apps/mobile/google-services.json
+apps/mobile/GoogleService-Info.plist
 eas-build-*
 
 # Archivos generados o subidos en desarrollo
@@ -32,6 +33,7 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+apps/mobile/metro-ios.log
 
 # SO / editores
 .DS_Store

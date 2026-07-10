@@ -17,6 +17,7 @@ const googleAndroidClientId =
   process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID || '107458796974-sf1vc8erhk0l877234j7hm8brddfsj2v.apps.googleusercontent.com';
 const googleIosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
 const googleClientIdSufijo = '.apps.googleusercontent.com';
+type GoogleAuthRequest = ReturnType<typeof Google.useIdTokenAuthRequest>;
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -30,18 +31,34 @@ function obtenerGoogleRedirectUri() {
   return `com.googleusercontent.apps.${clientId.replace(googleClientIdSufijo, '')}:/oauthredirect`;
 }
 
+function errorConfiguracionGoogle() {
+  const clientId = Platform.OS === 'ios' ? googleIosClientId : Platform.OS === 'android' ? googleAndroidClientId : googleWebClientId;
+
+  if (clientId) {
+    return '';
+  }
+
+  const variable =
+    Platform.OS === 'ios'
+      ? 'EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID'
+      : Platform.OS === 'android'
+        ? 'EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID'
+        : 'EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID';
+
+  return `Google Sign-In no esta configurado. Agrega ${variable} al archivo .env y reinicia Metro.`;
+}
+
 export default function Login() {
-  const keyboardBottomPadding = useKeyboardBottomPadding(48);
-  const guardarSesion = useAuthStore((state) => state.guardarSesion);
-  const accessToken = useAuthStore((state) => state.accessToken);
-  const hydrated = useAuthStore((state) => state.hydrated);
-  const [identificador, setIdentificador] = useState('');
-  const [contrasena, setContrasena] = useState('');
-  const [error, setError] = useState('');
-  const [cargando, setCargando] = useState(false);
-  const [cargandoGoogle, setCargandoGoogle] = useState(false);
-  const [recordarme, setRecordarme] = useState(false);
-  const [mostrarContrasena, setMostrarContrasena] = useState(false);
+  const errorGoogle = errorConfiguracionGoogle();
+
+  if (errorGoogle) {
+    return <ContenidoLogin errorConfiguracionGoogle={errorGoogle} />;
+  }
+
+  return <LoginConGoogle />;
+}
+
+function LoginConGoogle() {
   const [requestGoogle, respuestaGoogle, abrirGoogle] = Google.useIdTokenAuthRequest(
     {
       webClientId: googleWebClientId,
@@ -54,6 +71,32 @@ export default function Login() {
       native: obtenerGoogleRedirectUri(),
     }
   );
+
+  return <ContenidoLogin requestGoogle={requestGoogle} respuestaGoogle={respuestaGoogle} abrirGoogle={abrirGoogle} />;
+}
+
+function ContenidoLogin({
+  requestGoogle,
+  respuestaGoogle,
+  abrirGoogle,
+  errorConfiguracionGoogle = '',
+}: {
+  requestGoogle?: GoogleAuthRequest[0];
+  respuestaGoogle?: GoogleAuthRequest[1];
+  abrirGoogle?: GoogleAuthRequest[2];
+  errorConfiguracionGoogle?: string;
+}) {
+  const keyboardBottomPadding = useKeyboardBottomPadding(48);
+  const guardarSesion = useAuthStore((state) => state.guardarSesion);
+  const accessToken = useAuthStore((state) => state.accessToken);
+  const hydrated = useAuthStore((state) => state.hydrated);
+  const [identificador, setIdentificador] = useState('');
+  const [contrasena, setContrasena] = useState('');
+  const [error, setError] = useState('');
+  const [cargando, setCargando] = useState(false);
+  const [cargandoGoogle, setCargandoGoogle] = useState(false);
+  const [recordarme, setRecordarme] = useState(false);
+  const [mostrarContrasena, setMostrarContrasena] = useState(false);
 
   async function autenticarConGoogle(idToken: string) {
     setCargandoGoogle(true);
@@ -132,8 +175,8 @@ export default function Login() {
   async function enviarGoogle() {
     setError('');
 
-    if (!requestGoogle) {
-      setError('Google Sign-In no esta listo. Revisa la configuracion.');
+    if (errorConfiguracionGoogle || !requestGoogle || !abrirGoogle) {
+      setError(errorConfiguracionGoogle || 'Google Sign-In no esta listo. Revisa la configuracion.');
       return;
     }
 
@@ -225,7 +268,11 @@ export default function Login() {
               </Link>
             </View>
 
-            {error ? <Text className="rounded-lg bg-red-50 p-3 text-sm font-semibold text-red-600">{error}</Text> : null}
+            {error || errorConfiguracionGoogle ? (
+              <Text className="rounded-lg bg-red-50 p-3 text-sm font-semibold text-red-600">
+                {error || errorConfiguracionGoogle}
+              </Text>
+            ) : null}
 
             <AppButton titulo={cargando ? 'Iniciando...' : 'Iniciar sesion'} disabled={cargando || cargandoGoogle} onPress={enviar} />
             {cargando ? <ActivityIndicator color="#168A5B" /> : null}
@@ -240,7 +287,7 @@ export default function Login() {
               className={`h-14 flex-row items-center justify-center gap-3 rounded-lg border border-slate-200 bg-white ${
                 cargando || cargandoGoogle ? 'opacity-70' : ''
               }`}
-              disabled={cargando || cargandoGoogle}
+              disabled={cargando || cargandoGoogle || Boolean(errorConfiguracionGoogle)}
               onPress={enviarGoogle}
             >
               {cargandoGoogle ? (
@@ -249,7 +296,7 @@ export default function Login() {
                 <Image source={logoGoogle} className="h-5 w-5" resizeMode="contain" />
               )}
               <Text className="text-base font-semibold text-marca-texto">
-                {cargandoGoogle ? 'Conectando...' : 'Continuar con Google'}
+                {cargandoGoogle ? 'Conectando...' : errorConfiguracionGoogle ? 'Google no configurado' : 'Continuar con Google'}
               </Text>
             </Pressable>
 
