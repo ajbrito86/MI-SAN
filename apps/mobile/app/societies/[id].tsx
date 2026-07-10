@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
-import { Alert, Image, Linking, Modal, Pressable, Text, TextInput, View } from 'react-native';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { Alert, Image, Linking, Modal, Pressable, ScrollView, Text, TextInput, View, type LayoutChangeEvent } from 'react-native';
 import { AppButton } from '@/components/app-button';
 import { AppCard } from '@/components/app-card';
 import { AppHeader } from '@/components/app-header';
@@ -31,6 +31,16 @@ import {
 } from '@/services/sociedades-service';
 import { useAuthStore } from '@/stores/auth-store';
 
+type SeccionDashboard =
+  | 'ciclo'
+  | 'reporte'
+  | 'estado-participantes'
+  | 'mi-estado'
+  | 'acciones'
+  | 'participantes'
+  | 'pagos'
+  | 'historial';
+
 export default function DetalleSociedad() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const token = useAuthStore((state) => state.accessToken);
@@ -48,6 +58,9 @@ export default function DetalleSociedad() {
   const [evidenciaVistaPrevia, setEvidenciaVistaPrevia] = useState<{ nombre: string; url: string } | null>(null);
   const [cicloSeleccionadoId, setCicloSeleccionadoId] = useState<string | null>(null);
   const [cicloIniciadoLocalmenteId, setCicloIniciadoLocalmenteId] = useState<string | null>(null);
+  const [seccionAbierta, setSeccionAbierta] = useState<SeccionDashboard | null>(null);
+  const scrollRef = useRef<ScrollView>(null);
+  const posicionesSeccionesRef = useRef<Partial<Record<SeccionDashboard, number>>>({});
 
   const {
     data: sociedad,
@@ -159,6 +172,32 @@ export default function DetalleSociedad() {
   const proximoPago = [...misPagosPendientes].sort(
     (a, b) => new Date(a.fechaVencimiento).getTime() - new Date(b.fechaVencimiento).getTime(),
   )[0];
+  const pagosReportadosPendientes = pagosSociedadCiclo.filter((pago) => pago.estado === 'REPORTADO').length;
+  const participantesConAtraso = resumen?.participantesResumen?.filter((item) => item.cuotasAtrasadas > 0).length ?? 0;
+  const cuotasAtrasadas = resumen?.cuotasPorEstado?.ATRASADO?.cantidad ?? 0;
+  const montoPendienteReporte = Object.entries(resumen?.cuotasPorEstado ?? {}).reduce(
+    (total, [estado, datos]) => (['PENDIENTE', 'REPORTADO', 'ATRASADO'].includes(estado) ? total + datos.monto : total),
+    0,
+  );
+
+  const alternarSeccion = (seccion: SeccionDashboard) => {
+    setSeccionAbierta((actual) => (actual === seccion ? null : seccion));
+  };
+  const guardarPosicionSeccion = (seccion: SeccionDashboard, event: LayoutChangeEvent) => {
+    posicionesSeccionesRef.current[seccion] = event.nativeEvent.layout.y;
+  };
+  const abrirSeccionConFoco = (seccion: SeccionDashboard) => {
+    setSeccionAbierta(seccion);
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        const y = posicionesSeccionesRef.current[seccion];
+
+        if (typeof y === 'number') {
+          scrollRef.current?.scrollTo({ y: Math.max(y - 12, 0), animated: true });
+        }
+      }, 80);
+    });
+  };
 
   useEffect(() => {
     if (ciclosDisponibles.length === 0) {
@@ -406,7 +445,7 @@ export default function DetalleSociedad() {
   }
 
   return (
-    <ScreenScrollView>
+    <ScreenScrollView ref={scrollRef}>
       <Stack.Screen options={{ headerShown: false }} />
       <Modal visible={Boolean(evidenciaVistaPrevia)} transparent animationType="fade" onRequestClose={() => setEvidenciaVistaPrevia(null)}>
         <View className="flex-1 justify-center bg-black/80 px-4">
@@ -439,7 +478,7 @@ export default function DetalleSociedad() {
       />
       <View className="mt-5 gap-4 pb-8">
         {sociedad ? (
-          <View className="rounded-2xl bg-white p-5 shadow-sm">
+          <View className="rounded-2xl bg-white p-4 shadow-sm">
             <View className="flex-row items-start justify-between gap-3">
               <View className="flex-1">
                 <Text className="text-lg font-semibold text-marca-texto">Resumen</Text>
@@ -449,14 +488,14 @@ export default function DetalleSociedad() {
                 {etiquetaEstadoSociedad(sociedad.estado)}
               </Text>
             </View>
-            <View className="mt-4 gap-3">
-              <View className="rounded-xl bg-slate-50 p-4">
+            <View className="mt-3 gap-2">
+              <View className="rounded-xl bg-slate-50 p-3">
                 <Text className="text-xs font-bold uppercase text-slate-500">Cuota individual</Text>
                 <Text className="mt-1 text-base font-semibold text-marca-texto">
                   {formatearMonto(sociedad.montoCuota, sociedad.moneda)} {sociedad.frecuencia.toLowerCase()} por participante
                 </Text>
               </View>
-              <View className="rounded-xl bg-emerald-50 p-4">
+              <View className="rounded-xl bg-emerald-50 p-3">
                 <Text className="text-xs font-bold uppercase text-marca-verde">Entrega por turno</Text>
                 <Text className="mt-1 text-xl font-bold text-marca-texto">
                   {formatearMonto(montoEntregaEstimado, sociedad.moneda)}
@@ -466,13 +505,13 @@ export default function DetalleSociedad() {
                 </Text>
               </View>
               <View className="flex-row gap-3">
-                <View className="flex-1 rounded-xl bg-slate-50 p-4">
+                <View className="flex-1 rounded-xl bg-slate-50 p-3">
                   <Text className="text-xs font-bold uppercase text-slate-500">Participantes</Text>
                   <Text className="mt-1 font-semibold text-marca-texto">
                     {participantesActivos}/{sociedad.cantidadParticipantes} activos
                   </Text>
                 </View>
-                <View className="flex-1 rounded-xl bg-slate-50 p-4">
+                <View className="flex-1 rounded-xl bg-slate-50 p-3">
                   <Text className="text-xs font-bold uppercase text-slate-500">Cuotas por persona</Text>
                   <Text className="mt-1 font-semibold text-marca-texto">{cuotasPorParticipante}</Text>
                 </View>
@@ -481,10 +520,39 @@ export default function DetalleSociedad() {
           </View>
         ) : null}
 
+        {sociedad ? (
+          <View>
+            <Text className="mb-2 text-xs font-bold uppercase tracking-widest text-slate-500">Acciones rápidas</Text>
+            <View className="flex-row flex-wrap gap-2">
+              {esOrganizador && pagosReportadosPendientes > 0 ? (
+                <AccionRapida
+                  titulo={`Revisar pagos (${pagosReportadosPendientes})`}
+                  destacada
+                  onPress={() => abrirSeccionConFoco('pagos')}
+                />
+              ) : null}
+              {esOrganizador && puedeInvitar ? (
+                <AccionRapida titulo="Invitar participante" onPress={() => abrirSeccionConFoco('acciones')} />
+              ) : null}
+              {esOrganizador && sociedad.cicloActual?.estado === 'ACTIVO' ? (
+                <AccionRapida titulo="Registrar entrega" onPress={() => abrirSeccionConFoco('participantes')} />
+              ) : null}
+              {chatDisponible ? <AccionRapida titulo="Chats" onPress={() => abrirSeccionConFoco('participantes')} /> : null}
+            </View>
+          </View>
+        ) : null}
+
+        <Text className="pt-2 text-xs font-bold uppercase tracking-widest text-slate-500">Información del SAN</Text>
+
         {ciclosDisponibles.length > 0 ? (
-          <View className="rounded-2xl bg-white p-5 shadow-sm">
-            <Text className="text-lg font-semibold text-marca-texto">Ciclo consultado</Text>
-            <Text className="mt-1 text-sm text-slate-600">Pagos, turnos y reportes por ciclo.</Text>
+          <AccordionDashboard
+            titulo="Ciclo consultado"
+            resumen={`${etiquetaCicloSeleccionado} · ${cicloSeleccionado ? etiquetaEstadoOperativo(cicloSeleccionado.estado) : 'Sin ciclo'}`}
+            abierto={seccionAbierta === 'ciclo'}
+            onPress={() => alternarSeccion('ciclo')}
+            onLayout={(event) => guardarPosicionSeccion('ciclo', event)}
+          >
+            <Text className="text-sm text-slate-600">Pagos, turnos y reportes por ciclo.</Text>
             <View className="mt-4 gap-2">
               {ciclosDisponibles.map((ciclo) => {
                 const activo = ciclo.id === cicloSeleccionado?.id;
@@ -514,12 +582,18 @@ export default function DetalleSociedad() {
                 {cicloSeleccionado.fechaFin ? ` - Fin: ${new Date(cicloSeleccionado.fechaFin).toLocaleDateString()}` : ''}
               </Text>
             ) : null}
-          </View>
+          </AccordionDashboard>
         ) : null}
 
         {resumen ? (
-          <View className="rounded-2xl bg-white p-5 shadow-sm">
-            <Text className="text-lg font-semibold text-marca-texto">Reporte - {etiquetaCicloSeleccionado}</Text>
+          <AccordionDashboard
+            titulo="Reporte del ciclo"
+            resumen={`${formatearMonto(montoPendienteReporte, resumen.moneda)} pendientes · ${cuotasAtrasadas} atrasadas`}
+            abierto={seccionAbierta === 'reporte'}
+            onPress={() => alternarSeccion('reporte')}
+            onLayout={(event) => guardarPosicionSeccion('reporte', event)}
+          >
+            <Text className="font-semibold text-marca-texto">{etiquetaCicloSeleccionado}</Text>
             <Text className="mt-2 text-slate-600">Total confirmado: {formatearMonto(resumen.totalConfirmado, resumen.moneda)}</Text>
             <Text className="mt-1 text-slate-600">Pagos confirmados: {resumen.pagosConfirmados}</Text>
             <View className="mt-3 gap-2">
@@ -529,12 +603,17 @@ export default function DetalleSociedad() {
                 </Text>
               ))}
             </View>
-          </View>
+          </AccordionDashboard>
         ) : null}
 
         {esOrganizador && resumen?.participantesResumen?.length ? (
-          <View className="rounded-2xl bg-white p-5 shadow-sm">
-            <Text className="text-lg font-semibold text-marca-texto">Estado por participante</Text>
+          <AccordionDashboard
+            titulo="Estado por participante"
+            resumen={`${resumen.participantesResumen.length} participantes · ${participantesConAtraso} con atraso`}
+            abierto={seccionAbierta === 'estado-participantes'}
+            onPress={() => alternarSeccion('estado-participantes')}
+            onLayout={(event) => guardarPosicionSeccion('estado-participantes', event)}
+          >
             <View className="mt-3 gap-3">
               {resumen.participantesResumen.map((item) => {
                 const tieneAtraso = !sociedadCerrada && item.cuotasAtrasadas > 0;
@@ -585,12 +664,22 @@ export default function DetalleSociedad() {
                 );
               })}
             </View>
-          </View>
+          </AccordionDashboard>
         ) : null}
 
         {sociedad && (miTurno || misPagosSociedad.length > 0) ? (
-          <View className="rounded-2xl bg-white p-5 shadow-sm">
-            <Text className="text-lg font-semibold text-marca-texto">Mi estado - {etiquetaCicloSeleccionado}</Text>
+          <AccordionDashboard
+            titulo="Mi estado"
+            resumen={
+              miTurno
+                ? `Turno #${miTurno.numeroTurno}${proximoPago ? ` · Próximo ${new Date(proximoPago.fechaVencimiento).toLocaleDateString()}` : ''}`
+                : `${misPagosPendientes.length} cuota(s) pendiente(s)`
+            }
+            abierto={seccionAbierta === 'mi-estado'}
+            onPress={() => alternarSeccion('mi-estado')}
+            onLayout={(event) => guardarPosicionSeccion('mi-estado', event)}
+          >
+            <Text className="font-semibold text-marca-texto">{etiquetaCicloSeleccionado}</Text>
             <View className="mt-3 gap-3">
               <View className="rounded-xl bg-slate-50 p-4">
                 <Text className="text-xs font-bold uppercase text-slate-500">Mi turno</Text>
@@ -653,12 +742,19 @@ export default function DetalleSociedad() {
                 </Text>
               ) : null}
             </View>
-          </View>
+          </AccordionDashboard>
         ) : null}
 
+        <Text className="pt-2 text-xs font-bold uppercase tracking-widest text-slate-500">Gestión</Text>
+
         {esOrganizador ? (
-          <View className="rounded-2xl bg-white p-5 shadow-sm">
-            <Text className="text-lg font-semibold text-marca-texto">Acciones</Text>
+          <AccordionDashboard
+            titulo="Administrar SAN"
+            resumen={puedeInvitar ? 'Invitaciones y configuración disponibles' : 'Operación y cierre del ciclo'}
+            abierto={seccionAbierta === 'acciones'}
+            onPress={() => alternarSeccion('acciones')}
+            onLayout={(event) => guardarPosicionSeccion('acciones', event)}
+          >
             {mensajeAccion ? <Text className="mt-2 text-sm font-semibold text-marca-verde">{mensajeAccion}</Text> : null}
             {!puedeOperarSociedad ? (
               <Text className="mt-2 rounded-lg bg-slate-50 p-3 text-sm font-semibold text-slate-600">
@@ -840,11 +936,17 @@ export default function DetalleSociedad() {
                 />
               ) : null}
             </View>
-          </View>
+          </AccordionDashboard>
         ) : null}
 
-        <View className="rounded-2xl bg-white p-5 shadow-sm">
-          <Text className="text-lg font-semibold text-marca-texto">Participantes y turnos - {etiquetaCicloSeleccionado}</Text>
+        <AccordionDashboard
+          titulo="Participantes y turnos"
+          resumen={`${participantesActivos} participantes · ${participantesConAtraso} con atraso`}
+          abierto={seccionAbierta === 'participantes'}
+          onPress={() => alternarSeccion('participantes')}
+          onLayout={(event) => guardarPosicionSeccion('participantes', event)}
+        >
+          <Text className="font-semibold text-marca-texto">{etiquetaCicloSeleccionado}</Text>
           <View className="mt-3 gap-3">
             {participantesConTurnoOrdenados.map(({ participante, turno }) => {
               const esOrganizadorEnSuPropiaFila = esOrganizador && participante.usuario.id === usuarioActual?.id;
@@ -855,7 +957,7 @@ export default function DetalleSociedad() {
                 (esOrganizador || participante.usuario.id === usuarioActual?.id);
 
               return (
-                <View key={participante.id} className="gap-3 rounded-xl border border-slate-100 bg-white p-4 shadow-sm">
+                <View key={participante.id} className="gap-2 rounded-xl border border-slate-100 bg-white p-3">
                   <View className="flex-row items-start justify-between gap-3">
                     <View className="flex-1">
                       <Text className="font-semibold text-marca-texto">
@@ -990,11 +1092,17 @@ export default function DetalleSociedad() {
               );
             })}
           </View>
-        </View>
+        </AccordionDashboard>
 
         {esOrganizador ? (
-          <View className="rounded-2xl bg-white p-5 shadow-sm">
-            <Text className="text-lg font-semibold text-marca-texto">Pagos reportados - {etiquetaCicloSeleccionado}</Text>
+          <AccordionDashboard
+            titulo="Pagos reportados"
+            resumen={pagosReportadosPendientes > 0 ? `${pagosReportadosPendientes} pendientes de revisión` : 'Sin pendientes'}
+            abierto={seccionAbierta === 'pagos'}
+            onPress={() => alternarSeccion('pagos')}
+            onLayout={(event) => guardarPosicionSeccion('pagos', event)}
+          >
+            <Text className="font-semibold text-marca-texto">{etiquetaCicloSeleccionado}</Text>
             <View className="mt-3 gap-4">
               {pagosSociedadCiclo.filter((pago) => pago.estado === 'REPORTADO').length === 0 ? (
                 <Text className="text-slate-600">No hay pagos reportados pendientes de revision.</Text>
@@ -1110,11 +1218,17 @@ export default function DetalleSociedad() {
                   })
               )}
             </View>
-          </View>
+          </AccordionDashboard>
         ) : null}
 
-        <View className="rounded-lg bg-white p-4">
-          <Text className="text-lg font-semibold text-marca-texto">Historial</Text>
+        <Text className="pt-2 text-xs font-bold uppercase tracking-widest text-slate-500">Actividad</Text>
+        <AccordionDashboard
+          titulo="Historial"
+          resumen={historial.length > 0 ? `${historial.length} eventos registrados` : 'Sin eventos registrados'}
+          abierto={seccionAbierta === 'historial'}
+          onPress={() => alternarSeccion('historial')}
+          onLayout={(event) => guardarPosicionSeccion('historial', event)}
+        >
           <View className="mt-3 gap-3">
             {historial.length === 0 ? (
               <Text className="text-slate-600">Aun no hay movimientos registrados en este SAN.</Text>
@@ -1127,8 +1241,51 @@ export default function DetalleSociedad() {
               ))
             )}
           </View>
-        </View>
+        </AccordionDashboard>
       </View>
     </ScreenScrollView>
+  );
+}
+
+function AccordionDashboard({
+  titulo,
+  resumen,
+  abierto,
+  onPress,
+  children,
+  onLayout,
+}: {
+  titulo: string;
+  resumen: string;
+  abierto: boolean;
+  onPress: () => void;
+  children: ReactNode;
+  onLayout?: (event: LayoutChangeEvent) => void;
+}) {
+  return (
+    <View className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm" onLayout={onLayout}>
+      <Pressable className="flex-row items-center gap-3 px-4 py-4" onPress={onPress} accessibilityRole="button">
+        <View className="min-w-0 flex-1">
+          <Text className="text-base font-bold text-marca-texto">{titulo}</Text>
+          <Text className="mt-1 text-sm text-slate-600">{resumen}</Text>
+        </View>
+        <View className={`h-9 w-9 items-center justify-center rounded-full ${abierto ? 'bg-emerald-50' : 'bg-slate-50'}`}>
+          <Text className={`text-xl font-bold ${abierto ? 'text-marca-verde' : 'text-slate-500'}`}>{abierto ? '−' : '+'}</Text>
+        </View>
+      </Pressable>
+      {abierto ? <View className="gap-3 border-t border-slate-100 px-4 py-4">{children}</View> : null}
+    </View>
+  );
+}
+
+function AccionRapida({ titulo, onPress, destacada = false }: { titulo: string; onPress: () => void; destacada?: boolean }) {
+  return (
+    <Pressable
+      className={`rounded-full border px-4 py-2.5 ${destacada ? 'border-marca-verde bg-marca-verde' : 'border-emerald-100 bg-white'}`}
+      onPress={onPress}
+      accessibilityRole="button"
+    >
+      <Text className={`text-sm font-bold ${destacada ? 'text-white' : 'text-marca-verde'}`}>{titulo}</Text>
+    </Pressable>
   );
 }

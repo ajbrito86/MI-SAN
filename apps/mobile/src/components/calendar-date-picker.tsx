@@ -1,4 +1,5 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react-native';
+import { useEffect, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
 type CalendarDatePickerProps = {
@@ -13,17 +14,26 @@ const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', '
 
 export function CalendarDatePicker({ label, value, onChange, disabled }: CalendarDatePickerProps) {
   const fechaBase = value ? crearFechaLocal(value) : new Date();
-  const year = fechaBase.getFullYear();
-  const month = fechaBase.getMonth();
+  const [mesVisible, setMesVisible] = useState(() => new Date(fechaBase.getFullYear(), fechaBase.getMonth(), 1));
+  const year = mesVisible.getFullYear();
+  const month = mesVisible.getMonth();
   const celdas = crearCeldasMes(year, month);
+
+  useEffect(() => {
+    if (!value) {
+      return;
+    }
+
+    const fechaSeleccionada = crearFechaLocal(value);
+    setMesVisible(new Date(fechaSeleccionada.getFullYear(), fechaSeleccionada.getMonth(), 1));
+  }, [value]);
 
   const cambiarMes = (delta: number) => {
     if (disabled) {
       return;
     }
 
-    const siguiente = new Date(year, month + delta, 1);
-    onChange(formatearFecha(siguiente));
+    setMesVisible(new Date(year, month + delta, 1));
   };
 
   return (
