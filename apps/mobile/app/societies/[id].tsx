@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { Alert, Image, Linking, Modal, Pressable, Text, TextInput, View } from 'react-native';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { Alert, Image, Linking, Modal, Pressable, ScrollView, Text, TextInput, View, type LayoutChangeEvent } from 'react-native';
 import { AppButton } from '@/components/app-button';
 import { AppCard } from '@/components/app-card';
 import { AppHeader } from '@/components/app-header';
@@ -59,6 +59,8 @@ export default function DetalleSociedad() {
   const [cicloSeleccionadoId, setCicloSeleccionadoId] = useState<string | null>(null);
   const [cicloIniciadoLocalmenteId, setCicloIniciadoLocalmenteId] = useState<string | null>(null);
   const [seccionAbierta, setSeccionAbierta] = useState<SeccionDashboard | null>(null);
+  const scrollRef = useRef<ScrollView>(null);
+  const posicionesSeccionesRef = useRef<Partial<Record<SeccionDashboard, number>>>({});
 
   const {
     data: sociedad,
@@ -180,6 +182,21 @@ export default function DetalleSociedad() {
 
   const alternarSeccion = (seccion: SeccionDashboard) => {
     setSeccionAbierta((actual) => (actual === seccion ? null : seccion));
+  };
+  const guardarPosicionSeccion = (seccion: SeccionDashboard, event: LayoutChangeEvent) => {
+    posicionesSeccionesRef.current[seccion] = event.nativeEvent.layout.y;
+  };
+  const abrirSeccionConFoco = (seccion: SeccionDashboard) => {
+    setSeccionAbierta(seccion);
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        const y = posicionesSeccionesRef.current[seccion];
+
+        if (typeof y === 'number') {
+          scrollRef.current?.scrollTo({ y: Math.max(y - 12, 0), animated: true });
+        }
+      }, 80);
+    });
   };
 
   useEffect(() => {
@@ -428,7 +445,7 @@ export default function DetalleSociedad() {
   }
 
   return (
-    <ScreenScrollView>
+    <ScreenScrollView ref={scrollRef}>
       <Stack.Screen options={{ headerShown: false }} />
       <Modal visible={Boolean(evidenciaVistaPrevia)} transparent animationType="fade" onRequestClose={() => setEvidenciaVistaPrevia(null)}>
         <View className="flex-1 justify-center bg-black/80 px-4">
@@ -511,16 +528,16 @@ export default function DetalleSociedad() {
                 <AccionRapida
                   titulo={`Revisar pagos (${pagosReportadosPendientes})`}
                   destacada
-                  onPress={() => setSeccionAbierta('pagos')}
+                  onPress={() => abrirSeccionConFoco('pagos')}
                 />
               ) : null}
               {esOrganizador && puedeInvitar ? (
-                <AccionRapida titulo="Invitar participante" onPress={() => setSeccionAbierta('acciones')} />
+                <AccionRapida titulo="Invitar participante" onPress={() => abrirSeccionConFoco('acciones')} />
               ) : null}
               {esOrganizador && sociedad.cicloActual?.estado === 'ACTIVO' ? (
-                <AccionRapida titulo="Registrar entrega" onPress={() => setSeccionAbierta('participantes')} />
+                <AccionRapida titulo="Registrar entrega" onPress={() => abrirSeccionConFoco('participantes')} />
               ) : null}
-              {chatDisponible ? <AccionRapida titulo="Chats" onPress={() => setSeccionAbierta('participantes')} /> : null}
+              {chatDisponible ? <AccionRapida titulo="Chats" onPress={() => abrirSeccionConFoco('participantes')} /> : null}
             </View>
           </View>
         ) : null}
@@ -533,6 +550,7 @@ export default function DetalleSociedad() {
             resumen={`${etiquetaCicloSeleccionado} · ${cicloSeleccionado ? etiquetaEstadoOperativo(cicloSeleccionado.estado) : 'Sin ciclo'}`}
             abierto={seccionAbierta === 'ciclo'}
             onPress={() => alternarSeccion('ciclo')}
+            onLayout={(event) => guardarPosicionSeccion('ciclo', event)}
           >
             <Text className="text-sm text-slate-600">Pagos, turnos y reportes por ciclo.</Text>
             <View className="mt-4 gap-2">
@@ -573,6 +591,7 @@ export default function DetalleSociedad() {
             resumen={`${formatearMonto(montoPendienteReporte, resumen.moneda)} pendientes · ${cuotasAtrasadas} atrasadas`}
             abierto={seccionAbierta === 'reporte'}
             onPress={() => alternarSeccion('reporte')}
+            onLayout={(event) => guardarPosicionSeccion('reporte', event)}
           >
             <Text className="font-semibold text-marca-texto">{etiquetaCicloSeleccionado}</Text>
             <Text className="mt-2 text-slate-600">Total confirmado: {formatearMonto(resumen.totalConfirmado, resumen.moneda)}</Text>
@@ -593,6 +612,7 @@ export default function DetalleSociedad() {
             resumen={`${resumen.participantesResumen.length} participantes · ${participantesConAtraso} con atraso`}
             abierto={seccionAbierta === 'estado-participantes'}
             onPress={() => alternarSeccion('estado-participantes')}
+            onLayout={(event) => guardarPosicionSeccion('estado-participantes', event)}
           >
             <View className="mt-3 gap-3">
               {resumen.participantesResumen.map((item) => {
@@ -657,6 +677,7 @@ export default function DetalleSociedad() {
             }
             abierto={seccionAbierta === 'mi-estado'}
             onPress={() => alternarSeccion('mi-estado')}
+            onLayout={(event) => guardarPosicionSeccion('mi-estado', event)}
           >
             <Text className="font-semibold text-marca-texto">{etiquetaCicloSeleccionado}</Text>
             <View className="mt-3 gap-3">
@@ -732,6 +753,7 @@ export default function DetalleSociedad() {
             resumen={puedeInvitar ? 'Invitaciones y configuración disponibles' : 'Operación y cierre del ciclo'}
             abierto={seccionAbierta === 'acciones'}
             onPress={() => alternarSeccion('acciones')}
+            onLayout={(event) => guardarPosicionSeccion('acciones', event)}
           >
             {mensajeAccion ? <Text className="mt-2 text-sm font-semibold text-marca-verde">{mensajeAccion}</Text> : null}
             {!puedeOperarSociedad ? (
@@ -922,6 +944,7 @@ export default function DetalleSociedad() {
           resumen={`${participantesActivos} participantes · ${participantesConAtraso} con atraso`}
           abierto={seccionAbierta === 'participantes'}
           onPress={() => alternarSeccion('participantes')}
+          onLayout={(event) => guardarPosicionSeccion('participantes', event)}
         >
           <Text className="font-semibold text-marca-texto">{etiquetaCicloSeleccionado}</Text>
           <View className="mt-3 gap-3">
@@ -1077,6 +1100,7 @@ export default function DetalleSociedad() {
             resumen={pagosReportadosPendientes > 0 ? `${pagosReportadosPendientes} pendientes de revisión` : 'Sin pendientes'}
             abierto={seccionAbierta === 'pagos'}
             onPress={() => alternarSeccion('pagos')}
+            onLayout={(event) => guardarPosicionSeccion('pagos', event)}
           >
             <Text className="font-semibold text-marca-texto">{etiquetaCicloSeleccionado}</Text>
             <View className="mt-3 gap-4">
@@ -1203,6 +1227,7 @@ export default function DetalleSociedad() {
           resumen={historial.length > 0 ? `${historial.length} eventos registrados` : 'Sin eventos registrados'}
           abierto={seccionAbierta === 'historial'}
           onPress={() => alternarSeccion('historial')}
+          onLayout={(event) => guardarPosicionSeccion('historial', event)}
         >
           <View className="mt-3 gap-3">
             {historial.length === 0 ? (
@@ -1228,15 +1253,17 @@ function AccordionDashboard({
   abierto,
   onPress,
   children,
+  onLayout,
 }: {
   titulo: string;
   resumen: string;
   abierto: boolean;
   onPress: () => void;
   children: ReactNode;
+  onLayout?: (event: LayoutChangeEvent) => void;
 }) {
   return (
-    <View className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
+    <View className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm" onLayout={onLayout}>
       <Pressable className="flex-row items-center gap-3 px-4 py-4" onPress={onPress} accessibilityRole="button">
         <View className="min-w-0 flex-1">
           <Text className="text-base font-bold text-marca-texto">{titulo}</Text>

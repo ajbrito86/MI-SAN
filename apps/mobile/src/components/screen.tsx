@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { forwardRef, useEffect, useState, type ReactNode } from 'react';
 import { Keyboard, KeyboardAvoidingView, Platform, ScrollView, type ScrollViewProps, View, type ViewProps } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -6,20 +6,24 @@ type ScreenScrollViewProps = ScrollViewProps & {
   children: ReactNode;
 };
 
-export function ScreenScrollView({
-  children,
-  contentContainerStyle,
-  keyboardDismissMode = Platform.OS === 'ios' ? 'interactive' : 'on-drag',
-  keyboardShouldPersistTaps = 'handled',
-  showsVerticalScrollIndicator = false,
-  ...props
-}: ScreenScrollViewProps) {
+export const ScreenScrollView = forwardRef<ScrollView, ScreenScrollViewProps>(function ScreenScrollView(
+  {
+    children,
+    contentContainerStyle,
+    keyboardDismissMode = Platform.OS === 'ios' ? 'interactive' : 'on-drag',
+    keyboardShouldPersistTaps = 'handled',
+    showsVerticalScrollIndicator = false,
+    ...props
+  },
+  ref,
+) {
   const insets = useSafeAreaInsets();
   const keyboardBottomPadding = useKeyboardBottomPadding();
 
   return (
     <KeyboardAvoidingView className="flex-1 bg-[#F5FBF7]" behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <ScrollView
+        ref={ref}
         className="flex-1 px-5"
         contentContainerStyle={[
           {
@@ -38,7 +42,7 @@ export function ScreenScrollView({
       </ScrollView>
     </KeyboardAvoidingView>
   );
-}
+});
 
 export function useKeyboardBottomPadding(extra = 24) {
   const insets = useSafeAreaInsets();

@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as DocumentPicker from 'expo-document-picker';
 import { useFocusEffect } from 'expo-router';
 import { CreditCard, Wallet } from 'lucide-react-native';
-import { useCallback, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Linking, Pressable, Text, View } from 'react-native';
 import { AppButton } from '@/components/app-button';
 import { AppHeader } from '@/components/app-header';
@@ -34,6 +34,7 @@ export default function Pagos() {
   const [metodoPago, setMetodoPago] = useState<MetodoPago>('EFECTIVO');
   const [archivo, setArchivo] = useState<ArchivoEvidencia | null>(null);
   const [archivoComprobante, setArchivoComprobante] = useState<ArchivoEvidencia | null>(null);
+  const [sociedadFiltroId, setSociedadFiltroId] = useState<string>('TODAS');
 
   const { data: pagos = [], refetch: recargarPagos } = useQuery({
     queryKey: ['mis-pagos'],
@@ -50,11 +51,34 @@ export default function Pagos() {
   );
 
   const metodoSeleccionado = METODOS.find((metodo) => metodo.valor === metodoPago) ?? METODOS[0];
-  const pagosPorHacer = pagos.filter((pago) => ['PENDIENTE', 'ATRASADO', 'RECHAZADO'].includes(pago.estado));
-  const pagosEnRevision = pagos.filter((pago) => pago.estado === 'REPORTADO');
-  const pagosHistorial = pagos.filter((pago) => ['CONFIRMADO', 'INCUMPLIDO', 'CANCELADO'].includes(pago.estado));
-  const totalPagado = pagos.filter((pago) => pago.estado === 'CONFIRMADO').reduce((total, pago) => total + pago.monto, 0);
+  const sociedadesConPagos = useMemo(
+    () =>
+      pagos.reduce<{ id: string; nombre: string; moneda?: string }[]>((acumulado, pago) => {
+        if (!acumulado.some((sociedad) => sociedad.id === pago.sociedad.id)) {
+          acumulado.push({
+            id: pago.sociedad.id,
+            nombre: pago.sociedad.nombre,
+            moneda: pago.sociedad.moneda,
+          });
+        }
+
+        return acumulado;
+      }, []),
+    [pagos],
+  );
+  const pagosFiltrados = sociedadFiltroId === 'TODAS' ? pagos : pagos.filter((pago) => pago.sociedad.id === sociedadFiltroId);
+  const monedaResumen = pagosFiltrados[0]?.sociedad.moneda ?? pagos[0]?.sociedad.moneda;
+  const pagosPorHacer = pagosFiltrados.filter((pago) => ['PENDIENTE', 'ATRASADO', 'RECHAZADO'].includes(pago.estado));
+  const pagosEnRevision = pagosFiltrados.filter((pago) => pago.estado === 'REPORTADO');
+  const pagosHistorial = pagosFiltrados.filter((pago) => ['CONFIRMADO', 'INCUMPLIDO', 'CANCELADO'].includes(pago.estado));
+  const totalPagado = pagosFiltrados.filter((pago) => pago.estado === 'CONFIRMADO').reduce((total, pago) => total + pago.monto, 0);
   const totalDebe = pagosPorHacer.reduce((total, pago) => total + pago.monto, 0);
+
+  useEffect(() => {
+    if (sociedadFiltroId !== 'TODAS' && !sociedadesConPagos.some((sociedad) => sociedad.id === sociedadFiltroId)) {
+      setSociedadFiltroId('TODAS');
+    }
+  }, [sociedadFiltroId, sociedadesConPagos]);
 
   const seleccionarArchivo = async (onSelect: (archivo: ArchivoEvidencia) => void) => {
     const resultado = await DocumentPicker.getDocumentAsync({
@@ -287,16 +311,46 @@ export default function Pagos() {
           <>
             <View className="rounded-2xl bg-white p-5 shadow-sm">
               <Text className="text-lg font-semibold text-marca-texto">Resumen</Text>
+              {sociedadesConPagos.length > 1 ? (
+                <View className="mt-4 gap-3">
+                  <View className="flex-row items-center justify-between gap-3">
+                    <Text className="text-sm font-bold uppercase text-slate-500">Filtrar por SAN</Text>
+                    {sociedadFiltroId !== 'TODAS' ? (
+                      <Text className="text-sm font-bold text-marca-verde" onPress={() => setSociedadFiltroId('TODAS')}>
+                        Ver todos
+                      </Text>
+                    ) : null}
+                  </View>
+                  <View className="flex-row flex-wrap gap-2">
+                    <ChipFiltroPago
+                      etiqueta="Todos"
+                      activo={sociedadFiltroId === 'TODAS'}
+                      onPress={() => setSociedadFiltroId('TODAS')}
+                    />
+                    {sociedadesConPagos.map((sociedad) => (
+                      <ChipFiltroPago
+                        key={sociedad.id}
+                        etiqueta={sociedad.nombre}
+                        activo={sociedadFiltroId === sociedad.id}
+                        onPress={() => setSociedadFiltroId(sociedad.id)}
+                      />
+                    ))}
+                  </View>
+                </View>
+              ) : null}
               <View className="mt-3 flex-row gap-3">
                 <View className="flex-1 rounded-lg bg-emerald-50 p-3">
                   <Text className="text-xs font-bold uppercase text-marca-verde">Pagado</Text>
-                  <Text className="mt-1 font-semibold text-marca-texto">{formatearMonto(totalPagado, pagos[0]?.sociedad.moneda)}</Text>
+                  <Text className="mt-1 font-semibold text-marca-texto">{formatearMonto(totalPagado, monedaResumen)}</Text>
                 </View>
                 <View className="flex-1 rounded-lg bg-amber-50 p-3">
                   <Text className="text-xs font-bold uppercase text-amber-700">Por pagar</Text>
-                  <Text className="mt-1 font-semibold text-marca-texto">{formatearMonto(totalDebe, pagos[0]?.sociedad.moneda)}</Text>
+                  <Text className="mt-1 font-semibold text-marca-texto">{formatearMonto(totalDebe, monedaResumen)}</Text>
                 </View>
               </View>
+              <Text className="mt-3 text-sm text-slate-600">
+                Mostrando {pagosFiltrados.length} de {pagos.length} pago(s).
+              </Text>
             </View>
 
             <SeccionPagos titulo="Por pagar" vacio="No tienes cuotas pendientes." pagos={pagosPorHacer} renderPago={renderPago} />
@@ -311,6 +365,18 @@ export default function Pagos() {
 
 function etiquetaMetodo(metodo: string) {
   return METODOS.find((item) => item.valor === metodo)?.etiqueta ?? metodo;
+}
+
+function ChipFiltroPago({ etiqueta, activo, onPress }: { etiqueta: string; activo: boolean; onPress: () => void }) {
+  return (
+    <Pressable
+      className={`rounded-full border px-4 py-2.5 ${activo ? 'border-marca-verde bg-marca-verde' : 'border-slate-200 bg-white'}`}
+      onPress={onPress}
+      accessibilityRole="button"
+    >
+      <Text className={`text-sm font-bold ${activo ? 'text-white' : 'text-slate-600'}`}>{etiqueta}</Text>
+    </Pressable>
+  );
 }
 
 function SeccionPagos({

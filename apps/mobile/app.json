@@ -20,7 +20,7 @@
     },
     "android": {
       "package": "app.mi_san.mobile",
-      "versionCode": 13,
+      "versionCode": 14,
       "softwareKeyboardLayoutMode": "resize",
       "permissions": [
         "POST_NOTIFICATIONS"
