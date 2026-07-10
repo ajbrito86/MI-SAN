@@ -11,10 +11,11 @@
     "newArchEnabled": true,
     "ios": {
       "bundleIdentifier": "app.mi-san.mobile",
-      "buildNumber": "1",
+      "buildNumber": "2",
       "supportsTablet": false,
       "infoPlist": {
-        "NSUserTrackingUsageDescription": "MI-SAN usa identificadores para mostrar anuncios personalizados cuando das tu consentimiento."
+        "NSUserTrackingUsageDescription": "MI-SAN usa identificadores para mostrar anuncios personalizados cuando das tu consentimiento.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
