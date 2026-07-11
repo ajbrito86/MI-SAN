@@ -78,14 +78,14 @@ export async function apiRequestAutenticado<T>(path: string, options: ApiAutenti
     }
 
     try {
-      const tokens = await apiRequest<{ accessToken: string; refreshToken: string }>('/auth/refresh', {
+      const tokens = await apiRequest<{ accessToken: string; refreshToken: string; refreshTokenExpiresAt: string }>('/auth/refresh', {
         method: 'POST',
         body: JSON.stringify({ refreshToken }),
       });
       actualizarTokens(tokens);
       return await apiRequest<T>(path, { ...requestOptions, token: tokens.accessToken });
     } catch (refreshError) {
-      cerrarSesion();
+      cerrarSesion('Tu sesion ha expirado. Ingresa de nuevo para continuar.');
       throw refreshError;
     }
   }

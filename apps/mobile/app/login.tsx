@@ -3,7 +3,7 @@ import { Link, router } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { Bell, Check, Eye, EyeOff, FileText, Lock, Mail, ShieldCheck, Users } from 'lucide-react-native';
 import { useEffect, useState, type ReactNode } from 'react';
-import { ActivityIndicator, Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { AppButton } from '@/components/app-button';
 import { ScreenTopView, useKeyboardBottomPadding } from '@/components/screen';
 import { login, loginConGoogle } from '@/services/auth-service';
@@ -90,6 +90,8 @@ function ContenidoLogin({
   const guardarSesion = useAuthStore((state) => state.guardarSesion);
   const accessToken = useAuthStore((state) => state.accessToken);
   const hydrated = useAuthStore((state) => state.hydrated);
+  const mensajeSesionExpirada = useAuthStore((state) => state.mensajeSesionExpirada);
+  const limpiarMensajeSesionExpirada = useAuthStore((state) => state.limpiarMensajeSesionExpirada);
   const [identificador, setIdentificador] = useState('');
   const [contrasena, setContrasena] = useState('');
   const [error, setError] = useState('');
@@ -124,6 +126,16 @@ function ContenidoLogin({
       router.replace('/(tabs)/home');
     }
   }, [accessToken, hydrated]);
+
+  useEffect(() => {
+    if (!hydrated || !mensajeSesionExpirada) {
+      return;
+    }
+
+    setError(mensajeSesionExpirada);
+    Alert.alert('Sesion expirada', mensajeSesionExpirada);
+    limpiarMensajeSesionExpirada();
+  }, [hydrated, limpiarMensajeSesionExpirada, mensajeSesionExpirada]);
 
   useEffect(() => {
     if (!respuestaGoogle) {

@@ -16,6 +16,9 @@ const queryClient = new QueryClient();
 
 export default function RootLayout() {
   const accessToken = useAuthStore((state) => state.accessToken);
+  const refreshTokenExpiresAt = useAuthStore((state) => state.refreshTokenExpiresAt);
+  const hydrated = useAuthStore((state) => state.hydrated);
+  const cerrarSesion = useAuthStore((state) => state.cerrarSesion);
 
   useEffect(() => {
     configurarReporteErroresGlobales();
@@ -34,6 +37,18 @@ export default function RootLayout() {
 
     registrarDispositivoPush().catch(() => null);
   }, [accessToken]);
+
+  useEffect(() => {
+    if (!hydrated || !accessToken) {
+      return;
+    }
+
+    const expiraEn = refreshTokenExpiresAt ? new Date(refreshTokenExpiresAt).getTime() : Number.NaN;
+
+    if (!Number.isFinite(expiraEn) || expiraEn <= Date.now()) {
+      cerrarSesion('Tu sesion ha expirado. Ingresa de nuevo para continuar.');
+    }
+  }, [accessToken, cerrarSesion, hydrated, refreshTokenExpiresAt]);
 
   return (
     <SafeAreaProvider>

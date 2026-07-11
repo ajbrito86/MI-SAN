@@ -16,6 +16,7 @@ import { GoogleLoginDto } from './dto/google-login.dto';
 type Tokens = {
   accessToken: string;
   refreshToken: string;
+  refreshTokenExpiresAt: string;
 };
 
 @Injectable()
@@ -224,6 +225,8 @@ export class AuthService {
 
   private async generarTokens(usuarioId: string, email: string, telefono: string): Promise<Tokens> {
     const payload = { sub: usuarioId, email, telefono };
+    const refreshTokenExpiresAt = this.proximaMedianoche();
+    const refreshExpiraEnSegundos = Math.max(1, Math.ceil((refreshTokenExpiresAt.getTime() - Date.now()) / 1000));
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(payload, {
         secret: this.configService.get<string>('JWT_ACCESS_SECRET'),
@@ -231,11 +234,19 @@ export class AuthService {
       }),
       this.jwtService.signAsync(payload, {
         secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
-        expiresIn: '7d',
+        expiresIn: refreshExpiraEnSegundos,
       }),
     ]);
 
-    return { accessToken, refreshToken };
+    return { accessToken, refreshToken, refreshTokenExpiresAt: refreshTokenExpiresAt.toISOString() };
+  }
+
+  private proximaMedianoche() {
+    const ahora = new Date();
+    const proximaMedianoche = new Date(ahora);
+    proximaMedianoche.setHours(24, 0, 0, 0);
+
+    return proximaMedianoche;
   }
 
   private async guardarRefreshToken(usuarioId: string, refreshToken: string) {

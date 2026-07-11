@@ -18,6 +18,7 @@ export type AuthResponse = {
   usuario: Usuario;
   accessToken: string;
   refreshToken: string;
+  refreshTokenExpiresAt: string;
 };
 
 export type LoginPayload = {
