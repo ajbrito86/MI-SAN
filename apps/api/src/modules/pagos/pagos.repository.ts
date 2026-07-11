@@ -170,6 +170,34 @@ export class PagosRepository {
     });
   }
 
+  confirmarPagoPropioOrganizador(cuotaPagoId: string, usuarioId: string, metodoPago: TipoPago, observacion?: string) {
+    return this.prisma.$transaction(async (tx) => {
+      const cuota = await tx.cuotaPago.update({
+        where: { id: cuotaPagoId },
+        data: {
+          estado: EstadoPago.CONFIRMADO,
+          confirmadoPor: usuarioId,
+          fechaPago: new Date(),
+          metodoPagoReportado: metodoPago,
+          observacion,
+        },
+        include: { ciclo: { include: { sociedad: true } }, participante: { include: { usuario: true } } },
+      });
+
+      await tx.historialMovimiento.create({
+        data: {
+          sociedadId: cuota.ciclo.sociedadId,
+          usuarioId,
+          realizadoPor: usuarioId,
+          accion: TipoMovimientoHistorial.PAGO_CONFIRMADO,
+          descripcion: `Cuota #${cuota.numeroCuota} ciclo #${cuota.ciclo.numeroCiclo} pagada y confirmada automaticamente por el organizador.`,
+        },
+      });
+
+      return cuota;
+    });
+  }
+
   confirmar(cuotaPagoId: string, usuarioId: string) {
     return this.prisma.$transaction(async (tx) => {
       const cuota = await tx.cuotaPago.update({

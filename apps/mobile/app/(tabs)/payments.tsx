@@ -108,10 +108,14 @@ export default function Pagos() {
         await subirEvidenciaPago(token ?? '', cuotaPagoId, archivo);
       }
 
-      await reportarPago(token ?? '', cuotaPagoId, metodoPago);
+      return reportarPago(token ?? '', cuotaPagoId, metodoPago);
     },
-    onSuccess: async () => {
-      setMensaje('Pago enviado al organizador para revision.');
+    onSuccess: async (pagoActualizado) => {
+      setMensaje(
+        pagoActualizado.estado === 'CONFIRMADO'
+          ? 'Pago registrado y confirmado automaticamente.'
+          : 'Pago enviado al organizador para revision.',
+      );
       setPagoActivo(null);
       setMetodoPago('EFECTIVO');
       setArchivo(null);

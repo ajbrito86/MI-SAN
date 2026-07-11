@@ -103,6 +103,15 @@ export class PagosService {
 
     this.validarMetodoPago(dto.metodoPago, cuota.ciclo.sociedad.tipoPago);
 
+    if (cuota.ciclo.sociedad.organizadorId === usuarioId) {
+      return this.pagosRepository.confirmarPagoPropioOrganizador(
+        dto.cuotaPagoId,
+        usuarioId,
+        dto.metodoPago,
+        dto.observacion?.trim(),
+      );
+    }
+
     const fechaInicio = new Date();
     const cuotaReportada = await this.pagosRepository.reportar(dto.cuotaPagoId, usuarioId, dto.metodoPago, dto.observacion?.trim());
     await this.notificacionesService.enviarUltimaParaUsuario(cuotaReportada.ciclo.sociedad.organizadorId, fechaInicio);
