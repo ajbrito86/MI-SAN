@@ -56,7 +56,7 @@ async function main() {
         },
         monetizacion: {
           duracionTrialDias: 45,
-          precioPremiumUsd: 0.99,
+          precioPremiumUsd: 4.99,
           frecuenciaInterstitialMinutos: 10,
         },
         mensajes: {
@@ -87,7 +87,7 @@ async function main() {
         },
         monetizacion: {
           duracionTrialDias: 45,
-          precioPremiumUsd: 0.99,
+          precioPremiumUsd: 4.99,
           frecuenciaInterstitialMinutos: 10,
         },
         mensajes: {
@@ -151,7 +151,7 @@ async function main() {
     update: {
       nombre: 'Premium sin anuncios',
       descripcion: 'Pago unico para eliminar anuncios.',
-      precio: '0.99',
+      precio: '4.99',
       duracionDias: null,
       permiteAds: false,
       isPagoUnico: true,
@@ -161,7 +161,7 @@ async function main() {
       codigo: 'PREMIUM_SIN_ADS',
       nombre: 'Premium sin anuncios',
       descripcion: 'Pago unico para eliminar anuncios.',
-      precio: '0.99',
+      precio: '4.99',
       duracionDias: null,
       permiteAds: false,
       isPagoUnico: true,
