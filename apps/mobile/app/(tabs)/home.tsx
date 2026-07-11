@@ -11,6 +11,7 @@ import { TarjetaPremium } from '@/components/tarjeta-premium';
 import { formatearMonto } from '@/lib/moneda';
 import { useSuscripcion } from '@/hooks/use-suscripcion';
 import { obtenerResumenDashboard } from '@/services/dashboard-service';
+import { contarNotificacionesNoLeidas } from '@/services/notificaciones-service';
 import { useAuthStore } from '@/stores/auth-store';
 
 export default function Home() {
@@ -23,14 +24,30 @@ export default function Home() {
     enabled: Boolean(token),
     refetchInterval: 30000,
   });
+  const { data: noLeidas } = useQuery({
+    queryKey: ['notificaciones-no-leidas'],
+    queryFn: () => contarNotificacionesNoLeidas(token ?? ''),
+    enabled: Boolean(token),
+    refetchInterval: 30000,
+  });
 
   return (
     <ScreenScrollView>
       <View className="flex-row items-center justify-between">
         <Text className="text-3xl font-extrabold text-marca-texto">{usuario ? `Hola, ${usuario.nombres}` : 'Hola'}</Text>
-        <View className="h-11 w-11 items-center justify-center rounded-full bg-white shadow-sm">
+        <Pressable
+          className="relative h-11 w-11 items-center justify-center rounded-full bg-white shadow-sm"
+          onPress={() => router.push('/notifications' as never)}
+          accessibilityRole="button"
+          accessibilityLabel={noLeidas?.cantidad ? `${noLeidas.cantidad} aviso(s) nuevo(s)` : 'Ver avisos'}
+        >
           <Bell color="#17231F" size={22} />
-        </View>
+          {noLeidas?.cantidad ? (
+            <View className="absolute -right-1 -top-1 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 py-0.5">
+              <Text className="text-xs font-extrabold text-white">{noLeidas.cantidad > 99 ? '99+' : noLeidas.cantidad}</Text>
+            </View>
+          ) : null}
+        </Pressable>
       </View>
       <View className="mt-8 gap-4 pb-8">
         <View className="pt-1">
