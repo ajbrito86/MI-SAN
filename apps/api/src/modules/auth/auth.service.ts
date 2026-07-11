@@ -225,7 +225,7 @@ export class AuthService {
 
   private async generarTokens(usuarioId: string, email: string, telefono: string): Promise<Tokens> {
     const payload = { sub: usuarioId, email, telefono };
-    const refreshTokenExpiresAt = this.proximaMedianoche();
+    const refreshTokenExpiresAt = this.proximoCorteDiarioSesion();
     const refreshExpiraEnSegundos = Math.max(1, Math.ceil((refreshTokenExpiresAt.getTime() - Date.now()) / 1000));
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(payload, {
@@ -241,12 +241,27 @@ export class AuthService {
     return { accessToken, refreshToken, refreshTokenExpiresAt: refreshTokenExpiresAt.toISOString() };
   }
 
-  private proximaMedianoche() {
+  private proximoCorteDiarioSesion() {
+    const horaUtcCorte = this.obtenerHoraUtcCorteSesion();
     const ahora = new Date();
-    const proximaMedianoche = new Date(ahora);
-    proximaMedianoche.setHours(24, 0, 0, 0);
+    const proximoCorte = new Date(ahora);
+    proximoCorte.setUTCHours(horaUtcCorte, 0, 0, 0);
 
-    return proximaMedianoche;
+    if (proximoCorte.getTime() <= ahora.getTime()) {
+      proximoCorte.setUTCDate(proximoCorte.getUTCDate() + 1);
+    }
+
+    return proximoCorte;
+  }
+
+  private obtenerHoraUtcCorteSesion() {
+    const valor = Number(this.configService.get<string>('SESSION_DAILY_CUTOFF_UTC_HOUR') ?? '4');
+
+    if (!Number.isInteger(valor) || valor < 0 || valor > 23) {
+      return 4;
+    }
+
+    return valor;
   }
 
   private async guardarRefreshToken(usuarioId: string, refreshToken: string) {
