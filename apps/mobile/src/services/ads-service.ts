@@ -205,7 +205,7 @@ export async function mostrarInterstitialPagoCuota({
 }) {
   const modoPrueba = adsTestModeHabilitado();
 
-  if (!(modoPrueba || (mostrarAds && anunciosActivos)) || Platform.OS === 'web') {
+  if (!(mostrarAds && (modoPrueba || anunciosActivos)) || Platform.OS === 'web') {
     return false;
   }
 
@@ -272,7 +272,7 @@ export async function registrarAccionElegibleInterstitial({
   nombreAccion: 'crear_san' | 'finalizar_ciclo' | 'cerrar_sociedad';
 }) {
   const modoPrueba = adsTestModeHabilitado();
-  const puedeMostrarAds = modoPrueba || (mostrarAds && anunciosActivos);
+  const puedeMostrarAds = mostrarAds && (modoPrueba || anunciosActivos);
   const accionesRequeridas = modoPrueba ? 1 : accionesMinimas;
 
   if (!puedeMostrarAds || Platform.OS === 'web') {
@@ -286,5 +286,5 @@ export async function registrarAccionElegibleInterstitial({
     return false;
   }
 
-  return mostrarInterstitialSiPuede(true, frecuenciaMinutos);
+  return mostrarInterstitialSiPuede(mostrarAds, frecuenciaMinutos);
 }

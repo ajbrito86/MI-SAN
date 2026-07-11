@@ -43,7 +43,7 @@ export function BannerPublicidad({ ubicacion }: { ubicacion: UbicacionBanner }) 
     };
   }, []);
 
-  const puedeMostrarBanner = modoPruebaAds || (configuracion.featureFlags.anunciosActivos && suscripcion?.mostrarAds);
+  const puedeMostrarBanner = Boolean(suscripcion?.mostrarAds) && (modoPruebaAds || configuracion.featureFlags.anunciosActivos);
 
   if (!UBICACIONES_BANNER_PERMITIDAS.has(ubicacion) || !puedeMostrarBanner) {
     return null;
