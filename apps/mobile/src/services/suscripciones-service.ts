@@ -24,6 +24,10 @@ export type CompraPremiumPayload = {
   purchaseToken?: string;
   transactionReceipt?: string;
   packageNameAndroid?: string;
+  originalTransactionIdIos?: string;
+  appBundleIdIos?: string;
+  jwsRepresentationIos?: string;
+  environmentIos?: string;
 };
 
 export function obtenerSuscripcionActual() {

@@ -26,9 +26,10 @@ export function validarEnv(config: Record<string, unknown>) {
 
     if (config.BILLING_REAL_ENABLED === 'true') {
       const requeridasBilling = [
+        'PREMIUM_PRODUCT_ID',
         'GOOGLE_PLAY_PACKAGE_NAME',
-        'GOOGLE_PLAY_PREMIUM_PRODUCT_ID',
         'GOOGLE_PLAY_SERVICE_ACCOUNT_JSON_BASE64',
+        'APP_STORE_BUNDLE_ID',
       ].filter((clave) => !config[clave]);
 
       if (requeridasBilling.length > 0) {

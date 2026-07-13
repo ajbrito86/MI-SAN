@@ -126,6 +126,6 @@ El flujo requiere:
 Producto sugerido:
 
 - Tipo: Non-Consumable.
-- Product ID: `com.misan.premium.noads`.
+- Product ID: `premium_sin_ads`.
 - Precio inicial: US$4.99.
 - Beneficio: Premium sin anuncios.

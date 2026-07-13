@@ -171,7 +171,7 @@ Non-Consumable Purchase
 
 Identificador sugerido:
 
-com.misan.premium.noads
+premium_sin_ads
 
 Precio inicial:
 

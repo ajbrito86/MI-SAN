@@ -242,17 +242,19 @@ function validarEnv() {
 function validarBillingEnv(apiEnv, origen, opciones = {}) {
   const billingReal = extraerEnv(apiEnv, 'BILLING_REAL_ENABLED');
   const manualPremium = extraerEnv(apiEnv, 'ALLOW_MANUAL_PREMIUM_ACTIVATION');
+  const premiumProductId = extraerEnv(apiEnv, 'PREMIUM_PRODUCT_ID');
   const packageName = extraerEnv(apiEnv, 'GOOGLE_PLAY_PACKAGE_NAME');
-  const productId = extraerEnv(apiEnv, 'GOOGLE_PLAY_PREMIUM_PRODUCT_ID');
+  const productId = premiumProductId || extraerEnv(apiEnv, 'GOOGLE_PLAY_PREMIUM_PRODUCT_ID');
   const serviceAccount = extraerEnv(apiEnv, 'GOOGLE_PLAY_SERVICE_ACCOUNT_JSON_BASE64');
+  const appStoreBundleId = extraerEnv(apiEnv, 'APP_STORE_BUNDLE_ID');
 
   if (billingReal === null) {
     const mensaje = `Falta BILLING_REAL_ENABLED en ${origen}.`;
     if (opciones.estricto) error(mensaje);
     else aviso(mensaje);
   } else if (billingReal === 'true') {
-    aviso(`${origen} declara Billing real activo; confirmar que Google Play Billing ya valida compras en backend.`);
-    validarBillingRealGooglePlay(packageName, productId, serviceAccount, origen, opciones);
+    aviso(`${origen} declara Billing real activo; confirmar que Google Play Billing y App Store validan compras en backend.`);
+    validarBillingRealTiendas(packageName, productId, serviceAccount, appStoreBundleId, origen, opciones);
   } else {
     ok(`${origen} mantiene Billing real desactivado.`);
   }
@@ -270,11 +272,12 @@ function validarBillingEnv(apiEnv, origen, opciones = {}) {
   }
 }
 
-function validarBillingRealGooglePlay(packageName, productId, serviceAccount, origen, opciones = {}) {
+function validarBillingRealTiendas(packageName, productId, serviceAccount, appStoreBundleId, origen, opciones = {}) {
   const faltantes = [];
   if (!packageName) faltantes.push('GOOGLE_PLAY_PACKAGE_NAME');
-  if (!productId) faltantes.push('GOOGLE_PLAY_PREMIUM_PRODUCT_ID');
+  if (!productId) faltantes.push('PREMIUM_PRODUCT_ID');
   if (!serviceAccount) faltantes.push('GOOGLE_PLAY_SERVICE_ACCOUNT_JSON_BASE64');
+  if (!appStoreBundleId) faltantes.push('APP_STORE_BUNDLE_ID');
 
   if (faltantes.length > 0) {
     const mensaje = `${origen} habilita Billing real pero faltan: ${faltantes.join(', ')}.`;
@@ -290,16 +293,22 @@ function validarBillingRealGooglePlay(packageName, productId, serviceAccount, or
   }
 
   if (productId !== 'premium_sin_ads') {
-    error(`${origen} debe usar GOOGLE_PLAY_PREMIUM_PRODUCT_ID=premium_sin_ads.`);
+    error(`${origen} debe usar PREMIUM_PRODUCT_ID=premium_sin_ads.`);
   } else {
     ok(`${origen} usa producto Premium esperado para Billing.`);
+  }
+
+  if (appStoreBundleId !== 'app.mi-san.mobile') {
+    error(`${origen} debe usar APP_STORE_BUNDLE_ID=app.mi-san.mobile.`);
+  } else {
+    ok(`${origen} usa bundle iOS esperado para Billing.`);
   }
 }
 
 function validarBillingMobileEnv(mobileEnv, origen, opciones = {}) {
   validarBillingMobileValores(
     extraerEnv(mobileEnv, 'EXPO_PUBLIC_ENABLE_NATIVE_BILLING'),
-    extraerEnv(mobileEnv, 'EXPO_PUBLIC_GOOGLE_PLAY_PREMIUM_PRODUCT_ID'),
+    extraerEnv(mobileEnv, 'EXPO_PUBLIC_PREMIUM_PRODUCT_ID') || extraerEnv(mobileEnv, 'EXPO_PUBLIC_GOOGLE_PLAY_PREMIUM_PRODUCT_ID'),
     origen,
     opciones,
   );
@@ -308,7 +317,7 @@ function validarBillingMobileEnv(mobileEnv, origen, opciones = {}) {
 function validarBillingMobileEnvDesdeObjeto(envObj, origen, opciones = {}) {
   validarBillingMobileValores(
     extraerEnvObjeto(envObj, 'EXPO_PUBLIC_ENABLE_NATIVE_BILLING'),
-    extraerEnvObjeto(envObj, 'EXPO_PUBLIC_GOOGLE_PLAY_PREMIUM_PRODUCT_ID'),
+    extraerEnvObjeto(envObj, 'EXPO_PUBLIC_PREMIUM_PRODUCT_ID') || extraerEnvObjeto(envObj, 'EXPO_PUBLIC_GOOGLE_PLAY_PREMIUM_PRODUCT_ID'),
     origen,
     opciones,
   );
@@ -326,7 +335,7 @@ function validarBillingMobileValores(nativeBilling, productId, origen, opciones 
   }
 
   if (!productId) {
-    const mensaje = `Falta EXPO_PUBLIC_GOOGLE_PLAY_PREMIUM_PRODUCT_ID en ${origen}.`;
+    const mensaje = `Falta EXPO_PUBLIC_PREMIUM_PRODUCT_ID en ${origen}.`;
     if (opciones.estricto) error(mensaje);
     else aviso(mensaje);
   } else if (productId !== 'premium_sin_ads') {
