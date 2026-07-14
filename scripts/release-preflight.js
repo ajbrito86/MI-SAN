@@ -65,6 +65,20 @@ function validarPng(relPath, width, height) {
   }
 }
 
+function esSemverValido(version) {
+  return /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/.test(
+    version,
+  );
+}
+
+function esEnteroPositivo(valor) {
+  return Number.isInteger(valor) && valor > 0;
+}
+
+function esEnteroPositivoString(valor) {
+  return typeof valor === 'string' && /^[1-9]\d*$/.test(valor);
+}
+
 function listarArchivos(dirRel, extensiones) {
   const dirAbs = path.join(root, dirRel);
   if (!fs.existsSync(dirAbs)) {
@@ -105,14 +119,31 @@ function validarSinConsoleInnecesario() {
 
 function validarAppJson() {
   const appJson = leerJson('apps/mobile/app.json').expo;
-  if (appJson.version === '1.0.0') ok('Version mobile 1.0.0 configurada.');
-  else error(`Version mobile inesperada: ${appJson.version}`);
+  const eas = leerJson('apps/mobile/eas.json');
 
-  if (appJson.android?.versionCode === 1) ok('Android versionCode 1 configurado.');
-  else error('Android versionCode inicial no esta configurado en 1.');
+  if (typeof appJson.version === 'string' && esSemverValido(appJson.version)) {
+    ok(`Version mobile semantica valida: ${appJson.version}.`);
+  } else {
+    error(`Version mobile invalida; se esperaba semver y se encontro: ${appJson.version}`);
+  }
 
-  if (appJson.ios?.buildNumber === '1') ok('iOS buildNumber 1 configurado.');
-  else error('iOS buildNumber inicial no esta configurado en 1.');
+  if (esEnteroPositivo(appJson.android?.versionCode)) {
+    ok(`Android versionCode positivo configurado: ${appJson.android.versionCode}.`);
+  } else {
+    error(`Android versionCode debe ser un entero positivo; valor actual: ${appJson.android?.versionCode}`);
+  }
+
+  if (esEnteroPositivoString(appJson.ios?.buildNumber)) {
+    ok(`iOS buildNumber positivo configurado: ${appJson.ios.buildNumber}.`);
+  } else {
+    error(`iOS buildNumber debe ser un entero positivo en string; valor actual: ${appJson.ios?.buildNumber}`);
+  }
+
+  if (eas.cli?.appVersionSource === 'local') {
+    ok('EAS usa appVersionSource=local; version, versionCode y buildNumber salen de apps/mobile/app.json.');
+  } else {
+    error('apps/mobile/eas.json debe mantener cli.appVersionSource=local para coherencia de versiones.');
+  }
 
   validarArchivo(appJson.icon.replace('./', 'apps/mobile/'));
   validarArchivo(appJson.splash.image.replace('./', 'apps/mobile/'));

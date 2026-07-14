@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { Bell, ChevronRight } from 'lucide-react-native';
+import { useCallback } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { AppButton } from '@/components/app-button';
 import { AppHeader } from '@/components/app-header';
@@ -20,7 +21,18 @@ export default function Notificaciones() {
     queryKey: ['notificaciones'],
     queryFn: () => listarNotificaciones(token ?? ''),
     enabled: Boolean(token),
+    refetchOnMount: 'always',
   });
+
+  useFocusEffect(
+    useCallback(() => {
+      if (token) {
+        void queryClient.invalidateQueries({ queryKey: ['notificaciones'] });
+        void queryClient.invalidateQueries({ queryKey: ['notificaciones-no-leidas'] });
+      }
+    }, [queryClient, token]),
+  );
+
   const marcarLeidaMutation = useMutation({
     mutationFn: (notificacionId: string) => marcarNotificacionLeida(token ?? '', notificacionId),
     onSuccess: async () => {

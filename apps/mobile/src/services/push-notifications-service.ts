@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import type { QueryClient } from '@tanstack/react-query';
 import Constants from 'expo-constants';
 import * as Device from 'expo-device';
 import type * as ExpoNotifications from 'expo-notifications';
@@ -16,6 +17,8 @@ const registroPushKey = 'mi-san.push-registration';
 const isExpoGo = Constants.appOwnership === 'expo';
 export const pushNotificationsEnabled = process.env.EXPO_PUBLIC_ENABLE_PUSH_NOTIFICATIONS === 'true';
 let handlerConfigurado = false;
+
+const queriesNotificaciones = [['notificaciones'], ['notificaciones-no-leidas']] as const;
 
 function cargarNotifications(): typeof ExpoNotifications {
   return require('expo-notifications') as typeof ExpoNotifications;
@@ -97,7 +100,7 @@ export async function eliminarDispositivoPush() {
   });
 }
 
-export function configurarNavegacionPush() {
+export function configurarNavegacionPush(queryClient?: QueryClient) {
   if (!pushNotificationsEnabled || isExpoGo) {
     return () => undefined;
   }
@@ -106,6 +109,7 @@ export function configurarNavegacionPush() {
   try {
     const Notifications = cargarNotifications();
     subscription = Notifications.addNotificationResponseReceivedListener((response) => {
+      sincronizarQueriesNotificaciones(queryClient);
       const data = response.notification.request.content.data as {
         metadata?: PushMetadata;
       };
@@ -117,6 +121,34 @@ export function configurarNavegacionPush() {
   }
 
   return () => subscription?.remove();
+}
+
+export function configurarSincronizacionPush(queryClient: QueryClient) {
+  if (!pushNotificationsEnabled || isExpoGo) {
+    return () => undefined;
+  }
+
+  let subscription: { remove(): void } | undefined;
+  try {
+    const Notifications = cargarNotifications();
+    subscription = Notifications.addNotificationReceivedListener(() => {
+      sincronizarQueriesNotificaciones(queryClient);
+    });
+  } catch {
+    return () => undefined;
+  }
+
+  return () => subscription?.remove();
+}
+
+function sincronizarQueriesNotificaciones(queryClient?: QueryClient) {
+  if (!queryClient) {
+    return;
+  }
+
+  queriesNotificaciones.forEach((queryKey) => {
+    void queryClient.invalidateQueries({ queryKey: [...queryKey] });
+  });
 }
 
 function abrirDestinoPush(metadata?: PushMetadata) {
