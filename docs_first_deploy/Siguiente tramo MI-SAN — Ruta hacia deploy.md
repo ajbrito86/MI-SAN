@@ -54,7 +54,7 @@ Debe cubrir:
 - Producto Google Play:
   - `premium_sin_ads`
 - Producto Apple:
-  - `com.misan.premium.noads`
+  - `premium_sin_ads`
 - Tipo:
   - Non-consumable
 - Precio:

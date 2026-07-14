@@ -9,8 +9,9 @@ import { ComprarPremiumDto } from './dto/comprar-premium.dto';
 const CODIGO_TRIAL = 'GRATIS_TRIAL';
 const CODIGO_GRATIS_ADS = 'GRATIS_ADS';
 const CODIGO_PREMIUM = 'PREMIUM_SIN_ADS';
-const GOOGLE_PLAY_PRODUCT_ID_DEFAULT = 'premium_sin_ads';
+const PREMIUM_PRODUCT_ID_DEFAULT = 'premium_sin_ads';
 const GOOGLE_PLAY_PACKAGE_NAME_DEFAULT = 'app.mi_san.mobile';
+const APP_STORE_BUNDLE_ID_DEFAULT = 'app.mi-san.mobile';
 const PLANES_BASE = {
   [CODIGO_TRIAL]: {
     nombre: 'Gratis Trial',
@@ -37,6 +38,40 @@ const PLANES_BASE = {
     isPagoUnico: true,
   },
 } as const;
+
+type ValidacionCompraPremium = {
+  productId: string;
+  plataforma: PlataformaCompra;
+  orderId?: string;
+  transactionId?: string;
+  originalTransactionId?: string;
+  packageName?: string;
+  bundleId?: string;
+  purchaseTimeMillis?: string | number;
+  purchaseState?: number | null;
+  acknowledgementState?: number | null;
+  consumptionState?: number | null;
+  purchaseType?: number | null;
+  environment?: string;
+};
+
+type AppStoreReceiptResponse = {
+  status?: number;
+  environment?: string;
+  receipt?: {
+    bundle_id?: string;
+    in_app?: AppStoreReceiptPurchase[];
+  };
+  latest_receipt_info?: AppStoreReceiptPurchase[];
+};
+
+type AppStoreReceiptPurchase = {
+  product_id?: string;
+  transaction_id?: string;
+  original_transaction_id?: string;
+  purchase_date_ms?: string;
+  cancellation_date_ms?: string;
+};
 
 @Injectable()
 export class SuscripcionesService {
@@ -162,7 +197,8 @@ export class SuscripcionesService {
 
     const plan = await this.buscarPlanActivo(CODIGO_PREMIUM);
     const fechaInicio = new Date();
-    const transaccionExternaId = dto.transaccionExternaId ?? validacionCompra?.orderId ?? dto.purchaseToken;
+    const transaccionExternaId =
+      dto.transaccionExternaId ?? validacionCompra?.orderId ?? validacionCompra?.transactionId ?? dto.purchaseToken;
 
     const suscripcion = await this.prisma.$transaction(async (tx) => {
       await tx.usuarioPlan.updateMany({
@@ -204,7 +240,9 @@ export class SuscripcionesService {
       metadataJson: {
         productId: dto.productId,
         packageNameAndroid: dto.packageNameAndroid,
-        googlePlay: validacionCompra,
+        appBundleIdIos: dto.appBundleIdIos,
+        originalTransactionIdIos: dto.originalTransactionIdIos,
+        validacionCompra,
       },
     });
 
@@ -221,18 +259,26 @@ export class SuscripcionesService {
     }
 
     if (billingRealHabilitado) {
-      return this.validarCompraGooglePlay(dto);
+      return this.validarCompraPremiumReal(dto);
     }
 
     return null;
   }
 
-  private async validarCompraGooglePlay(dto: ComprarPremiumDto) {
-    if (dto.plataformaCompra !== PlataformaCompra.GOOGLE_PLAY) {
-      throw new ForbiddenException('Billing real Android requiere una compra de Google Play.');
+  private validarCompraPremiumReal(dto: ComprarPremiumDto) {
+    if (dto.plataformaCompra === PlataformaCompra.GOOGLE_PLAY) {
+      return this.validarCompraGooglePlay(dto);
     }
 
-    const productIdEsperado = this.configService.get<string>('GOOGLE_PLAY_PREMIUM_PRODUCT_ID') || GOOGLE_PLAY_PRODUCT_ID_DEFAULT;
+    if (dto.plataformaCompra === PlataformaCompra.APP_STORE) {
+      return this.validarCompraAppStore(dto);
+    }
+
+    throw new ForbiddenException('Billing real requiere una compra de Google Play o App Store.');
+  }
+
+  private async validarCompraGooglePlay(dto: ComprarPremiumDto): Promise<ValidacionCompraPremium> {
+    const productIdEsperado = this.obtenerPremiumProductIdEsperado();
     const packageNameEsperado = this.configService.get<string>('GOOGLE_PLAY_PACKAGE_NAME') || GOOGLE_PLAY_PACKAGE_NAME_DEFAULT;
 
     if (!dto.productId || dto.productId !== productIdEsperado) {
@@ -273,14 +319,108 @@ export class SuscripcionesService {
 
     return {
       productId: productIdEsperado,
+      plataforma: PlataformaCompra.GOOGLE_PLAY,
       packageName: packageNameEsperado,
-      orderId: compra.orderId,
-      purchaseTimeMillis: compra.purchaseTimeMillis,
+      orderId: compra.orderId ?? undefined,
+      purchaseTimeMillis: compra.purchaseTimeMillis ?? undefined,
       purchaseState: compra.purchaseState,
       acknowledgementState: compra.acknowledgementState,
       consumptionState: compra.consumptionState,
       purchaseType: compra.purchaseType,
     };
+  }
+
+  private async validarCompraAppStore(dto: ComprarPremiumDto): Promise<ValidacionCompraPremium> {
+    const productIdEsperado = this.obtenerPremiumProductIdEsperado();
+    const bundleIdEsperado = this.configService.get<string>('APP_STORE_BUNDLE_ID') || APP_STORE_BUNDLE_ID_DEFAULT;
+
+    if (!dto.productId || dto.productId !== productIdEsperado) {
+      throw new ForbiddenException('Product ID de App Store invalido.');
+    }
+
+    if (!dto.transactionReceipt) {
+      throw new ForbiddenException('Falta transactionReceipt de App Store.');
+    }
+
+    if (dto.appBundleIdIos && dto.appBundleIdIos !== bundleIdEsperado) {
+      throw new ForbiddenException('Bundle ID de App Store invalido.');
+    }
+
+    const respuesta = await this.verificarReceiptAppStore(dto.transactionReceipt);
+    const bundleIdReceipt = respuesta.receipt?.bundle_id;
+
+    if (bundleIdReceipt && bundleIdReceipt !== bundleIdEsperado) {
+      throw new ForbiddenException('Bundle ID del recibo App Store invalido.');
+    }
+
+    const compra = [...(respuesta.receipt?.in_app ?? []), ...(respuesta.latest_receipt_info ?? [])]
+      .filter((item) => item.product_id === productIdEsperado && !item.cancellation_date_ms)
+      .sort((a, b) => Number(b.purchase_date_ms ?? 0) - Number(a.purchase_date_ms ?? 0))[0];
+
+    if (!compra?.transaction_id) {
+      throw new ForbiddenException('No se encontro una compra Premium valida en el recibo de App Store.');
+    }
+
+    if (dto.originalTransactionIdIos && compra.original_transaction_id && dto.originalTransactionIdIos !== compra.original_transaction_id) {
+      throw new ForbiddenException('Transaccion original de App Store invalida.');
+    }
+
+    return {
+      productId: productIdEsperado,
+      plataforma: PlataformaCompra.APP_STORE,
+      bundleId: bundleIdEsperado,
+      transactionId: compra.transaction_id,
+      originalTransactionId: compra.original_transaction_id,
+      purchaseTimeMillis: compra.purchase_date_ms,
+      environment: respuesta.environment,
+    };
+  }
+
+  private async verificarReceiptAppStore(receiptData: string) {
+    const produccion = 'https://buy.itunes.apple.com/verifyReceipt';
+    const sandbox = 'https://sandbox.itunes.apple.com/verifyReceipt';
+    const respuestaProduccion = await this.enviarReceiptAppStore(produccion, receiptData);
+
+    if (respuestaProduccion.status === 21007) {
+      return this.enviarReceiptAppStore(sandbox, receiptData);
+    }
+
+    if (respuestaProduccion.status === 21008) {
+      return this.enviarReceiptAppStore(produccion, receiptData);
+    }
+
+    if (respuestaProduccion.status !== 0) {
+      throw new ForbiddenException(`Recibo de App Store invalido. Codigo ${respuestaProduccion.status ?? 'desconocido'}.`);
+    }
+
+    return respuestaProduccion;
+  }
+
+  private async enviarReceiptAppStore(url: string, receiptData: string): Promise<AppStoreReceiptResponse> {
+    const password = this.configService.get<string>('APP_STORE_SHARED_SECRET');
+    const respuesta = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        'receipt-data': receiptData,
+        ...(password ? { password } : {}),
+        'exclude-old-transactions': true,
+      }),
+    });
+
+    if (!respuesta.ok) {
+      throw new ForbiddenException('No se pudo validar el recibo con App Store.');
+    }
+
+    return (await respuesta.json()) as AppStoreReceiptResponse;
+  }
+
+  private obtenerPremiumProductIdEsperado() {
+    return (
+      this.configService.get<string>('PREMIUM_PRODUCT_ID') ||
+      this.configService.get<string>('GOOGLE_PLAY_PREMIUM_PRODUCT_ID') ||
+      PREMIUM_PRODUCT_ID_DEFAULT
+    );
   }
 
   private async crearGooglePlayAuth() {

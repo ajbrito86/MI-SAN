@@ -101,6 +101,7 @@ export class PagosService {
       throw new BadRequestException('Esta cuota no puede reportarse en su estado actual.');
     }
 
+    await this.validarSecuenciaPago(cuota);
     this.validarMetodoPago(dto.metodoPago, cuota.ciclo.sociedad.tipoPago);
 
     if (cuota.ciclo.sociedad.organizadorId === usuarioId) {
@@ -185,6 +186,27 @@ export class PagosService {
   private validarSociedadOperativa(estado: EstadoSociedad) {
     if (estado === EstadoSociedad.CANCELADA || estado === EstadoSociedad.FINALIZADA) {
       throw new BadRequestException('La sociedad esta cerrada y no permite operar pagos.');
+    }
+  }
+
+  private async validarSecuenciaPago(cuota: {
+    cicloId: string;
+    participanteId: string;
+    numeroCuota: number;
+  }) {
+    if (cuota.numeroCuota <= 1) {
+      return;
+    }
+
+    const cuotaAnterior = await this.pagosRepository.buscarCuotaAnterior(
+      cuota.cicloId,
+      cuota.participanteId,
+      cuota.numeroCuota - 1,
+    );
+    const estadosPreviosValidos: EstadoPago[] = [EstadoPago.REPORTADO, EstadoPago.CONFIRMADO];
+
+    if (!cuotaAnterior || !estadosPreviosValidos.includes(cuotaAnterior.estado)) {
+      throw new BadRequestException(`Debes hacer primero la cuota #${cuota.numeroCuota - 1}.`);
     }
   }
 }

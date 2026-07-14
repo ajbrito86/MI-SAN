@@ -8,7 +8,11 @@ import { AppButton } from '@/components/app-button';
 import { useConfiguracionMobile } from '@/hooks/use-configuracion-mobile';
 import { inicializarAds } from '@/services/ads-service';
 import { configurarReporteErroresGlobales } from '@/services/analytics-service';
-import { configurarNavegacionPush, registrarDispositivoPush } from '@/services/push-notifications-service';
+import {
+  configurarNavegacionPush,
+  configurarSincronizacionPush,
+  registrarDispositivoPush,
+} from '@/services/push-notifications-service';
 import { useAuthStore } from '@/stores/auth-store';
 import '../global.css';
 
@@ -26,8 +30,13 @@ export default function RootLayout() {
   }, []);
 
   useEffect(() => {
-    const limpiarNavegacionPush = configurarNavegacionPush();
-    return limpiarNavegacionPush;
+    const limpiarNavegacionPush = configurarNavegacionPush(queryClient);
+    const limpiarSincronizacionPush = configurarSincronizacionPush(queryClient);
+
+    return () => {
+      limpiarNavegacionPush();
+      limpiarSincronizacionPush();
+    };
   }, []);
 
   useEffect(() => {

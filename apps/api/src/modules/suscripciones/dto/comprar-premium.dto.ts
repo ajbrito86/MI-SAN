@@ -29,4 +29,23 @@ export class ComprarPremiumDto {
   @IsString()
   @MaxLength(255)
   packageNameAndroid?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  originalTransactionIdIos?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  appBundleIdIos?: string;
+
+  @IsOptional()
+  @IsString()
+  jwsRepresentationIos?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  environmentIos?: string;
 }

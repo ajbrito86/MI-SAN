@@ -22,6 +22,7 @@ coverage
 apps/mobile/google-services.json
 apps/mobile/GoogleService-Info.plist
 eas-build-*
+apps/mobile/.eas-local/
 
 # Archivos generados o subidos en desarrollo
 /uploads

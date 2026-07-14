@@ -11,12 +11,12 @@ import { useSuscripcion } from '@/hooks/use-suscripcion';
 import { registrarError, registrarEvento } from '@/services/analytics-service';
 import {
   billingNativoHabilitado,
-  crearPayloadPremiumGooglePlay,
-  finalizarCompraPremiumGooglePlay,
+  crearPayloadPremium,
+  finalizarCompraPremium,
   formatearPrecioProducto,
-  iniciarCompraPremiumGooglePlay,
-  obtenerProductoPremiumGooglePlay,
-  restaurarCompraPremiumGooglePlay,
+  iniciarCompraPremium,
+  obtenerProductoPremium,
+  restaurarCompraPremium,
 } from '@/services/billing-service';
 import { comprarPremium, restaurarCompra } from '@/services/suscripciones-service';
 import { useAuthStore } from '@/stores/auth-store';
@@ -31,7 +31,7 @@ export default function PantallaPremium() {
   const usarBillingNativo = billingNativoHabilitado();
 
   const productoPremium = useMutation({
-    mutationFn: obtenerProductoPremiumGooglePlay,
+    mutationFn: obtenerProductoPremium,
   });
 
   useEffect(() => {
@@ -47,14 +47,14 @@ export default function PantallaPremium() {
         return comprarPremium({ plataformaCompra });
       }
 
-      const compraGooglePlay = await iniciarCompraPremiumGooglePlay(usuario?.id);
+      const compraNativa = await iniciarCompraPremium(usuario?.id);
 
-      if (!compraGooglePlay) {
-        throw new Error('No se recibio confirmacion de compra desde Google Play.');
+      if (!compraNativa) {
+        throw new Error('No se recibio confirmacion de compra desde la tienda.');
       }
 
-      const suscripcionActualizada = await comprarPremium(crearPayloadPremiumGooglePlay(compraGooglePlay));
-      await finalizarCompraPremiumGooglePlay(compraGooglePlay);
+      const suscripcionActualizada = await comprarPremium(crearPayloadPremium(compraNativa));
+      await finalizarCompraPremium(compraNativa);
 
       return suscripcionActualizada;
     },
@@ -75,14 +75,14 @@ export default function PantallaPremium() {
         return restaurarCompra({ plataformaCompra });
       }
 
-      const compraGooglePlay = await restaurarCompraPremiumGooglePlay();
+      const compraNativa = await restaurarCompraPremium();
 
-      if (!compraGooglePlay) {
-        throw new Error('No encontramos una compra Premium para restaurar en Google Play.');
+      if (!compraNativa) {
+        throw new Error('No encontramos una compra Premium para restaurar en la tienda.');
       }
 
-      const suscripcionActualizada = await restaurarCompra(crearPayloadPremiumGooglePlay(compraGooglePlay));
-      await finalizarCompraPremiumGooglePlay(compraGooglePlay);
+      const suscripcionActualizada = await restaurarCompra(crearPayloadPremium(compraNativa));
+      await finalizarCompraPremium(compraNativa);
 
       return suscripcionActualizada;
     },

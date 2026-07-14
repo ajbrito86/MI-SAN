@@ -15,7 +15,7 @@ export const CONFIGURACION_MOBILE_DEFAULT: ConfiguracionMobile = {
     anunciosActivos: true,
     premiumActivo: true,
     trialActivo: true,
-    comprasActivas: false,
+    comprasActivas: true,
   },
   monetizacion: {
     duracionTrialDias: 45,

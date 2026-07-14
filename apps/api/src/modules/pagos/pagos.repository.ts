@@ -17,6 +17,23 @@ export class PagosRepository {
     });
   }
 
+  buscarCuotaAnterior(cicloId: string, participanteId: string, numeroCuota: number) {
+    return this.prisma.cuotaPago.findUnique({
+      where: {
+        cicloId_participanteId_numeroCuota: {
+          cicloId,
+          participanteId,
+          numeroCuota,
+        },
+      },
+      select: {
+        id: true,
+        numeroCuota: true,
+        estado: true,
+      },
+    });
+  }
+
   async asegurarCuotasActivasUsuario(usuarioId: string) {
     const ciclos = await this.prisma.cicloSociedad.findMany({
       where: {

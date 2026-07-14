@@ -65,6 +65,20 @@ function validarPng(relPath, width, height) {
   }
 }
 
+function esSemverValido(version) {
+  return /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/.test(
+    version,
+  );
+}
+
+function esEnteroPositivo(valor) {
+  return Number.isInteger(valor) && valor > 0;
+}
+
+function esEnteroPositivoString(valor) {
+  return typeof valor === 'string' && /^[1-9]\d*$/.test(valor);
+}
+
 function listarArchivos(dirRel, extensiones) {
   const dirAbs = path.join(root, dirRel);
   if (!fs.existsSync(dirAbs)) {
@@ -105,14 +119,31 @@ function validarSinConsoleInnecesario() {
 
 function validarAppJson() {
   const appJson = leerJson('apps/mobile/app.json').expo;
-  if (appJson.version === '1.0.0') ok('Version mobile 1.0.0 configurada.');
-  else error(`Version mobile inesperada: ${appJson.version}`);
+  const eas = leerJson('apps/mobile/eas.json');
 
-  if (appJson.android?.versionCode === 1) ok('Android versionCode 1 configurado.');
-  else error('Android versionCode inicial no esta configurado en 1.');
+  if (typeof appJson.version === 'string' && esSemverValido(appJson.version)) {
+    ok(`Version mobile semantica valida: ${appJson.version}.`);
+  } else {
+    error(`Version mobile invalida; se esperaba semver y se encontro: ${appJson.version}`);
+  }
 
-  if (appJson.ios?.buildNumber === '1') ok('iOS buildNumber 1 configurado.');
-  else error('iOS buildNumber inicial no esta configurado en 1.');
+  if (esEnteroPositivo(appJson.android?.versionCode)) {
+    ok(`Android versionCode positivo configurado: ${appJson.android.versionCode}.`);
+  } else {
+    error(`Android versionCode debe ser un entero positivo; valor actual: ${appJson.android?.versionCode}`);
+  }
+
+  if (esEnteroPositivoString(appJson.ios?.buildNumber)) {
+    ok(`iOS buildNumber positivo configurado: ${appJson.ios.buildNumber}.`);
+  } else {
+    error(`iOS buildNumber debe ser un entero positivo en string; valor actual: ${appJson.ios?.buildNumber}`);
+  }
+
+  if (eas.cli?.appVersionSource === 'local') {
+    ok('EAS usa appVersionSource=local; version, versionCode y buildNumber salen de apps/mobile/app.json.');
+  } else {
+    error('apps/mobile/eas.json debe mantener cli.appVersionSource=local para coherencia de versiones.');
+  }
 
   validarArchivo(appJson.icon.replace('./', 'apps/mobile/'));
   validarArchivo(appJson.splash.image.replace('./', 'apps/mobile/'));
@@ -242,17 +273,19 @@ function validarEnv() {
 function validarBillingEnv(apiEnv, origen, opciones = {}) {
   const billingReal = extraerEnv(apiEnv, 'BILLING_REAL_ENABLED');
   const manualPremium = extraerEnv(apiEnv, 'ALLOW_MANUAL_PREMIUM_ACTIVATION');
+  const premiumProductId = extraerEnv(apiEnv, 'PREMIUM_PRODUCT_ID');
   const packageName = extraerEnv(apiEnv, 'GOOGLE_PLAY_PACKAGE_NAME');
-  const productId = extraerEnv(apiEnv, 'GOOGLE_PLAY_PREMIUM_PRODUCT_ID');
+  const productId = premiumProductId || extraerEnv(apiEnv, 'GOOGLE_PLAY_PREMIUM_PRODUCT_ID');
   const serviceAccount = extraerEnv(apiEnv, 'GOOGLE_PLAY_SERVICE_ACCOUNT_JSON_BASE64');
+  const appStoreBundleId = extraerEnv(apiEnv, 'APP_STORE_BUNDLE_ID');
 
   if (billingReal === null) {
     const mensaje = `Falta BILLING_REAL_ENABLED en ${origen}.`;
     if (opciones.estricto) error(mensaje);
     else aviso(mensaje);
   } else if (billingReal === 'true') {
-    aviso(`${origen} declara Billing real activo; confirmar que Google Play Billing ya valida compras en backend.`);
-    validarBillingRealGooglePlay(packageName, productId, serviceAccount, origen, opciones);
+    aviso(`${origen} declara Billing real activo; confirmar que Google Play Billing y App Store validan compras en backend.`);
+    validarBillingRealTiendas(packageName, productId, serviceAccount, appStoreBundleId, origen, opciones);
   } else {
     ok(`${origen} mantiene Billing real desactivado.`);
   }
@@ -270,11 +303,12 @@ function validarBillingEnv(apiEnv, origen, opciones = {}) {
   }
 }
 
-function validarBillingRealGooglePlay(packageName, productId, serviceAccount, origen, opciones = {}) {
+function validarBillingRealTiendas(packageName, productId, serviceAccount, appStoreBundleId, origen, opciones = {}) {
   const faltantes = [];
   if (!packageName) faltantes.push('GOOGLE_PLAY_PACKAGE_NAME');
-  if (!productId) faltantes.push('GOOGLE_PLAY_PREMIUM_PRODUCT_ID');
+  if (!productId) faltantes.push('PREMIUM_PRODUCT_ID');
   if (!serviceAccount) faltantes.push('GOOGLE_PLAY_SERVICE_ACCOUNT_JSON_BASE64');
+  if (!appStoreBundleId) faltantes.push('APP_STORE_BUNDLE_ID');
 
   if (faltantes.length > 0) {
     const mensaje = `${origen} habilita Billing real pero faltan: ${faltantes.join(', ')}.`;
@@ -290,16 +324,22 @@ function validarBillingRealGooglePlay(packageName, productId, serviceAccount, or
   }
 
   if (productId !== 'premium_sin_ads') {
-    error(`${origen} debe usar GOOGLE_PLAY_PREMIUM_PRODUCT_ID=premium_sin_ads.`);
+    error(`${origen} debe usar PREMIUM_PRODUCT_ID=premium_sin_ads.`);
   } else {
     ok(`${origen} usa producto Premium esperado para Billing.`);
+  }
+
+  if (appStoreBundleId !== 'app.mi-san.mobile') {
+    error(`${origen} debe usar APP_STORE_BUNDLE_ID=app.mi-san.mobile.`);
+  } else {
+    ok(`${origen} usa bundle iOS esperado para Billing.`);
   }
 }
 
 function validarBillingMobileEnv(mobileEnv, origen, opciones = {}) {
   validarBillingMobileValores(
     extraerEnv(mobileEnv, 'EXPO_PUBLIC_ENABLE_NATIVE_BILLING'),
-    extraerEnv(mobileEnv, 'EXPO_PUBLIC_GOOGLE_PLAY_PREMIUM_PRODUCT_ID'),
+    extraerEnv(mobileEnv, 'EXPO_PUBLIC_PREMIUM_PRODUCT_ID') || extraerEnv(mobileEnv, 'EXPO_PUBLIC_GOOGLE_PLAY_PREMIUM_PRODUCT_ID'),
     origen,
     opciones,
   );
@@ -308,7 +348,7 @@ function validarBillingMobileEnv(mobileEnv, origen, opciones = {}) {
 function validarBillingMobileEnvDesdeObjeto(envObj, origen, opciones = {}) {
   validarBillingMobileValores(
     extraerEnvObjeto(envObj, 'EXPO_PUBLIC_ENABLE_NATIVE_BILLING'),
-    extraerEnvObjeto(envObj, 'EXPO_PUBLIC_GOOGLE_PLAY_PREMIUM_PRODUCT_ID'),
+    extraerEnvObjeto(envObj, 'EXPO_PUBLIC_PREMIUM_PRODUCT_ID') || extraerEnvObjeto(envObj, 'EXPO_PUBLIC_GOOGLE_PLAY_PREMIUM_PRODUCT_ID'),
     origen,
     opciones,
   );
@@ -326,7 +366,7 @@ function validarBillingMobileValores(nativeBilling, productId, origen, opciones 
   }
 
   if (!productId) {
-    const mensaje = `Falta EXPO_PUBLIC_GOOGLE_PLAY_PREMIUM_PRODUCT_ID en ${origen}.`;
+    const mensaje = `Falta EXPO_PUBLIC_PREMIUM_PRODUCT_ID en ${origen}.`;
     if (opciones.estricto) error(mensaje);
     else aviso(mensaje);
   } else if (productId !== 'premium_sin_ads') {

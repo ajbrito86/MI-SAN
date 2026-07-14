@@ -6,10 +6,10 @@ type ModuloBilling = typeof import('react-native-iap');
 
 declare const require: (nombre: string) => ModuloBilling;
 
-const GOOGLE_PLAY_PRODUCT_ID_DEFAULT = 'premium_sin_ads';
+const PREMIUM_PRODUCT_ID_DEFAULT = 'premium_sin_ads';
 
 function cargarModuloBilling() {
-  if (Platform.OS !== 'android' || process.env.EXPO_PUBLIC_ENABLE_NATIVE_BILLING !== 'true') {
+  if (!['android', 'ios'].includes(Platform.OS) || process.env.EXPO_PUBLIC_ENABLE_NATIVE_BILLING !== 'true') {
     return null;
   }
 
@@ -24,58 +24,68 @@ export function billingNativoHabilitado() {
   return Boolean(cargarModuloBilling());
 }
 
-export function obtenerGooglePlayPremiumProductId() {
-  return process.env.EXPO_PUBLIC_GOOGLE_PLAY_PREMIUM_PRODUCT_ID || GOOGLE_PLAY_PRODUCT_ID_DEFAULT;
+export function obtenerPremiumProductId() {
+  return process.env.EXPO_PUBLIC_PREMIUM_PRODUCT_ID || process.env.EXPO_PUBLIC_GOOGLE_PLAY_PREMIUM_PRODUCT_ID || PREMIUM_PRODUCT_ID_DEFAULT;
 }
 
-export async function obtenerProductoPremiumGooglePlay() {
+export async function obtenerProductoPremium() {
   const moduloBilling = cargarModuloBilling();
 
   if (!moduloBilling) {
     return null;
   }
 
-  const productId = obtenerGooglePlayPremiumProductId();
+  const productId = obtenerPremiumProductId();
   await moduloBilling.initConnection();
-  await moduloBilling.flushFailedPurchasesCachedAsPendingAndroid().catch(() => false);
+  await limpiarComprasPendientesAndroid(moduloBilling);
   const productos = await moduloBilling.getProducts({ skus: [productId] });
 
   return productos[0] ?? null;
 }
 
-export async function iniciarCompraPremiumGooglePlay(usuarioId?: string | null) {
+export async function iniciarCompraPremium(usuarioId?: string | null) {
   const moduloBilling = cargarModuloBilling();
 
   if (!moduloBilling) {
     return null;
   }
 
-  const productId = obtenerGooglePlayPremiumProductId();
+  const productId = obtenerPremiumProductId();
   await moduloBilling.initConnection();
-  await moduloBilling.flushFailedPurchasesCachedAsPendingAndroid().catch(() => false);
-  const compra = await moduloBilling.requestPurchase({
-    skus: [productId],
-    obfuscatedAccountIdAndroid: usuarioId ?? undefined,
-  });
+  await limpiarComprasPendientesAndroid(moduloBilling);
+  const compra =
+    Platform.OS === 'ios'
+      ? await moduloBilling.requestPurchase({
+          sku: productId,
+          andDangerouslyFinishTransactionAutomaticallyIOS: false,
+          appAccountToken: usuarioId ?? undefined,
+        })
+      : await moduloBilling.requestPurchase({
+          skus: [productId],
+          obfuscatedAccountIdAndroid: usuarioId ?? undefined,
+        });
 
   return primeraCompra(compra);
 }
 
-export async function restaurarCompraPremiumGooglePlay() {
+export async function restaurarCompraPremium() {
   const moduloBilling = cargarModuloBilling();
 
   if (!moduloBilling) {
     return null;
   }
 
-  const productId = obtenerGooglePlayPremiumProductId();
+  const productId = obtenerPremiumProductId();
   await moduloBilling.initConnection();
-  const compras = await moduloBilling.getAvailablePurchases();
+  const compras = await moduloBilling.getAvailablePurchases({
+    automaticallyFinishRestoredTransactions: false,
+    onlyIncludeActiveItems: true,
+  });
 
   return compras.find((compra) => compra.productId === productId) ?? null;
 }
 
-export async function finalizarCompraPremiumGooglePlay(compra: Purchase) {
+export async function finalizarCompraPremium(compra: Purchase) {
   const moduloBilling = cargarModuloBilling();
 
   if (!moduloBilling) {
@@ -85,14 +95,18 @@ export async function finalizarCompraPremiumGooglePlay(compra: Purchase) {
   await moduloBilling.finishTransaction({ purchase: compra, isConsumable: false });
 }
 
-export function crearPayloadPremiumGooglePlay(compra: Purchase): CompraPremiumPayload {
+export function crearPayloadPremium(compra: Purchase): CompraPremiumPayload {
   return {
-    plataformaCompra: 'GOOGLE_PLAY',
+    plataformaCompra: Platform.OS === 'ios' ? 'APP_STORE' : 'GOOGLE_PLAY',
     productId: compra.productId,
     purchaseToken: compra.purchaseToken,
     transactionReceipt: compra.transactionReceipt,
     transaccionExternaId: compra.transactionId,
     packageNameAndroid: compra.packageNameAndroid,
+    originalTransactionIdIos: compra.originalTransactionIdentifierIOS,
+    appBundleIdIos: compra.appBundleIdIos,
+    jwsRepresentationIos: compra.jwsRepresentationIos,
+    environmentIos: compra.environmentIos,
   };
 }
 
@@ -106,4 +120,10 @@ function primeraCompra(compra: Purchase | Purchase[] | void | null) {
   }
 
   return Array.isArray(compra) ? compra[0] ?? null : compra;
+}
+
+async function limpiarComprasPendientesAndroid(moduloBilling: ModuloBilling) {
+  if (Platform.OS === 'android') {
+    await moduloBilling.flushFailedPurchasesCachedAsPendingAndroid().catch(() => false);
+  }
 }
