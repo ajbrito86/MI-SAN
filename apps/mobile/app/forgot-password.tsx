@@ -73,7 +73,7 @@ export default function RecuperarContrasena() {
 
         <View className="gap-3">
           <TextInput
-            className="rounded-lg border border-slate-200 bg-white px-4 py-4 text-base"
+            className="min-h-12 rounded-lg border border-slate-200 bg-white px-4 py-3 text-base leading-6"
             placeholder="Telefono o correo"
             autoCapitalize="none"
             value={identificador}
@@ -84,7 +84,7 @@ export default function RecuperarContrasena() {
           {paso === 'confirmar' ? (
             <>
               <TextInput
-                className="rounded-lg border border-slate-200 bg-white px-4 py-4 text-base"
+                className="min-h-12 rounded-lg border border-slate-200 bg-white px-4 py-3 text-base leading-6"
                 placeholder="Codigo de 6 digitos"
                 keyboardType="number-pad"
                 maxLength={6}
@@ -92,7 +92,7 @@ export default function RecuperarContrasena() {
                 onChangeText={setCodigo}
               />
               <TextInput
-                className="rounded-lg border border-slate-200 bg-white px-4 py-4 text-base"
+                className="min-h-12 rounded-lg border border-slate-200 bg-white px-4 py-3 text-base leading-6"
                 placeholder="Nueva contrasena"
                 secureTextEntry
                 value={nuevaContrasena}

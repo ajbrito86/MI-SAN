@@ -49,3 +49,23 @@ export function enviarMensajeSan(token: string, sociedadId: string, participante
     body: JSON.stringify({ mensaje }),
   });
 }
+
+export type MotivoReporteChat =
+  | 'LENGUAJE_OFENSIVO'
+  | 'ACOSO_O_AMENAZA'
+  | 'CONTENIDO_SEXUAL_O_INAPROPIADO'
+  | 'ESTAFA_O_FRAUDE'
+  | 'SPAM'
+  | 'OTRO';
+
+export function reportarChat(
+  token: string,
+  sociedadId: string,
+  participanteId: string,
+  data: { mensajeId?: string; motivo: MotivoReporteChat; descripcion?: string },
+) {
+  return apiRequestAutenticado<{ id: string; estado: string; mensaje: string }>(
+    `/societies/${sociedadId}/chats/${participanteId}/reports`,
+    { method: 'POST', body: JSON.stringify(data) },
+  );
+}

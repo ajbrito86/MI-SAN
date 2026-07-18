@@ -5,6 +5,8 @@ export default function AcercaDe() {
     <LegalPage
       titulo="Acerca de"
       subtitulo="MI-SAN"
+      enlaceWeb="https://mi-san.kingdom-devs.net"
+      textoEnlaceWeb="Visitar el sitio de MI-SAN"
       parrafos={[
         'MI-SAN ayuda a organizar SANes desde el telefono: participantes, turnos, cuotas, pagos, historial y avisos.',
         'La primera version comercial busca validar uso real, recibir retroalimentacion y mejorar de forma continua.',

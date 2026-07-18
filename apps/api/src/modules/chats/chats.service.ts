@@ -2,6 +2,7 @@ import { BadRequestException, ForbiddenException, Injectable, NotFoundException 
 import { EstadoSociedad } from '@prisma/client';
 import { NotificacionesService } from '../notificaciones/notificaciones.service';
 import { EnviarMensajeDto } from './dto/enviar-mensaje.dto';
+import { ReportarChatDto } from './dto/reportar-chat.dto';
 import { ChatsRepository } from './chats.repository';
 
 @Injectable()
@@ -74,6 +75,41 @@ export class ChatsService {
     const mensaje = await this.chatsRepository.enviarMensaje(conversacion.id, usuarioId, texto);
     await this.notificacionesService.enviarUltimaParaUsuario(destinatarioId, fechaInicio);
     return this.mapearMensaje(mensaje);
+  }
+
+  async reportar(usuarioId: string, sociedadId: string, participanteId: string, dto: ReportarChatDto) {
+    const { sociedad, participante } = await this.validarAccesoChat(usuarioId, sociedadId, participanteId);
+    const conversacion = await this.chatsRepository.buscarConversacion(sociedad.id, participanteId);
+
+    if (!conversacion) {
+      throw new NotFoundException('No encontramos esa conversacion.');
+    }
+
+    if (dto.mensajeId) {
+      const mensaje = await this.chatsRepository.buscarMensajeEnConversacion(dto.mensajeId, conversacion.id);
+      if (!mensaje) {
+        throw new NotFoundException('El mensaje no pertenece a esta conversacion.');
+      }
+      if (mensaje.remitenteId === usuarioId) {
+        throw new BadRequestException('No puedes reportar tu propio mensaje.');
+      }
+      if (await this.chatsRepository.buscarReporteMensaje(usuarioId, dto.mensajeId)) {
+        throw new BadRequestException('Ya reportaste este mensaje.');
+      }
+    }
+
+    const usuarioReportadoId = usuarioId === sociedad.organizadorId ? participante.usuarioId : sociedad.organizadorId;
+    const reporte = await this.chatsRepository.crearReporte({
+      reportanteUsuarioId: usuarioId,
+      usuarioReportadoId,
+      sociedadId,
+      conversacionId: conversacion.id,
+      mensajeId: dto.mensajeId,
+      motivo: dto.motivo,
+      descripcion: dto.descripcion?.trim() || undefined,
+    });
+
+    return { id: reporte.id, estado: reporte.estado, mensaje: 'Reporte enviado. Revisaremos la situacion.' };
   }
 
   private async validarAccesoChat(usuarioId: string, sociedadId: string, participanteId: string) {

@@ -2,14 +2,16 @@ import { router } from 'expo-router';
 import { Bell, ChevronRight, Crown, FileText, HelpCircle, Info, LogOut, Shield, Trash2 } from 'lucide-react-native';
 import { type ReactNode } from 'react';
 import { useState } from 'react';
-import { Alert, Pressable, Text, View } from 'react-native';
+import { Alert, Pressable, Switch, Text, View } from 'react-native';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { AppButton } from '@/components/app-button';
 import { ScreenScrollView } from '@/components/screen';
 import { useSuscripcion } from '@/hooks/use-suscripcion';
-import { mostrarOpcionesPrivacidadAds } from '@/services/ads-service';
 import { logout } from '@/services/auth-service';
 import {
   abrirConfiguracionNotificaciones,
+  actualizarPreferenciaNotificaciones,
+  obtenerPreferenciaNotificaciones,
   obtenerEstadoPermisosPush,
   registrarDispositivoPush,
 } from '@/services/push-notifications-service';
@@ -21,6 +23,12 @@ export default function Perfil() {
   const cerrarSesion = useAuthStore((state) => state.cerrarSesion);
   const { data: suscripcion } = useSuscripcion();
   const [mensajeCuenta, setMensajeCuenta] = useState('');
+  const queryClient = useQueryClient();
+  const { data: preferencia, isFetching: consultandoPreferencia } = useQuery({
+    queryKey: ['preferencia-notificaciones'],
+    queryFn: obtenerPreferenciaNotificaciones,
+    enabled: Boolean(token),
+  });
 
   async function salir() {
     if (token) {
@@ -40,23 +48,17 @@ export default function Perfil() {
   const iniciales = usuario ? `${usuario.nombres[0] ?? ''}${usuario.apellidos[0] ?? ''}`.toUpperCase() : 'MS';
   const telefonoVisible = usuario?.telefono?.startsWith('google:') ? '' : usuario?.telefono;
 
-  async function abrirPrivacidadAds() {
+  async function cambiarNotificaciones(habilitadas: boolean) {
     setMensajeCuenta('');
 
     try {
-      const resultado = await mostrarOpcionesPrivacidadAds();
-      if (resultado === null) {
-        setMensajeCuenta('Las opciones de privacidad de anuncios no estan disponibles en este dispositivo.');
+      if (!habilitadas) {
+        await actualizarPreferenciaNotificaciones(false);
+        await queryClient.invalidateQueries({ queryKey: ['preferencia-notificaciones'] });
+        setMensajeCuenta('Notificaciones desactivadas en MI-SAN.');
+        return;
       }
-    } catch {
-      setMensajeCuenta('No pudimos abrir las opciones de privacidad de anuncios.');
-    }
-  }
 
-  async function activarNotificaciones() {
-    setMensajeCuenta('');
-
-    try {
       const estado = await obtenerEstadoPermisosPush();
 
       if (estado === 'unavailable') {
@@ -67,7 +69,7 @@ export default function Perfil() {
       if (estado === 'denied') {
         Alert.alert(
           'Notificaciones bloqueadas',
-          'Android tiene bloqueadas las notificaciones de MI-SAN. Abre la configuracion del celular y activa Permitir notificaciones.',
+          'Las notificaciones estan desactivadas en la configuracion del dispositivo.',
           [
             { text: 'Cancelar', style: 'cancel' },
             { text: 'Abrir configuracion', onPress: abrirConfiguracionNotificaciones },
@@ -77,6 +79,7 @@ export default function Perfil() {
       }
 
       const tokenPush = await registrarDispositivoPush();
+      await queryClient.invalidateQueries({ queryKey: ['preferencia-notificaciones'] });
       setMensajeCuenta(tokenPush ? 'Notificaciones activadas correctamente.' : 'No pudimos activar las notificaciones en este dispositivo.');
     } catch {
       setMensajeCuenta('No pudimos abrir o activar las notificaciones.');
@@ -127,8 +130,21 @@ export default function Perfil() {
             <FilaCuenta icono={<FileText color="#64748B" size={19} />} titulo="Terminos y condiciones" onPress={() => router.push('/legal/terms' as never)} />
             <FilaCuenta icono={<HelpCircle color="#64748B" size={19} />} titulo="Soporte" onPress={() => router.push('/legal/support' as never)} />
             <FilaCuenta icono={<Info color="#64748B" size={19} />} titulo="Acerca de" onPress={() => router.push('/about' as never)} />
-            <FilaCuenta icono={<Bell color="#64748B" size={19} />} titulo="Notificaciones" onPress={activarNotificaciones} />
-            <FilaCuenta icono={<Bell color="#64748B" size={19} />} titulo="Privacidad de anuncios" onPress={abrirPrivacidadAds} />
+            <View className="min-h-16 flex-row items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 shadow-sm">
+              <Bell color="#64748B" size={19} />
+              <View className="flex-1 py-2">
+                <Text className="font-semibold text-slate-700">Notificaciones</Text>
+                <Text className="mt-0.5 text-xs text-slate-500">Recibe avisos sobre pagos, mensajes, invitaciones y cambios importantes en tus SANes.</Text>
+              </View>
+              <Switch
+                value={Boolean(preferencia?.habilitadas)}
+                disabled={consultandoPreferencia}
+                onValueChange={cambiarNotificaciones}
+                trackColor={{ false: '#CBD5E1', true: '#86D6B5' }}
+                thumbColor={preferencia?.habilitadas ? '#168A5B' : '#F8FAFC'}
+              />
+            </View>
+            <FilaCuenta icono={<Shield color="#64748B" size={19} />} titulo="Privacidad de anuncios" onPress={() => router.push('/legal/ads-privacy' as never)} />
           </View>
           {mensajeCuenta ? <Text className="mt-3 rounded-lg bg-amber-50 p-3 text-sm font-semibold text-amber-700">{mensajeCuenta}</Text> : null}
         </View>

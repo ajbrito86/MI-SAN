@@ -27,6 +27,8 @@ export default function Invitaciones() {
       await queryClient.invalidateQueries({ queryKey: ['mis-invitaciones'] });
       await queryClient.invalidateQueries({ queryKey: ['sociedades'] });
       await queryClient.invalidateQueries({ queryKey: ['notificaciones'] });
+      await queryClient.invalidateQueries({ queryKey: ['notificaciones-no-leidas'] });
+      await queryClient.invalidateQueries({ queryKey: ['dashboard-resumen'] });
     },
     onError: (err) => setMensaje(err instanceof Error ? err.message : 'No pudimos aceptar la invitacion.'),
   });
@@ -36,6 +38,7 @@ export default function Invitaciones() {
       setMensaje('Invitacion rechazada.');
       await queryClient.invalidateQueries({ queryKey: ['mis-invitaciones'] });
       await queryClient.invalidateQueries({ queryKey: ['notificaciones'] });
+      await queryClient.invalidateQueries({ queryKey: ['notificaciones-no-leidas'] });
     },
     onError: (err) => setMensaje(err instanceof Error ? err.message : 'No pudimos rechazar la invitacion.'),
   });

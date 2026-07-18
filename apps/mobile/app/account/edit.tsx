@@ -128,7 +128,7 @@ function CampoPerfil({
       {icono}
       <View className="min-w-0 flex-1">
         <Text className="text-xs font-semibold text-slate-500">{etiqueta}</Text>
-        <TextInput className="mt-1 min-h-8 min-w-0 text-base text-marca-texto" placeholderTextColor="#94A3B8" {...props} />
+        <TextInput className="mt-1 min-h-12 min-w-0 py-2 text-base leading-6 text-marca-texto" placeholderTextColor="#94A3B8" {...props} />
       </View>
     </View>
   );

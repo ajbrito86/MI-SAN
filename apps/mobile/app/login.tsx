@@ -238,7 +238,7 @@ function ContenidoLogin({
             <View className="flex-row items-center gap-3 rounded-lg border border-slate-200 bg-white px-4 py-3">
               <Mail size={21} color="#475569" />
               <TextInput
-                className="min-h-8 min-w-0 flex-1 text-base text-marca-texto"
+                className="min-h-12 min-w-0 flex-1 py-2 text-base leading-6 text-marca-texto"
                 placeholder="Correo electronico"
                 placeholderTextColor="#8A97A8"
                 autoCapitalize="none"
@@ -251,7 +251,7 @@ function ContenidoLogin({
             <View className="flex-row items-center gap-3 rounded-lg border border-slate-200 bg-white px-4 py-3">
               <Lock size={21} color="#475569" />
               <TextInput
-                className="min-h-8 min-w-0 flex-1 text-base text-marca-texto"
+                className="min-h-12 min-w-0 flex-1 py-2 text-base leading-6 text-marca-texto"
                 placeholder="Contrasena"
                 placeholderTextColor="#8A97A8"
                 secureTextEntry={!mostrarContrasena}

@@ -12,6 +12,7 @@ import {
   configurarNavegacionPush,
   configurarSincronizacionPush,
   registrarDispositivoPush,
+  obtenerPreferenciaNotificaciones,
 } from '@/services/push-notifications-service';
 import { useAuthStore } from '@/stores/auth-store';
 import '../global.css';
@@ -44,7 +45,9 @@ export default function RootLayout() {
       return;
     }
 
-    registrarDispositivoPush().catch(() => null);
+    obtenerPreferenciaNotificaciones()
+      .then((preferencia) => preferencia.habilitadas ? registrarDispositivoPush(false) : null)
+      .catch(() => null);
   }, [accessToken]);
 
   useEffect(() => {

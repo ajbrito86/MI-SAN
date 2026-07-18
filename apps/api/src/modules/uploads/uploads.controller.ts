@@ -1,7 +1,7 @@
 import { Body, Controller, Post, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
-import { mkdirSync } from 'fs';
+import { mkdirSync, unlinkSync } from 'fs';
 import { extname } from 'path';
 import { UsuarioActual } from '../../common/decorators/usuario-actual.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -31,11 +31,20 @@ export class UploadsController {
       limits: { fileSize: 10 * 1024 * 1024 },
     }),
   )
-  subirEvidencia(
+  async subirEvidencia(
     @UsuarioActual() usuario: UsuarioAutenticado,
     @Body() dto: SubirEvidenciaDto,
     @UploadedFile() archivo: Express.Multer.File,
   ) {
-    return this.uploadsService.subirEvidencia(usuario.id, dto, archivo);
+    try {
+      return await this.uploadsService.subirEvidencia(usuario.id, dto, archivo);
+    } catch (error) {
+      if (archivo?.path) {
+        try {
+          unlinkSync(archivo.path);
+        } catch {}
+      }
+      throw error;
+    }
   }
 }

@@ -84,6 +84,7 @@ export class SociedadesRepository {
         OR: [{ organizadorId: usuarioId }, { participantes: { some: { usuarioId, isActive: true } } }],
       },
       include: {
+        organizador: { select: { id: true, nombres: true, apellidos: true } },
         participantes: {
           include: {
             usuario: {

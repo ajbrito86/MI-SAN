@@ -54,6 +54,28 @@ export class ChatsRepository {
     });
   }
 
+  buscarMensajeEnConversacion(mensajeId: string, conversacionId: string) {
+    return this.prisma.mensajeChat.findFirst({ where: { id: mensajeId, conversacionId } });
+  }
+
+  buscarReporteMensaje(reportanteUsuarioId: string, mensajeId: string) {
+    return this.prisma.reporteChat.findUnique({
+      where: { reportanteUsuarioId_mensajeId: { reportanteUsuarioId, mensajeId } },
+    });
+  }
+
+  crearReporte(data: {
+    reportanteUsuarioId: string;
+    usuarioReportadoId: string;
+    sociedadId: string;
+    conversacionId: string;
+    mensajeId?: string;
+    motivo: import('@prisma/client').MotivoReporteChat;
+    descripcion?: string;
+  }) {
+    return this.prisma.reporteChat.create({ data });
+  }
+
   listarConversaciones(sociedadId: string, participanteId?: string) {
     return this.prisma.conversacionSociedad.findMany({
       where: {

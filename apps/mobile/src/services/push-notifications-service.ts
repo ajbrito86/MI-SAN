@@ -18,13 +18,13 @@ const isExpoGo = Constants.appOwnership === 'expo';
 export const pushNotificationsEnabled = process.env.EXPO_PUBLIC_ENABLE_PUSH_NOTIFICATIONS === 'true';
 let handlerConfigurado = false;
 
-const queriesNotificaciones = [['notificaciones'], ['notificaciones-no-leidas']] as const;
+const queriesNotificaciones = [['notificaciones'], ['notificaciones-no-leidas'], ['sociedades'], ['dashboard-resumen']] as const;
 
 function cargarNotifications(): typeof ExpoNotifications {
   return require('expo-notifications') as typeof ExpoNotifications;
 }
 
-export async function registrarDispositivoPush() {
+export async function registrarDispositivoPush(solicitarPermiso = true) {
   if (!pushNotificationsEnabled || isExpoGo || Platform.OS === 'web' || !Device.isDevice) {
     return null;
   }
@@ -52,8 +52,11 @@ export async function registrarDispositivoPush() {
   }
 
   const permisosActuales = await Notifications.getPermissionsAsync();
-  const permisos =
-    permisosActuales.status === 'granted' ? permisosActuales : await Notifications.requestPermissionsAsync();
+  const permisos = permisosActuales.status === 'granted'
+    ? permisosActuales
+    : solicitarPermiso
+      ? await Notifications.requestPermissionsAsync()
+      : permisosActuales;
 
   if (permisos.status !== 'granted') {
     return null;
@@ -69,6 +72,19 @@ export async function registrarDispositivoPush() {
   await AsyncStorage.setItem(registroPushKey, JSON.stringify({ pushToken: token, plataforma: Platform.OS }));
 
   return token;
+}
+
+export type PreferenciaNotificaciones = { habilitadas: boolean; tokenRegistrado: boolean };
+
+export function obtenerPreferenciaNotificaciones() {
+  return apiRequestAutenticado<PreferenciaNotificaciones>('/notifications/preference');
+}
+
+export function actualizarPreferenciaNotificaciones(habilitadas: boolean) {
+  return apiRequestAutenticado<PreferenciaNotificaciones>('/notifications/preference', {
+    method: 'PATCH',
+    body: JSON.stringify({ habilitadas }),
+  });
 }
 
 export async function obtenerEstadoPermisosPush() {

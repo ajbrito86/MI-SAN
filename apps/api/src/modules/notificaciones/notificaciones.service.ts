@@ -58,12 +58,23 @@ export class NotificacionesService {
     }
 
     await this.notificacionesRepository.actualizarPushToken(usuarioId, pushToken);
+    await this.notificacionesRepository.actualizarPreferencia(usuarioId, true);
     return { mensaje: 'Notificaciones push activadas correctamente.' };
   }
 
   async eliminarPushToken(usuarioId: string) {
     await this.notificacionesRepository.actualizarPushToken(usuarioId, null);
     return { mensaje: 'Notificaciones push desactivadas correctamente.' };
+  }
+
+  async obtenerPreferencia(usuarioId: string) {
+    const preferencia = await this.notificacionesRepository.obtenerPreferencia(usuarioId);
+    return { habilitadas: preferencia.notificacionesHabilitadas, tokenRegistrado: Boolean(preferencia.pushToken) };
+  }
+
+  async actualizarPreferencia(usuarioId: string, habilitadas: boolean) {
+    const preferencia = await this.notificacionesRepository.actualizarPreferencia(usuarioId, habilitadas);
+    return { habilitadas: preferencia.notificacionesHabilitadas, tokenRegistrado: Boolean(preferencia.pushToken) };
   }
 
   async enviarUltimaParaUsuario(usuarioId: string, createdAtGte: Date) {

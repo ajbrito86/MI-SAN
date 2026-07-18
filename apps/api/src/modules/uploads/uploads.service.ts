@@ -1,4 +1,5 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { EstadoPago, TipoPago } from '@prisma/client';
 import { SubirEvidenciaDto } from './dto/subir-evidencia.dto';
 import { UploadsRepository } from './uploads.repository';
 
@@ -28,6 +29,15 @@ export class UploadsService {
 
     if (!esParticipante && !esOrganizador) {
       throw new ForbiddenException('No tienes permiso para cargar evidencias en esta cuota.');
+    }
+
+    if (cuota.ciclo.sociedad.tipoPago === TipoPago.EFECTIVO) {
+      throw new BadRequestException('Esta sociedad solo permite pagos en efectivo y no admite comprobantes.');
+    }
+
+    const estadosPermitidos: EstadoPago[] = [EstadoPago.PENDIENTE, EstadoPago.ATRASADO, EstadoPago.RECHAZADO, EstadoPago.REPORTADO];
+    if (!estadosPermitidos.includes(cuota.estado)) {
+      throw new BadRequestException('No se pueden adjuntar comprobantes en el estado actual de la cuota.');
     }
 
     return this.uploadsRepository.crearEvidencia({

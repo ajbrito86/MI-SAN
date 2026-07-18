@@ -110,10 +110,20 @@ export async function mostrarOpcionesPrivacidadAds() {
   const moduloAds = cargarModuloAds();
 
   if (!moduloAds) {
-    return null;
+    return { estado: 'NO_DISPONIBLE' as const, motivo: 'ENTORNO' as const };
   }
 
-  return moduloAds.AdsConsent.showPrivacyOptionsForm();
+  const informacion = await moduloAds.AdsConsent.requestInfoUpdate();
+
+  if (informacion.privacyOptionsRequirementStatus !== 'REQUIRED') {
+    return {
+      estado: 'NO_REQUERIDO' as const,
+      motivo: informacion.privacyOptionsRequirementStatus,
+    };
+  }
+
+  const resultado = await moduloAds.AdsConsent.showPrivacyOptionsForm();
+  return { estado: 'MOSTRADO' as const, informacion: resultado };
 }
 
 export function puedeMostrarInterstitial(mostrarAds: boolean, frecuenciaMinutos = 10) {

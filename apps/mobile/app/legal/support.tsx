@@ -5,6 +5,8 @@ export default function Soporte() {
     <LegalPage
       titulo="Soporte"
       subtitulo="Ayuda y contacto"
+      enlaceWeb="https://mi-san.kingdom-devs.net/soporte.html"
+      textoEnlaceWeb="Abrir centro de soporte"
       parrafos={[
         'Correo oficial de soporte: soporte@mi-san.kingdom-devs.net.',
         'Tiempo estimado de respuesta: 2 a 5 dias laborables durante la primera etapa comercial.',

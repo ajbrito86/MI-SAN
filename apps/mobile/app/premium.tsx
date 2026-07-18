@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { Check, RotateCcw, Sparkles } from 'lucide-react-native';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Platform, Text, View } from 'react-native';
 import { AppButton } from '@/components/app-button';
 import { AppHeader } from '@/components/app-header';
@@ -21,6 +21,8 @@ import {
 import { comprarPremium, restaurarCompra } from '@/services/suscripciones-service';
 import { useAuthStore } from '@/stores/auth-store';
 
+const billingLogger = globalThis.console;
+
 export default function PantallaPremium() {
   const queryClient = useQueryClient();
   const { data: configuracion } = useConfiguracionMobile();
@@ -29,6 +31,7 @@ export default function PantallaPremium() {
   const actualizarUsuario = useAuthStore((state) => state.actualizarUsuario);
   const plataformaCompra = Platform.OS === 'ios' ? 'APP_STORE' : Platform.OS === 'android' ? 'GOOGLE_PLAY' : 'MANUAL';
   const usarBillingNativo = billingNativoHabilitado();
+  const [mensajeRestauracion, setMensajeRestauracion] = useState('');
 
   const productoPremium = useMutation({
     mutationFn: obtenerProductoPremium,
@@ -71,37 +74,52 @@ export default function PantallaPremium() {
 
   const restauracion = useMutation({
     mutationFn: async () => {
+      if (suscripcion?.plan === 'PREMIUM_SIN_ADS' && !suscripcion.esTrial) {
+        return { yaActiva: true } as const;
+      }
       if (!usarBillingNativo) {
-        return restaurarCompra({ plataformaCompra });
+        return { suscripcionActualizada: await restaurarCompra({ plataformaCompra }) } as const;
       }
 
       const compraNativa = await restaurarCompraPremium();
 
       if (!compraNativa) {
-        throw new Error('No encontramos una compra Premium para restaurar en la tienda.');
+        return { noEncontrada: true } as const;
       }
 
       const suscripcionActualizada = await restaurarCompra(crearPayloadPremium(compraNativa));
       await finalizarCompraPremium(compraNativa);
 
-      return suscripcionActualizada;
+      return { suscripcionActualizada } as const;
     },
-    onSuccess: () => {
+    onSuccess: (resultado) => {
+      if ('yaActiva' in resultado) {
+        setMensajeRestauracion('Tu cuenta ya tiene Premium activo.');
+        return;
+      }
+      if ('noEncontrada' in resultado) {
+        setMensajeRestauracion('No encontramos compras anteriores para restaurar.');
+        return;
+      }
       registrarEvento({ nombre: 'premium_restaurado', metadataJson: { plataformaCompra } });
       if (usuario) {
         actualizarUsuario({ ...usuario, rolGlobal: 'ORGANIZADOR' });
       }
       queryClient.invalidateQueries({ queryKey: ['suscripcion-actual'] });
-      router.back();
+      setMensajeRestauracion('Compra restaurada correctamente.');
     },
-    onError: (error) => registrarError('premium_restauracion_error', error, { plataformaCompra }),
+    onError: (error) => {
+      billingLogger.error('[billing:restore] error nativo completo', error);
+      registrarError('premium_restauracion_error', error, { plataformaCompra });
+      setMensajeRestauracion('No pudimos restaurar la compra. Intentalo nuevamente.');
+    },
   });
 
   const cargando = compra.isPending || restauracion.isPending;
   const precioPremium = formatearPrecioProducto(productoPremium.data, `US$${configuracion.monetizacion.precioPremiumUsd.toFixed(2)}`);
   const tienePremiumPermanente = suscripcion?.plan === 'PREMIUM_SIN_ADS' && !suscripcion.esTrial;
   const tieneBeneficiosPorTrial = Boolean(suscripcion?.premium && suscripcion.esTrial);
-  const errorOperacion = compra.error || restauracion.error;
+  const errorOperacion = compra.error;
 
   return (
     <ScreenScrollView>
@@ -150,6 +168,7 @@ export default function PantallaPremium() {
             {errorOperacion instanceof Error ? errorOperacion.message : 'No pudimos completar la operacion. Intentalo nuevamente.'}
           </Text>
         ) : null}
+        {mensajeRestauracion ? <Text className="rounded-lg bg-emerald-50 p-3 text-sm font-semibold text-marca-verde">{mensajeRestauracion}</Text> : null}
 
         <AppButton
           titulo="Comprar Premium"

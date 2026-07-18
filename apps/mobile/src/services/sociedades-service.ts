@@ -40,6 +40,7 @@ export type CicloSociedad = {
 };
 
 export type DetalleSociedad = Sociedad & {
+  organizador?: { id: string; nombres: string; apellidos: string };
   participantes: ParticipanteSociedad[];
   cicloActual: CicloSociedad | null;
   ciclos: CicloSociedad[];

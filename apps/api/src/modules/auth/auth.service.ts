@@ -225,7 +225,7 @@ export class AuthService {
 
   private async generarTokens(usuarioId: string, email: string, telefono: string): Promise<Tokens> {
     const payload = { sub: usuarioId, email, telefono };
-    const refreshTokenExpiresAt = this.proximoCorteDiarioSesion();
+    const refreshTokenExpiresAt = this.proximoCorteSemanalSesion();
     const refreshExpiraEnSegundos = Math.max(1, Math.ceil((refreshTokenExpiresAt.getTime() - Date.now()) / 1000));
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(payload, {
@@ -241,13 +241,15 @@ export class AuthService {
     return { accessToken, refreshToken, refreshTokenExpiresAt: refreshTokenExpiresAt.toISOString() };
   }
 
-  private proximoCorteDiarioSesion() {
+  private proximoCorteSemanalSesion() {
     const horaUtcCorte = this.obtenerHoraUtcCorteSesion();
     const ahora = new Date();
-    const proximoCorte = new Date(ahora);
+    const proximoCorte = new Date(ahora.getTime() + 7 * 24 * 60 * 60 * 1000);
     proximoCorte.setUTCHours(horaUtcCorte, 0, 0, 0);
 
     if (proximoCorte.getTime() <= ahora.getTime()) {
+      proximoCorte.setUTCDate(proximoCorte.getUTCDate() + 7);
+    } else if (proximoCorte.getTime() < ahora.getTime() + 7 * 24 * 60 * 60 * 1000) {
       proximoCorte.setUTCDate(proximoCorte.getUTCDate() + 1);
     }
 

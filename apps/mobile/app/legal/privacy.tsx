@@ -5,6 +5,8 @@ export default function PoliticaPrivacidad() {
     <LegalPage
       titulo="Privacidad"
       subtitulo="Uso y proteccion de datos"
+      enlaceWeb="https://mi-san.kingdom-devs.net/privacidad.html"
+      textoEnlaceWeb="Ver política completa en el sitio web"
       parrafos={[
         'MI-SAN recopila datos necesarios para crear y administrar cuentas, SANes, participantes, pagos, configuraciones y soporte.',
         'Los datos pueden incluir nombre, correo electronico, telefono, foto de perfil opcional, informacion de uso, version de la aplicacion, identificadores tecnicos y diagnosticos.',

@@ -100,6 +100,12 @@ export default function Pagos() {
 
   const reportarMutation = useMutation({
     mutationFn: async (cuotaPagoId: string) => {
+      const pago = pagos.find((item) => item.id === cuotaPagoId);
+      if (!pago || (pago.sociedad.tipoPago !== 'MIXTO' && pago.sociedad.tipoPago !== metodoPago)) {
+        setArchivo(null);
+        throw new Error('Ese metodo de pago no esta permitido en esta sociedad.');
+      }
+
       if (metodoSeleccionado.requiereComprobante && !archivo) {
         throw new Error('Debes adjuntar un comprobante para deposito o transferencia.');
       }
@@ -148,7 +154,8 @@ export default function Pagos() {
   const iniciarReporte = (cuotaPagoId: string) => {
     setMensaje(null);
     setArchivo(null);
-    setMetodoPago('EFECTIVO');
+    const pago = pagos.find((item) => item.id === cuotaPagoId);
+    setMetodoPago(pago?.sociedad.tipoPago === 'MIXTO' ? 'EFECTIVO' : (pago?.sociedad.tipoPago as MetodoPago) || 'EFECTIVO');
     setPagoActivo(cuotaPagoId);
     setComprobanteActivo(null);
     setArchivoComprobante(null);
@@ -169,6 +176,7 @@ export default function Pagos() {
     const adjuntoActivo = comprobanteActivo === pago.id;
     const requiereComprobantePendiente =
       pago.estado === 'REPORTADO' && pago.metodoPagoReportado !== null && pago.metodoPagoReportado !== 'EFECTIVO' && pago.evidencias.length === 0;
+    const metodosPermitidos = METODOS.filter((metodo) => pago.sociedad.tipoPago === 'MIXTO' || pago.sociedad.tipoPago === metodo.valor);
 
     return (
       <View key={pago.id} className="gap-2 rounded-lg bg-white p-4">
@@ -208,7 +216,7 @@ export default function Pagos() {
           <View className="gap-3 rounded-lg bg-slate-50 p-4">
             <Text className="text-base font-semibold text-marca-texto">Metodo de pago</Text>
             <View className="flex-row flex-wrap gap-2">
-              {METODOS.map((metodo) => {
+              {metodosPermitidos.map((metodo) => {
                 const activo = metodo.valor === metodoPago;
                 return (
                   <Pressable
@@ -216,9 +224,7 @@ export default function Pagos() {
                     className={`rounded-lg border px-3 py-3 ${activo ? 'border-marca-verde bg-emerald-50' : 'border-slate-200 bg-white'}`}
                     onPress={() => {
                       setMetodoPago(metodo.valor);
-                      if (!metodo.requiereComprobante) {
-                        setArchivo(null);
-                      }
+                      setArchivo(null);
                     }}
                   >
                     <Text className={`text-sm font-semibold ${activo ? 'text-marca-verde' : 'text-slate-600'}`}>{metodo.etiqueta}</Text>

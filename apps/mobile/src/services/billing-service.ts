@@ -7,6 +7,7 @@ type ModuloBilling = typeof import('react-native-iap');
 declare const require: (nombre: string) => ModuloBilling;
 
 const PREMIUM_PRODUCT_ID_DEFAULT = 'premium_sin_ads';
+const billingLogger = globalThis.console;
 
 function cargarModuloBilling() {
   if (!['android', 'ios'].includes(Platform.OS) || process.env.EXPO_PUBLIC_ENABLE_NATIVE_BILLING !== 'true') {
@@ -76,11 +77,18 @@ export async function restaurarCompraPremium() {
   }
 
   const productId = obtenerPremiumProductId();
+  billingLogger.info('[billing:restore] product IDs solicitados', [productId]);
   await moduloBilling.initConnection();
   const compras = await moduloBilling.getAvailablePurchases({
     automaticallyFinishRestoredTransactions: false,
-    onlyIncludeActiveItems: true,
   });
+
+  billingLogger.info('[billing:restore] compras devueltas', compras.map((compra) => ({
+    productId: compra.productId,
+    transactionId: compra.transactionId,
+    originalTransactionIdentifierIOS: compra.originalTransactionIdentifierIOS,
+    environment: compra.environmentIos,
+  })));
 
   return compras.find((compra) => compra.productId === productId) ?? null;
 }

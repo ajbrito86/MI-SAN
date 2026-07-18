@@ -129,7 +129,7 @@ function CampoRegistro({
   return (
     <View className="min-h-14 flex-row items-center gap-3 rounded-xl border border-slate-200 bg-white px-4">
       {icono}
-      <TextInput className="min-h-12 min-w-0 flex-1 text-base text-marca-texto" placeholderTextColor="#667085" {...props} />
+      <TextInput className="min-h-12 min-w-0 flex-1 py-2 text-base leading-6 text-marca-texto" placeholderTextColor="#667085" {...props} />
     </View>
   );
 }

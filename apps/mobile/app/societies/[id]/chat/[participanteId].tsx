@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
-import { ChevronLeft, Send } from 'lucide-react-native';
+import { ChevronLeft, Flag, Send } from 'lucide-react-native';
 import { useEffect, useRef, useState } from 'react';
 import {
   FlatList,
@@ -8,6 +8,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
+  Modal,
   Text,
   TextInput,
   View,
@@ -15,7 +16,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppButton } from '@/components/app-button';
-import { type MensajeChat, enviarMensajeSan, listarMensajesSan } from '@/services/chats-service';
+import { type MensajeChat, type MotivoReporteChat, enviarMensajeSan, listarMensajesSan, reportarChat } from '@/services/chats-service';
 import { obtenerSociedad } from '@/services/sociedades-service';
 import { useAuthStore } from '@/stores/auth-store';
 
@@ -28,6 +29,10 @@ export default function ChatSan() {
   const inputRef = useRef<TextInput>(null);
   const [mensaje, setMensaje] = useState('');
   const [mensajeAccion, setMensajeAccion] = useState('');
+  const [reporteMensajeId, setReporteMensajeId] = useState<string | undefined>();
+  const [modalReporteVisible, setModalReporteVisible] = useState(false);
+  const [motivoReporte, setMotivoReporte] = useState<MotivoReporteChat>('LENGUAJE_OFENSIVO');
+  const [descripcionReporte, setDescripcionReporte] = useState('');
   const queryKey = ['chat-san', id, participanteId] as const;
 
   const { data: sociedad } = useQuery({
@@ -58,6 +63,27 @@ export default function ChatSan() {
     onError: (err) => setMensajeAccion(err instanceof Error ? err.message : 'No pudimos enviar el mensaje.'),
   });
 
+  const reporteMutation = useMutation({
+    mutationFn: () => reportarChat(token ?? '', id, participanteId, {
+      mensajeId: reporteMensajeId,
+      motivo: motivoReporte,
+      descripcion: motivoReporte === 'OTRO' ? descripcionReporte.trim() || undefined : undefined,
+    }),
+    onSuccess: (resultado) => {
+      setModalReporteVisible(false);
+      setDescripcionReporte('');
+      setMensajeAccion(resultado.mensaje);
+    },
+    onError: (error) => setMensajeAccion(error instanceof Error ? error.message : 'No pudimos enviar el reporte.'),
+  });
+
+  const abrirReporte = (mensajeId?: string) => {
+    setReporteMensajeId(mensajeId);
+    setMotivoReporte('LENGUAJE_OFENSIVO');
+    setDescripcionReporte('');
+    setModalReporteVisible(true);
+  };
+
   useEffect(() => {
     if (mensajes.length > 0) {
       listaRef.current?.scrollToEnd({ animated: true });
@@ -84,6 +110,11 @@ export default function ChatSan() {
         </Text>
         <Text className="mt-0.5 text-base leading-5 text-marca-texto">{item.mensaje}</Text>
         <Text className="mt-1 text-[11px] text-slate-500">{new Date(item.createdAt).toLocaleString()}</Text>
+        {!esMio ? (
+          <Pressable className="mt-2 self-start" onPress={() => abrirReporte(item.id)} accessibilityRole="button">
+            <Text className="text-xs font-semibold text-red-600">Reportar mensaje</Text>
+          </Pressable>
+        ) : null}
       </View>
     );
   };
@@ -91,7 +122,7 @@ export default function ChatSan() {
   return (
     <SafeAreaView className="flex-1 bg-marca-fondo" edges={['top', 'bottom']}>
       <Stack.Screen options={{ headerShown: false }} />
-      <KeyboardAvoidingView className="flex-1" behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={0}>
+      <KeyboardAvoidingView className="flex-1" behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={0}>
         <View className="flex-row items-center gap-3 border-b border-slate-200 bg-white px-3 py-2.5">
           <Pressable
             className="h-10 w-10 items-center justify-center rounded-full bg-slate-50"
@@ -102,11 +133,14 @@ export default function ChatSan() {
             <ChevronLeft color="#17231F" size={23} />
           </Pressable>
           <View className="min-w-0 flex-1">
-            <Text className="text-lg font-bold text-marca-texto">Chat privado</Text>
+            <Text className="text-lg font-bold text-marca-texto">{nombre || 'Chat privado'}</Text>
             <Text className="text-sm text-slate-600" numberOfLines={1}>
-              {nombre ? `SAN · ${nombre}` : 'Conversación del SAN'}
+              Conversación del SAN
             </Text>
           </View>
+          <Pressable className="h-10 w-10 items-center justify-center" onPress={() => abrirReporte()} accessibilityLabel="Reportar conversación">
+            <Flag color="#B42318" size={20} />
+          </Pressable>
         </View>
 
         <FlatList
@@ -120,7 +154,6 @@ export default function ChatSan() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
           onScrollBeginDrag={Keyboard.dismiss}
-          onTouchEnd={Keyboard.dismiss}
           onContentSizeChange={() => listaRef.current?.scrollToEnd({ animated: true })}
           ListEmptyComponent={
             <Pressable className="flex-1 items-center justify-center px-6" onPress={Keyboard.dismiss}>
@@ -180,6 +213,29 @@ export default function ChatSan() {
           </View>
         </View>
       </KeyboardAvoidingView>
+      <Modal visible={modalReporteVisible} transparent animationType="slide" onRequestClose={() => setModalReporteVisible(false)}>
+        <View className="flex-1 justify-end bg-black/40">
+          <View className="gap-3 rounded-t-3xl bg-white p-5 pb-8">
+            <Text className="text-xl font-bold text-marca-texto">{reporteMensajeId ? 'Reportar mensaje' : 'Reportar conversación'}</Text>
+            <Text className="text-sm text-slate-600">Selecciona el motivo. El reporte es confidencial y no elimina mensajes automáticamente.</Text>
+            {([
+              ['LENGUAJE_OFENSIVO', 'Lenguaje ofensivo'], ['ACOSO_O_AMENAZA', 'Acoso o amenaza'],
+              ['CONTENIDO_SEXUAL_O_INAPROPIADO', 'Contenido sexual o inapropiado'], ['ESTAFA_O_FRAUDE', 'Estafa o intento de fraude'],
+              ['SPAM', 'Spam'], ['OTRO', 'Otro'],
+            ] as [MotivoReporteChat, string][]).map(([valor, etiqueta]) => (
+              <Pressable key={valor} className={`rounded-xl border px-4 py-3 ${motivoReporte === valor ? 'border-red-500 bg-red-50' : 'border-slate-200'}`} onPress={() => setMotivoReporte(valor)}>
+                <Text className="font-semibold text-slate-700">{etiqueta}</Text>
+              </Pressable>
+            ))}
+            {motivoReporte === 'OTRO' ? (
+              <TextInput className="min-h-24 rounded-xl border border-slate-200 px-4 py-3 text-base leading-6" multiline textAlignVertical="top" placeholder="Descripción opcional" value={descripcionReporte} onChangeText={setDescripcionReporte} />
+            ) : null}
+            <Text className="text-xs text-slate-500">Consulta las normas de convivencia en Términos y condiciones.</Text>
+            <AppButton titulo={reporteMutation.isPending ? 'Enviando...' : 'Enviar reporte'} onPress={() => reporteMutation.mutate()} disabled={reporteMutation.isPending} />
+            <AppButton titulo="Cancelar" variante="secundario" onPress={() => setModalReporteVisible(false)} />
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }

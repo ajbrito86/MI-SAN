@@ -41,6 +41,7 @@ export class SociedadesService {
 
     return {
       ...this.mapearSociedad(sociedad, usuarioId),
+      organizador: sociedad.organizador,
       participantes: sociedad.participantes.map((participante) => ({
         id: participante.id,
         turno: participante.turno,

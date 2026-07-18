@@ -1,7 +1,7 @@
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { CalendarDays, Filter, Users, X } from 'lucide-react-native';
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { AppButton } from '@/components/app-button';
 import { CalendarDatePicker } from '@/components/calendar-date-picker';
@@ -23,11 +23,12 @@ export default function Sociedades() {
   const [fechaHasta, setFechaHasta] = useState('');
   const [campoFechaAbierto, setCampoFechaAbierto] = useState<CampoFecha>(null);
   const { data: suscripcion } = useSuscripcion();
-  const { data: sociedades = [] } = useQuery({
+  const { data: sociedades = [], refetch } = useQuery({
     queryKey: ['sociedades'],
     queryFn: () => listarSociedades(token ?? ''),
     enabled: Boolean(token),
   });
+  useFocusEffect(useCallback(() => { if (token) void refetch(); }, [refetch, token]));
   const rangoInvalido = Boolean(fechaDesde && fechaHasta && fechaDesde > fechaHasta);
   const sociedadesFiltradas = useMemo(
     () =>

@@ -5,6 +5,8 @@ export default function TerminosCondiciones() {
     <LegalPage
       titulo="Terminos"
       subtitulo="Condiciones de uso"
+      enlaceWeb="https://mi-san.kingdom-devs.net/terminos.html"
+      textoEnlaceWeb="Ver términos completos en el sitio web"
       parrafos={[
         'MI-SAN es una herramienta tecnologica para facilitar la organizacion y administracion de SANes.',
         'La aplicacion no actua como entidad financiera, banco o institucion de inversion. Los usuarios son responsables de los acuerdos economicos realizados dentro de sus grupos.',

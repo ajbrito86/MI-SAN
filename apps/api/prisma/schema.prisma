@@ -140,6 +140,22 @@ enum TipoAuditoriaMonetizacion {
   REEMBOLSO_REGISTRADO
 }
 
+enum MotivoReporteChat {
+  LENGUAJE_OFENSIVO
+  ACOSO_O_AMENAZA
+  CONTENIDO_SEXUAL_O_INAPROPIADO
+  ESTAFA_O_FRAUDE
+  SPAM
+  OTRO
+}
+
+enum EstadoReporteChat {
+  PENDIENTE
+  EN_REVISION
+  RESUELTO
+  DESCARTADO
+}
+
 model Usuario {
   id                  String                 @id @default(uuid())
   nombres             String
@@ -152,6 +168,7 @@ model Usuario {
   refreshTokenHash    String?
   fotoPerfilUrl       String?
   pushToken           String?
+  notificacionesHabilitadas Boolean            @default(true)
   isVerified          Boolean                @default(false)
   isActive            Boolean                @default(true)
   createdAt           DateTime               @default(now())
@@ -170,6 +187,8 @@ model Usuario {
   eventosAnalitica    EventoAnalitica[]
   recuperaciones      RecuperacionContrasena[]
   auditoriasMonetizacion AuditoriaMonetizacion[]
+  reportesChatCreados ReporteChat[]             @relation("ReportanteChat")
+  reportesChatRecibidos ReporteChat[]           @relation("ReportadoChat")
 }
 
 model ConfiguracionGlobal {
@@ -367,6 +386,7 @@ model ConversacionSociedad {
   participante   ParticipanteSociedad  @relation(fields: [participanteId], references: [id])
   organizador    Usuario               @relation("ConversacionesOrganizador", fields: [organizadorId], references: [id])
   mensajes       MensajeChat[]
+  reportes       ReporteChat[]
 
   @@unique([sociedadId, participanteId])
 }
@@ -380,6 +400,32 @@ model MensajeChat {
   createdAt      DateTime              @default(now())
   conversacion   ConversacionSociedad  @relation(fields: [conversacionId], references: [id])
   remitente      Usuario               @relation(fields: [remitenteId], references: [id])
+  reportes       ReporteChat[]
+}
+
+model ReporteChat {
+  id                  String             @id @default(uuid())
+  reportanteUsuarioId String
+  usuarioReportadoId  String
+  sociedadId          String
+  conversacionId      String
+  mensajeId           String?
+  motivo              MotivoReporteChat
+  descripcion         String?
+  estado              EstadoReporteChat @default(PENDIENTE)
+  isActive             Boolean            @default(true)
+  deletedAt            DateTime?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  reportante           Usuario            @relation("ReportanteChat", fields: [reportanteUsuarioId], references: [id])
+  usuarioReportado     Usuario            @relation("ReportadoChat", fields: [usuarioReportadoId], references: [id])
+  conversacion         ConversacionSociedad @relation(fields: [conversacionId], references: [id])
+  mensaje              MensajeChat?       @relation(fields: [mensajeId], references: [id])
+
+  @@unique([reportanteUsuarioId, mensajeId])
+  @@index([estado, createdAt])
+  @@index([conversacionId, createdAt])
+  @@index([usuarioReportadoId, createdAt])
 }
 
 model CuotaPago {

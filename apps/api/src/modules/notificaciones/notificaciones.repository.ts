@@ -44,11 +44,27 @@ export class NotificacionesRepository {
     });
   }
 
+  obtenerPreferencia(usuarioId: string) {
+    return this.prisma.usuario.findUniqueOrThrow({
+      where: { id: usuarioId },
+      select: { notificacionesHabilitadas: true, pushToken: true },
+    });
+  }
+
+  actualizarPreferencia(usuarioId: string, habilitadas: boolean) {
+    return this.prisma.usuario.update({
+      where: { id: usuarioId },
+      data: { notificacionesHabilitadas: habilitadas },
+      select: { notificacionesHabilitadas: true, pushToken: true },
+    });
+  }
+
   listarPushTokens(usuarioIds: string[]) {
     return this.prisma.usuario.findMany({
       where: {
         id: { in: [...new Set(usuarioIds)] },
         isActive: true,
+        notificacionesHabilitadas: true,
         pushToken: { not: null },
       },
       select: { id: true, pushToken: true },

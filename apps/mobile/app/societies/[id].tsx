@@ -1038,7 +1038,11 @@ export default function DetalleSociedad() {
                           params: {
                             id,
                             participanteId: participante.id,
-                            nombre: `${participante.usuario.nombres} ${participante.usuario.apellidos}`,
+                            nombre: esOrganizador
+                              ? `${participante.usuario.nombres} ${participante.usuario.apellidos}`
+                              : sociedad.organizador
+                                ? `${sociedad.organizador.nombres} ${sociedad.organizador.apellidos}`
+                                : 'Organizador del SAN',
                           },
                         })
                       }
