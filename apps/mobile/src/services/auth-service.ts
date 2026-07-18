@@ -7,6 +7,7 @@ export type Usuario = {
   nombres: string;
   apellidos: string;
   telefono: string;
+  googleId?: string | null;
   email: string;
   rolGlobal: 'ORGANIZADOR' | 'PARTICIPANTE';
   fotoPerfilUrl?: string | null;

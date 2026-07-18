@@ -17,7 +17,7 @@ export default function EliminarCuenta() {
   const [error, setError] = useState('');
   const [cargando, setCargando] = useState(false);
 
-  const esCuentaGoogle = usuario?.telefono?.startsWith('google:') ?? false;
+  const esCuentaGoogle = Boolean(usuario?.googleId || usuario?.telefono?.startsWith('google:'));
   const puedeEliminar = (esCuentaGoogle || contrasena.length >= 8) && confirmacion.trim().toUpperCase() === 'ELIMINAR';
 
   async function confirmarEliminacion() {

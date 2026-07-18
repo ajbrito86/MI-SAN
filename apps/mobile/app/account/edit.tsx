@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { Check, Mail, Phone, User } from 'lucide-react-native';
+import { Check, KeyRound, Mail, Phone, User } from 'lucide-react-native';
 import { useState, type ComponentProps, type ReactNode } from 'react';
 import { ActivityIndicator, Text, TextInput, View } from 'react-native';
 import { AppButton } from '@/components/app-button';
@@ -14,7 +14,7 @@ export default function EditarPerfil() {
   const [formulario, setFormulario] = useState({
     nombres: usuario?.nombres ?? '',
     apellidos: usuario?.apellidos ?? '',
-    telefono: usuario?.telefono ?? '',
+    telefono: usuario?.telefono?.startsWith('google:') ? '' : usuario?.telefono ?? '',
     email: usuario?.email ?? '',
   });
   const [error, setError] = useState('');
@@ -82,6 +82,16 @@ export default function EditarPerfil() {
               value={formulario.apellidos}
               onChangeText={(valor) => actualizar('apellidos', valor)}
             />
+            {usuario?.googleId ? (
+              <CampoPerfil
+                etiqueta="Identificador de Google"
+                icono={<KeyRound color="#64748B" size={22} />}
+                value={usuario.googleId}
+                editable={false}
+                selectTextOnFocus={false}
+                accessibilityHint="Este identificador pertenece a tu cuenta de Google y no se puede editar"
+              />
+            ) : null}
             <CampoPerfil
               etiqueta="Telefono"
               icono={<Phone color="#475569" size={22} />}

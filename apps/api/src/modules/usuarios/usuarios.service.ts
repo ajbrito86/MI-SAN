@@ -76,14 +76,18 @@ export class UsuariosService {
     rolGlobal: string;
     fotoPerfilUrl: string | null;
     isVerified: boolean;
+    googleId: string | null;
     createdAt: Date;
   }) {
+    const telefono = usuario.telefono.startsWith('google:') ? '' : usuario.telefono;
+
     return {
       id: usuario.id,
       nombres: usuario.nombres,
       apellidos: usuario.apellidos,
-      telefono: usuario.telefono,
+      telefono,
       email: usuario.email,
+      googleId: usuario.googleId,
       rolGlobal: usuario.rolGlobal,
       fotoPerfilUrl: usuario.fotoPerfilUrl,
       isVerified: usuario.isVerified,
